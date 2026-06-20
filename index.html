@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>VEX HUB PRO</title>
+
+  <meta name="theme-color" content="#050816" />
+  <meta name="description" content="VEX HUB PRO - Aplicativo de gestão inteligente de vendas automotivas" />
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/style.css" />
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<!-- VEX HUB PWA -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="assets/icons/favicon.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0B0B0B">
+<meta name="background-color" content="#0B0B0B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VEX HUB">
+<meta name="msapplication-TileColor" content="#0B0B0B">
+<meta name="msapplication-config" content="browserconfig.xml">
+
+</head>
+
+<body>
+  <main class="app-shell">
+    <section id="homeScreen" class="screen active">
+      <div class="login-layout">
+        <div class="brand-panel">
+          <div class="brand-badge">VEX</div>
+          <h1>VEX HUB</h1>
+          <p>Gestão inteligente de vendas automotivas. Controle vendas, acompanhe comissões e gerencie seu desempenho em um único lugar.</p>
+
+          <div class="authenticity-seal" aria-label="Selo de desenvolvimento">
+            <span>Desenvolvido por</span>
+            <strong>Frank Silva</strong>
+            <small>Desenvolvimento de Software</small>
+          </div>
+        </div>
+
+        <form id="loginForm" class="login-card">
+          <div>
+            <span class="eyebrow">Aplicativo VEX</span>
+            <h2>Bem-vindo de volta</h2>
+            <p>Acesse com seu e-mail e senha autorizados para continuar.</p>
+          </div>
+
+          <div class="auth-mode-switch single-mode" aria-label="Acesso ao aplicativo">
+            <button id="loginModeButton" class="auth-mode-button active" type="button">Entrar</button>
+          </div>
+
+          <label id="displayNameField" class="display-name-field hidden">
+            Nome de usuário
+            <input id="registerDisplayName" type="text" placeholder="Ex: Junior" autocomplete="name" />
+          </label>
+
+          <label>
+            E-mail
+            <input id="loginEmail" type="email" placeholder="seuemail@exemplo.com" autocomplete="email" />
+          </label>
+
+          <label>
+            Senha
+            <input id="loginPassword" type="password" placeholder="Digite sua senha" autocomplete="current-password" />
+          </label>
+
+          <button id="authSubmitButton" type="submit" class="primary-button">Entrar</button>
+
+          <small id="authHelperText" class="auth-helper-text">Acesso restrito aos usuários autorizados pela administração.</small>
+
+          <div id="loginMessage"></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="dashboardScreen" class="screen">
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-badge small">V</div>
+          <div>
+            <strong>VEX HUB PRO</strong>
+            <span>Automotive Sales Platform</span>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-section="dashboardSection">Dashboard</button>
+          <button class="nav-item" data-section="newSaleSection">+ Nova Venda</button>
+          <button class="nav-item" data-section="historySection">Veículos</button>
+          <button class="nav-item" data-section="reportsSection">Relatórios</button>
+          <button class="nav-item" data-section="profileSection">Perfil</button>
+          <button id="usersNavButton" class="nav-item admin-only hidden" data-section="usersSection">Usuários</button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <span id="userEmailLabel"></span>
+          <button id="logoutButton" class="ghost-button">Sair</button>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <section id="dashboardSection" class="content-section active">
+          <div class="section-header premium-header">
+            <div>
+              <span class="eyebrow">Painel Executivo</span>
+              <h2>Dashboard Premium</h2>
+              <p>Indicadores em tempo real para acompanhar vendas, comissões, metas e pendências.</p>
+            </div>
+
+            <div class="month-goal-card">
+              <span>Meta mensal</span>
+              <strong id="monthlyGoalCard">R$ 500.000,00</strong>
+              <small id="goalPercentCard">0% concluída</small>
+            </div>
+          </div>
+
+          <div id="executiveNotification" class="executive-notification"></div>
+
+          <div class="executive-grid">
+            <article class="metric-card hero-metric">
+              <span>Valor vendido no mês</span>
+              <strong id="monthlySoldValueCard">R$ 0,00</strong>
+              <small>Somente vendas do mês atual</small>
+            </article>
+
+            <article class="metric-card">
+              <span>Comissão do mês</span>
+              <strong id="monthlyCommissionCard">R$ 0,00</strong>
+              <small>Comissão total acumulada no mês</small>
+            </article>
+
+            <article class="metric-card">
+              <span>Ticket médio</span>
+              <strong id="averageTicketCard">R$ 0,00</strong>
+              <small>Valor médio por venda</small>
+            </article>
+
+            <article class="metric-card">
+              <span>Última venda</span>
+              <strong id="lastSaleCard">Nenhuma venda</strong>
+              <small id="lastSaleClientCard">Aguardando lançamento</small>
+            </article>
+
+            <article class="metric-card">
+              <span>Crescimento mensal</span>
+              <strong id="monthlyGrowthCard">0%</strong>
+              <small>Comparado ao mês anterior</small>
+            </article>
+
+            <article class="metric-card progress-card">
+              <span>Percentual da meta</span>
+              <strong id="goalProgressCard">0%</strong>
+              <div class="progress-track">
+                <div id="goalProgressBar" class="progress-fill"></div>
+              </div>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="dashboard-card">
+              <span>Total de vendas</span>
+              <strong id="totalSalesCard">0</strong>
+            </article>
+
+            <article class="dashboard-card">
+              <span>Comissão total</span>
+              <strong id="totalCommissionCard">R$ 0,00</strong>
+            </article>
+
+            <article class="dashboard-card">
+              <span>Pós-vendas pendentes</span>
+              <strong id="pendingAfterSalesCard">0</strong>
+            </article>
+
+            <article class="dashboard-card">
+              <span>Transferências</span>
+              <strong id="transferSalesCard">0</strong>
+            </article>
+          </div>
+        </section>
+
+        <section id="newSaleSection" class="content-section">
+          <div class="section-header">
+            <div>
+              <span class="eyebrow">Operação</span>
+              <h2>Nova Venda</h2>
+              <p>Cadastre uma nova venda no Firestore do usuário logado.</p>
+            </div>
+          </div>
+
+          <form id="saleForm" class="form-card">
+            <div class="form-grid">
+              <label>
+                Cliente
+                <input id="clientName" type="text" placeholder="Nome do cliente" />
+              </label>
+
+              <label>
+                Telefone
+                <input id="clientPhone" type="text" placeholder="(11) 99999-9999" />
+              </label>
+
+              <label>
+                Veículo
+                <input id="vehicleModel" type="text" placeholder="Ex: Corolla XEi" />
+              </label>
+
+              <label>
+                Ano
+                <input id="vehicleYear" type="text" placeholder="Ex: 2024" />
+              </label>
+
+              <label>
+                Valor
+                <input id="saleValue" type="text" placeholder="Ex: 125000" />
+              </label>
+
+              <label>
+                Data
+                <input id="saleDate" type="date" />
+              </label>
+
+              <label>
+                Transferência
+                <select id="transferType">
+                  <option value="">Selecione</option>
+                  <option value="Pela loja">Pela loja</option>
+                  <option value="Pelo cliente">Pelo cliente</option>
+                </select>
+              </label>
+
+              <label>
+                Status Pós-venda
+                <select id="afterSaleStatus">
+                  <option value="">Selecione</option>
+                  <option value="Pendente">Pendente</option>
+                  <option value="Em andamento">Em andamento</option>
+                  <option value="Aguardando Cliente">Aguardando Cliente</option>
+                  <option value="Transferência em andamento">Transferência em andamento</option>
+                  <option value="Transferido">Transferido</option>
+                  <option value="Finalizado">Finalizado</option>
+                </select>
+              </label>
+            </div>
+
+            <label>
+              Observações
+              <textarea id="saleNotes" placeholder="Observações importantes da venda"></textarea>
+            </label>
+
+            <div class="commission-box">
+              <p>Comissão automática</p>
+              <div class="report-preview">
+                <div><strong>Total</strong><span>R$ 250,00</span></div>
+                <div><strong>Frank Luiz</strong><span>R$ 125,00</span></div>
+                <div><strong>Lucas Luiz</strong><span>R$ 125,00</span></div>
+              </div>
+            </div>
+
+            <button class="primary-button" type="submit">Salvar venda</button>
+
+            <div id="saleMessage"></div>
+          </form>
+        </section>
+
+        <section id="historySection" class="content-section">
+          <div class="section-header">
+            <div>
+              <span class="eyebrow">VEX HUB PRO</span>
+              <h2>Veículos Vendidos</h2>
+              <p>Consulte os veículos vendidos, acompanhe status e detalhes operacionais.</p>
+            </div>
+
+            <strong id="historyCounter" class="counter-pill">0 vendas</strong>
+          </div>
+
+          <div class="filters-card">
+            <input id="historySearch" type="text" placeholder="Pesquisar cliente, telefone, veículo..." />
+
+            <select id="historyStatusFilter">
+              <option value="">Todos os status</option>
+              <option value="Pendente">Pendente</option>
+              <option value="Em andamento">Em andamento</option>
+              <option value="Aguardando Cliente">Aguardando Cliente</option>
+              <option value="Transferência em andamento">Transferência em andamento</option>
+              <option value="Transferido">Transferido</option>
+              <option value="Finalizado">Finalizado</option>
+            </select>
+
+            <select id="historyTransferFilter">
+              <option value="">Todas as transferências</option>
+              <option value="Pela loja">Pela loja</option>
+              <option value="Pelo cliente">Pelo cliente</option>
+            </select>
+
+            <button id="clearHistoryFiltersButton" class="secondary-button" type="button">Limpar filtros</button>
+          </div>
+
+          <div id="historyList"></div>
+        </section>
+
+        <section id="reportsSection" class="content-section">
+          <div class="section-header">
+            <div>
+              <span class="eyebrow">Relatórios</span>
+              <h2>Relatórios Premium</h2>
+              <p>Resumo financeiro e operacional das vendas cadastradas.</p>
+            </div>
+          </div>
+
+          <div class="reports-grid">
+            <div><span>Total de vendas</span><strong id="reportTotalSales">0</strong></div>
+            <div><span>Comissão total</span><strong id="reportTotalCommission">R$ 0,00</strong></div>
+            <div><span>Comissão Frank</span><strong id="reportFrankCommission">R$ 0,00</strong></div>
+            <div><span>Comissão Lucas</span><strong id="reportLucasCommission">R$ 0,00</strong></div>
+            <div><span>Transferências Loja</span><strong id="reportStoreTransfer">0</strong></div>
+            <div><span>Transferências Cliente</span><strong id="reportClientTransfer">0</strong></div>
+            <div><span>Pós-vendas pendentes</span><strong id="reportPendingAfterSales">0</strong></div>
+            <div><span>Pós-vendas finalizados</span><strong id="reportFinishedAfterSales">0</strong></div>
+          </div>
+        </section>
+
+        <section id="profileSection" class="content-section">
+          <div class="section-header">
+            <div>
+              <span class="eyebrow">Perfil</span>
+              <h2>Perfil</h2>
+              <p>Atualize o nome exibido no Dashboard e na navegação do aplicativo.</p>
+            </div>
+          </div>
+
+          <form id="profileForm" class="form-card profile-card">
+            <div class="profile-avatar" id="profileAvatar">V</div>
+
+            <div class="profile-form-content">
+              <label>
+                Nome de usuário
+                <input id="profileDisplayName" type="text" placeholder="Ex: Junior" autocomplete="name" />
+              </label>
+
+              <label>
+                E-mail da conta
+                <input id="profileEmail" type="email" readonly />
+              </label>
+
+              <label>
+                Tipo de acesso
+                <input id="profileRole" type="text" readonly />
+              </label>
+
+              <button class="primary-button" type="submit">Salvar nome</button>
+
+              <div id="profileMessage"></div>
+            </div>
+          </form>
+        </section>
+
+        <section id="usersSection" class="content-section admin-only hidden">
+          <div class="section-header">
+            <div>
+              <span class="eyebrow">Administração</span>
+              <h2>Usuários</h2>
+              <p>Área exclusiva para administradores. Aqui você visualiza usuários que já acessaram o app e controla permissões.</p>
+            </div>
+          </div>
+
+          <div class="admin-info-card">
+            <strong>Regra de segurança</strong>
+            <p>O Perfil mostra apenas a conta logada. Este painel mostra os usuários cadastrados no Firestore. Todo novo usuário entra como <b>Usuário</b>; somente um <b>Administrador</b> pode promover para Administrador.</p>
+          </div>
+
+          <div id="usersList" class="users-list"></div>
+          <div id="usersMessage"></div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const firebaseConfig = {
+  apiKey: "AIzaSyAOPTuscUu3ojxlq_z63x23byDqit1p1Ww",
+  authDomain: "vex-hub-app.firebaseapp.com",
+  projectId: "vex-hub-app",
+  storageBucket: "vex-hub-app.firebasestorage.app",
+  messagingSenderId: "960864786408",
+  appId: "1:960864786408:web:8f69d0f4cef9d77fb9365d"
+};
+
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
