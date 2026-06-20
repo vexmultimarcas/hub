@@ -97,7 +97,7 @@ button {
   display: grid;
   place-items: center;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.06em;
   box-shadow: 0 18px 46px rgba(139, 92, 246, 0.35);
 }
@@ -173,7 +173,7 @@ label {
   gap: 8px;
   color: #e2e8f0;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 input,
@@ -208,7 +208,7 @@ textarea:focus {
   border-radius: 16px;
   padding: 14px 18px;
   color: white;
-  font-weight: 800;
+  font-weight: 650;
   transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
 }
 
@@ -389,7 +389,7 @@ textarea:focus {
 .dashboard-card span {
   color: var(--muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -521,7 +521,7 @@ textarea:focus {
   color: #a7f3d0;
   border: 1px solid rgba(52, 211, 153, 0.24);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .history-details {
@@ -669,7 +669,7 @@ body {
 }
 
 .nav-item {
-  font-weight: 800;
+  font-weight: 650;
   color: #c7c7c7;
 }
 
@@ -748,7 +748,7 @@ textarea:focus {
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .vex-vehicles-summary strong {
@@ -844,7 +844,7 @@ textarea:focus {
 .vex-vehicle-price {
   color: #ffffff;
   font-size: 20px;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.05em;
 }
 
@@ -855,7 +855,7 @@ textarea:focus {
   border-radius: 999px;
   padding: 7px 11px;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   border: 1px solid rgba(255, 255, 255, 0.10);
@@ -901,7 +901,7 @@ textarea:focus {
 .vex-card-chevron {
   color: #e10600;
   font-size: 24px;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .vex-drawer-root {
@@ -1001,7 +1001,7 @@ textarea:focus {
   background: rgba(225, 6, 0, 0.14);
   color: #ffffff;
   font-size: 24px;
-  font-weight: 950;
+  font-weight: 600;
   letter-spacing: -0.05em;
 }
 
@@ -1023,7 +1023,7 @@ textarea:focus {
   display: block;
   color: #9ca3af;
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 650;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   margin-bottom: 7px;
@@ -1108,7 +1108,7 @@ textarea:focus {
   content: "🚗 Dados complementares do veículo";
   grid-column: 1 / -1;
   color: #ffffff;
-  font-weight: 950;
+  font-weight: 600;
   letter-spacing: -0.03em;
   font-size: 18px;
 }
@@ -1118,7 +1118,7 @@ textarea:focus {
   gap: 8px;
   color: #e5e7eb;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -1155,7 +1155,7 @@ textarea:focus {
   border: 1px solid rgba(255,255,255,.08);
   color: #d4d4d8;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 650;
   text-transform: uppercase;
   letter-spacing: .04em;
 }
@@ -1236,7 +1236,7 @@ textarea:focus {
   padding: 12px 14px;
   color: #cbd5e1;
   background: transparent;
-  font-weight: 900;
+  font-weight: 600;
   transition: 0.2s ease;
 }
 
@@ -1275,7 +1275,7 @@ textarea:focus {
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #ffffff;
   font-size: 42px;
-  font-weight: 950;
+  font-weight: 600;
   box-shadow: 0 22px 50px rgba(225, 6, 0, 0.18);
 }
 
@@ -1441,7 +1441,7 @@ textarea:focus {
   display: grid !important;
   place-items: center;
   color: #ffffff;
-  font-weight: 800;
+  font-weight: 650;
   background: linear-gradient(135deg, rgba(225, 6, 0, 0.85), rgba(255, 255, 255, 0.08));
   border: 1px solid rgba(255, 255, 255, 0.14);
   flex: 0 0 auto;
@@ -1461,7 +1461,7 @@ textarea:focus {
   padding: 7px 12px;
   border-radius: 999px;
   font-size: 12px !important;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.02em;
 }
 
@@ -1549,7 +1549,7 @@ textarea:focus {
 .authenticity-seal span {
   color: rgba(248, 250, 252, 0.58);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.18em;
 }
@@ -1622,7 +1622,7 @@ textarea:focus {
   margin: 0;
   color: #ffffff;
   font-size: clamp(17px, 1.65vw, 23px);
-  font-weight: 950;
+  font-weight: 600;
   letter-spacing: -0.045em;
   line-height: 1.18;
   text-transform: none;
@@ -1760,5 +1760,416 @@ textarea:focus {
 
   #historySection .filters-card {
     position: static;
+  }
+}
+
+/* =========================================================
+   VEX HUB RC1.2 — Ajustes reais de homologação
+   Escopo: login desktop, bloco Bom dia no desktop e legibilidade
+   ========================================================= */
+
+html,
+body,
+button,
+input,
+select,
+textarea {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+}
+
+@media (min-width: 921px) {
+  .login-layout {
+    width: min(1260px, calc(100% - 56px)) !important;
+    min-height: min(720px, calc(100vh - 56px)) !important;
+    align-items: center !important;
+    grid-template-columns: minmax(0, 1.04fr) minmax(420px, 0.86fr) !important;
+    gap: 32px !important;
+  }
+
+  .brand-panel {
+    min-height: 640px !important;
+    padding: 42px 56px !important;
+    justify-content: center !important;
+  }
+
+  .brand-panel .vex-s7-logo-signature {
+    width: min(245px, 48%) !important;
+    margin: 0 0 48px 0 !important;
+  }
+
+  .brand-panel h1 {
+    margin-top: 0 !important;
+    font-size: clamp(54px, 5.7vw, 78px) !important;
+    line-height: .92 !important;
+    letter-spacing: -0.075em !important;
+  }
+
+  .brand-panel p {
+    max-width: 640px !important;
+    margin-top: 24px !important;
+    font-size: 17px !important;
+    line-height: 1.65 !important;
+  }
+
+  .authenticity-seal {
+    margin-top: 42px !important;
+    max-width: 430px !important;
+    padding: 20px 22px !important;
+    border-radius: 22px !important;
+  }
+
+  .authenticity-seal strong {
+    font-size: 21px !important;
+  }
+
+  .authenticity-seal small {
+    font-size: 13px !important;
+  }
+
+  .login-card {
+    min-height: 640px !important;
+    padding: 46px 42px !important;
+    justify-content: center !important;
+    gap: 17px !important;
+  }
+
+  .login-card .auth-mode-switch.single-mode {
+    display: none !important;
+  }
+
+  .login-card h2 {
+    font-size: clamp(32px, 2.7vw, 42px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .login-card p {
+    max-width: 520px !important;
+    line-height: 1.55 !important;
+  }
+
+  .login-card label {
+    gap: 8px !important;
+    margin-top: 2px !important;
+  }
+
+  .login-card input {
+    min-height: 52px !important;
+  }
+
+  #authSubmitButton {
+    margin-top: 6px !important;
+    min-height: 56px !important;
+  }
+}
+
+@media (min-width: 721px) {
+  .vex-dashboard-hero {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 280px) !important;
+    align-items: center !important;
+    gap: 28px !important;
+  }
+
+  .vex-dashboard-hero > div:first-child {
+    justify-self: center !important;
+    width: min(100%, 760px) !important;
+    transform: translateX(64px) !important;
+  }
+
+  .vex-dashboard-hero > div:first-child .vex-kicker {
+    display: inline-flex !important;
+    text-align: left !important;
+  }
+
+  .vex-dashboard-hero > div:first-child h2,
+  .vex-dashboard-hero > div:first-child p {
+    text-align: left !important;
+  }
+}
+
+@media (min-width: 1400px) {
+  .vex-dashboard-hero > div:first-child {
+    transform: translateX(86px) !important;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1120px) {
+  .vex-dashboard-hero > div:first-child {
+    transform: translateX(24px) !important;
+  }
+}
+
+.vex-s6-row-main strong,
+.vex-vehicle-compact-title,
+.vex-vehicle-info h3,
+.vex-vehicle-title-row h4 {
+  font-weight: 650 !important;
+  letter-spacing: -0.012em !important;
+  line-height: 1.28 !important;
+  text-shadow: none !important;
+  color: rgba(255,255,255,0.94) !important;
+}
+
+.vex-s6-row-main strong {
+  font-size: 14.5px !important;
+}
+
+.vex-s6-row-main small,
+.vex-vehicle-compact-subline,
+.vex-vehicle-meta,
+.vex-vehicle-title-row p {
+  font-weight: 500 !important;
+  letter-spacing: -0.004em !important;
+  color: rgba(226,232,240,0.68) !important;
+}
+
+.vex-s6-row-value,
+.vex-vehicle-card-compact .vex-vehicle-price,
+.vex-vehicle-price {
+  font-weight: 600 !important;
+  letter-spacing: -0.012em !important;
+  text-shadow: none !important;
+}
+
+.vex-s6-row-status,
+.vex-status-badge,
+.vex-vehicle-card-compact .vex-status-badge {
+  font-weight: 600 !important;
+  letter-spacing: -0.006em !important;
+}
+
+
+/* ==========================================================
+   VEX HUB RC1.3 - Tipografia legível + ajustes reais
+   Observação: camada visual apenas. Não altera Firebase/Firestore/lógica.
+   ========================================================== */
+:root {
+  --vex-ui-font: "Segoe UI", Roboto, Arial, Helvetica, sans-serif;
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea,
+label,
+small,
+span,
+p,
+strong,
+h1,
+h2,
+h3,
+h4,
+h5,
+a {
+  font-family: var(--vex-ui-font) !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: optimizeLegibility !important;
+  text-shadow: none !important;
+}
+
+body {
+  font-weight: 400 !important;
+}
+
+/* Títulos principais continuam fortes, mas sem peso exagerado */
+h1,
+h2,
+.brand-panel h1,
+.vex-dashboard-hero h2,
+.section-header h2,
+.dashboard-card h3,
+.commission-box strong,
+.month-goal-card strong {
+  font-weight: 700 !important;
+  letter-spacing: -0.045em !important;
+}
+
+/* Labels e textos de formulário: mais limpos e legíveis */
+label,
+#saleForm label,
+.form-card label,
+.login-card label,
+.profile-card label {
+  font-weight: 600 !important;
+  letter-spacing: 0.005em !important;
+  color: rgba(226, 232, 240, 0.78) !important;
+}
+
+input,
+select,
+textarea,
+input::placeholder,
+textarea::placeholder {
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  color: rgba(226, 232, 240, 0.78) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(226, 232, 240, 0.44) !important;
+}
+
+button,
+.primary-btn,
+.secondary-btn,
+#authSubmitButton {
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* Histórico / veículos: remove a sensação de texto embaçado */
+.vex-s6-row-main strong,
+.vex-vehicle-compact-title,
+.vex-vehicle-info h3,
+.vex-vehicle-title-row h4,
+.vex-vehicle-card strong,
+.sale-card strong,
+.history-card strong {
+  font-weight: 500 !important;
+  letter-spacing: -0.006em !important;
+  line-height: 1.35 !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  text-shadow: none !important;
+}
+
+.vex-s6-row-main small,
+.vex-vehicle-compact-subline,
+.vex-vehicle-meta,
+.vex-vehicle-title-row p,
+.sale-card small,
+.history-card small {
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.45 !important;
+  color: rgba(203, 213, 225, 0.70) !important;
+  text-shadow: none !important;
+}
+
+.vex-s6-row-value,
+.vex-vehicle-price,
+.vex-vehicle-card-compact .vex-vehicle-price {
+  font-weight: 600 !important;
+  letter-spacing: -0.006em !important;
+}
+
+.vex-s6-row-status,
+.vex-status-badge,
+.vex-vehicle-card-compact .vex-status-badge,
+.role-badge {
+  font-weight: 600 !important;
+  letter-spacing: 0 !important;
+}
+
+/* Cadastro de venda: elimina pesos excessivos nos blocos extras */
+#newSaleSection,
+#newSaleSection *,
+#saleForm,
+#saleForm * {
+  text-shadow: none !important;
+}
+
+#saleForm h2,
+#saleForm h3,
+#saleForm h4,
+#saleForm .vex-f03-extra-fields h3,
+#saleForm .vex-extra-title,
+#newSaleSection .form-card h3 {
+  font-weight: 600 !important;
+  letter-spacing: -0.018em !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+#saleForm label,
+#saleForm .field-label,
+#newSaleSection label {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: rgba(203, 213, 225, 0.72) !important;
+}
+
+#saleForm input,
+#saleForm select,
+#saleForm textarea {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+/* Login desktop: centralização visual real do painel esquerdo */
+@media (min-width: 921px) {
+  .login-layout {
+    align-items: center !important;
+  }
+
+  .brand-panel {
+    justify-content: center !important;
+    min-height: 610px !important;
+    padding-top: 40px !important;
+    padding-bottom: 40px !important;
+  }
+
+  .brand-panel .vex-s7-logo-signature {
+    width: min(230px, 46%) !important;
+    margin: 0 0 42px 0 !important;
+  }
+
+  .brand-panel h1 {
+    margin-top: 0 !important;
+  }
+
+  .authenticity-seal {
+    margin-top: 34px !important;
+    max-width: 390px !important;
+    padding: 16px 18px !important;
+    border-radius: 20px !important;
+  }
+
+  .authenticity-seal span {
+    font-weight: 600 !important;
+    letter-spacing: 0.14em !important;
+  }
+
+  .authenticity-seal strong {
+    font-size: 19px !important;
+    font-weight: 600 !important;
+  }
+
+  .authenticity-seal small {
+    font-size: 13px !important;
+    font-weight: 400 !important;
+  }
+}
+
+/* Home desktop: alinhamento óptico do bloco Bom dia */
+@media (min-width: 921px) {
+  .vex-dashboard-hero > div:first-child {
+    justify-self: center !important;
+    transform: translateX(96px) !important;
+  }
+}
+
+@media (min-width: 1400px) {
+  .vex-dashboard-hero > div:first-child {
+    transform: translateX(120px) !important;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 920px) {
+  .vex-dashboard-hero > div:first-child {
+    transform: translateX(26px) !important;
+  }
+}
+
+/* Mobile não recebe deslocamento no Bom dia */
+@media (max-width: 720px) {
+  .vex-dashboard-hero > div:first-child {
+    transform: none !important;
   }
 }

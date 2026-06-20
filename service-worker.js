@@ -1,4 +1,4 @@
-const CACHE_NAME = "vex-hub-pro-v1-premium-sprint11";
+const CACHE_NAME = "vex-hub-rc1-3";
 
 const FILES_TO_CACHE = [
   "./",

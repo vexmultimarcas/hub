@@ -1,2 +1,1 @@
-VEX HUB PRO v1.0 PREMIUM UI
-Sprint 11 - Premium Final Quality Layer
+VEX HUB RC1.3 - Tipografia legível + ajustes reais de login/home

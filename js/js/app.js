@@ -850,7 +850,7 @@ function injectVexPremiumStyles() {
       right: 22px;
       bottom: -22px;
       font-size: 92px;
-      font-weight: 950;
+      font-weight: 600;
       letter-spacing: -0.12em;
       color: rgba(225, 6, 0, 0.10);
       pointer-events: none;
@@ -902,7 +902,7 @@ function injectVexPremiumStyles() {
       display: grid;
       place-items: center;
       color: white;
-      font-weight: 950;
+      font-weight: 600;
       background: linear-gradient(135deg, var(--vex-red), #7f0905);
       box-shadow: 0 14px 34px rgba(225, 6, 0, 0.28);
     }
@@ -917,7 +917,7 @@ function injectVexPremiumStyles() {
         linear-gradient(135deg, rgba(225, 6, 0, 0.94), rgba(42, 8, 8, 0.96)),
         #111827;
       color: white;
-      font-weight: 950;
+      font-weight: 600;
       letter-spacing: -0.08em;
       border: 1px solid rgba(255, 255, 255, 0.16);
     }
@@ -977,7 +977,7 @@ function injectVexPremiumStyles() {
     .vex-status-pill {
       border-radius: 999px;
       padding: 8px 12px;
-      font-weight: 900;
+      font-weight: 600;
       font-size: 12px;
       border: 1px solid rgba(255, 255, 255, 0.12);
     }
@@ -1005,7 +1005,7 @@ function injectVexPremiumStyles() {
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.06);
       color: white;
-      font-weight: 900;
+      font-weight: 600;
       padding: 12px 14px;
     }
 
@@ -1026,7 +1026,7 @@ function injectVexPremiumStyles() {
       display: grid;
       place-items: center;
       background: var(--vex-red);
-      font-weight: 950;
+      font-weight: 600;
     }
 
     .sale-details-overlay {
@@ -1094,7 +1094,7 @@ function injectVexPremiumStyles() {
       display: grid;
       place-items: center;
       background: var(--vex-red);
-      font-weight: 950;
+      font-weight: 600;
       letter-spacing: -0.08em;
       margin-bottom: 18px;
     }
@@ -1103,7 +1103,7 @@ function injectVexPremiumStyles() {
       color: #fecaca;
       text-transform: uppercase;
       font-size: 12px;
-      font-weight: 900;
+      font-weight: 600;
       letter-spacing: 0.14em;
     }
 
@@ -1119,7 +1119,7 @@ function injectVexPremiumStyles() {
       display: block;
       color: #fff;
       font-size: 34px;
-      font-weight: 950;
+      font-weight: 600;
       letter-spacing: -0.06em;
       margin: 8px 0;
     }
@@ -1164,7 +1164,7 @@ function injectVexPremiumStyles() {
       display: grid;
       gap: 8px;
       margin-bottom: 12px;
-      font-weight: 800;
+      font-weight: 650;
     }
 
     .drawer-label select {

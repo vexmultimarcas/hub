@@ -1043,7 +1043,7 @@ function injectVexPremiumStyles() {
       right: 22px;
       bottom: -22px;
       font-size: 92px;
-      font-weight: 950;
+      font-weight: 600;
       letter-spacing: -0.12em;
       color: rgba(225, 6, 0, 0.10);
       pointer-events: none;
@@ -1095,7 +1095,7 @@ function injectVexPremiumStyles() {
       display: grid;
       place-items: center;
       color: white;
-      font-weight: 950;
+      font-weight: 600;
       background: linear-gradient(135deg, var(--vex-red), #7f0905);
       box-shadow: 0 14px 34px rgba(225, 6, 0, 0.28);
     }
@@ -1110,7 +1110,7 @@ function injectVexPremiumStyles() {
         linear-gradient(135deg, rgba(225, 6, 0, 0.94), rgba(42, 8, 8, 0.96)),
         #111827;
       color: white;
-      font-weight: 950;
+      font-weight: 600;
       letter-spacing: -0.08em;
       border: 1px solid rgba(255, 255, 255, 0.16);
     }
@@ -1170,7 +1170,7 @@ function injectVexPremiumStyles() {
     .vex-status-pill {
       border-radius: 999px;
       padding: 8px 12px;
-      font-weight: 900;
+      font-weight: 600;
       font-size: 12px;
       border: 1px solid rgba(255, 255, 255, 0.12);
     }
@@ -1198,7 +1198,7 @@ function injectVexPremiumStyles() {
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.06);
       color: white;
-      font-weight: 900;
+      font-weight: 600;
       padding: 12px 14px;
     }
 
@@ -1219,7 +1219,7 @@ function injectVexPremiumStyles() {
       display: grid;
       place-items: center;
       background: var(--vex-red);
-      font-weight: 950;
+      font-weight: 600;
     }
 
     .sale-details-overlay {
@@ -1287,7 +1287,7 @@ function injectVexPremiumStyles() {
       display: grid;
       place-items: center;
       background: var(--vex-red);
-      font-weight: 950;
+      font-weight: 600;
       letter-spacing: -0.08em;
       margin-bottom: 18px;
     }
@@ -1296,7 +1296,7 @@ function injectVexPremiumStyles() {
       color: #fecaca;
       text-transform: uppercase;
       font-size: 12px;
-      font-weight: 900;
+      font-weight: 600;
       letter-spacing: 0.14em;
     }
 
@@ -1312,7 +1312,7 @@ function injectVexPremiumStyles() {
       display: block;
       color: #fff;
       font-size: 34px;
-      font-weight: 950;
+      font-weight: 600;
       letter-spacing: -0.06em;
       margin: 8px 0;
     }
@@ -1357,7 +1357,7 @@ function injectVexPremiumStyles() {
       display: grid;
       gap: 8px;
       margin-bottom: 12px;
-      font-weight: 800;
+      font-weight: 650;
     }
 
     .drawer-label select {
@@ -1439,14 +1439,14 @@ function prepareVexDashboardLayout() {
     <div class="vex-dashboard-shell">
       <section class="vex-dashboard-hero">
         <div>
-          <span class="vex-kicker">VEX MULTIMARCAS</span>
-          <h2 id="vexGreetingTitle">Bom dia 👋</h2>
+          <span class="vex-kicker" style="display:block;text-align:center">VEX MULTIMARCAS</span>
+          <h2 id="vexGreetingTitle" style="text-align:center">Bom dia 👋</h2>
           <p id="vexCurrentDate">Dashboard Executivo Premium</p>
         </div>
 
         <div class="vex-brand-card">
           <strong>VEX</strong>
-          <span>Automotive Sales Platform</span>
+          <span>🔑 Vire a chave do seu sonho</span>
         </div>
       </section>
 
@@ -2147,7 +2147,7 @@ function injectVexDashboardStyles() {
       bottom: -28px;
       color: rgba(225,6,0,0.12);
       font-size: 118px;
-      font-weight: 950;
+      font-weight: 600;
       letter-spacing: -0.14em;
       pointer-events: none;
     }
@@ -2162,7 +2162,7 @@ function injectVexDashboardStyles() {
       border-radius: 999px;
       padding: 7px 11px;
       font-size: 11px;
-      font-weight: 900;
+      font-weight: 600;
       letter-spacing: 0.13em;
       text-transform: uppercase;
     }
@@ -2196,7 +2196,7 @@ function injectVexDashboardStyles() {
     .vex-brand-card strong {
       color: #e10600;
       font-size: 46px;
-      font-weight: 950;
+      font-weight: 600;
       letter-spacing: -0.12em;
       line-height: 1;
     }
@@ -2245,14 +2245,14 @@ function injectVexDashboardStyles() {
     .vex-kpi-card span,
     .vex-alert-card > span {
       font-size: 12px;
-      font-weight: 900;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.11em;
     }
 
     .vex-card-topline small {
       color: #fecaca;
-      font-weight: 800;
+      font-weight: 650;
     }
 
     .vex-commission-card > strong {
@@ -2354,7 +2354,7 @@ function injectVexDashboardStyles() {
       color: white;
       border-radius: 14px;
       padding: 10px 12px;
-      font-weight: 900;
+      font-weight: 600;
     }
 
     .vex-latest-list,
@@ -2400,7 +2400,7 @@ function injectVexDashboardStyles() {
     .vex-latest-item em {
       color: #fff;
       font-style: normal;
-      font-weight: 950;
+      font-weight: 600;
       white-space: nowrap;
     }
 
@@ -2458,14 +2458,14 @@ function injectVexDashboardStyles() {
     .vex-logo-text strong {
       color: #e10600;
       font-size: 20px;
-      font-weight: 950;
+      font-weight: 600;
       letter-spacing: -0.10em;
     }
 
     .vex-logo-text span {
       color: white;
       font-size: 7px;
-      font-weight: 900;
+      font-weight: 600;
       letter-spacing: 0.16em;
     }
 
@@ -3436,7 +3436,7 @@ function injectVexPremiumUISprint6Styles() {
     .vex-s6-list-toolbar small {
       color: var(--vex-s6-muted);
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 650;
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
@@ -3499,7 +3499,7 @@ function injectVexPremiumUISprint6Styles() {
       text-overflow: ellipsis;
       white-space: nowrap;
       font-size: 15px;
-      font-weight: 950;
+      font-weight: 600;
       letter-spacing: -0.025em;
       color: #fff;
     }
@@ -3512,14 +3512,14 @@ function injectVexPremiumUISprint6Styles() {
       white-space: nowrap;
       color: var(--vex-s6-muted);
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     .vex-s6-row-value {
       justify-self: end;
       white-space: nowrap;
       font-size: 14px;
-      font-weight: 950;
+      font-weight: 600;
       color: #fff;
     }
 
@@ -3532,7 +3532,7 @@ function injectVexPremiumUISprint6Styles() {
       border-radius: 999px;
       padding: 6px 10px;
       font-size: 11px;
-      font-weight: 950;
+      font-weight: 600;
       border: 1px solid rgba(255, 255, 255, 0.12);
       color: #fecaca;
       background: rgba(225, 6, 0, 0.13);
@@ -3592,7 +3592,7 @@ function injectVexPremiumUISprint6Styles() {
       gap: 7px;
       font-size: 12px;
       color: var(--vex-s6-muted);
-      font-weight: 850;
+      font-weight: 650;
       letter-spacing: .02em;
     }
 
@@ -4209,7 +4209,7 @@ function injectVexMobileSprint8Styles() {
         white-space: nowrap;
         font-size: 11px;
         line-height: 1;
-        font-weight: 800;
+        font-weight: 650;
         letter-spacing: -0.02em;
       }
 
@@ -4320,7 +4320,7 @@ function injectVexMobileSprint8Styles() {
         box-shadow: 0 20px 52px rgba(225, 6, 0, 0.28), 0 14px 44px rgba(0, 0, 0, 0.36);
         font-size: 30px;
         line-height: 1;
-        font-weight: 700;
+        font-weight: 600;
       }
 
       #newSaleSection.active ~ .vex-s8-quick-sale,
@@ -4498,7 +4498,7 @@ function injectVexSprint9Styles() {
       -webkit-backdrop-filter: blur(20px);
       animation: vexS9ToastIn 180ms ease both;
       font-size: 14px;
-      font-weight: 750;
+      font-weight: 600;
       line-height: 1.35;
     }
 
@@ -4528,7 +4528,7 @@ function injectVexSprint9Styles() {
       bottom: 12px;
       color: rgba(255, 255, 255, 0.035);
       font-size: 54px;
-      font-weight: 950;
+      font-weight: 600;
       letter-spacing: -0.08em;
       pointer-events: none;
     }
@@ -4545,7 +4545,7 @@ function injectVexSprint9Styles() {
       border: 1px solid rgba(251, 191, 36, 0.22);
       color: #fde68a;
       font-size: 12px;
-      font-weight: 850;
+      font-weight: 650;
       backdrop-filter: blur(16px);
     }
 
@@ -4802,7 +4802,7 @@ function injectVexSprint10Styles() {
       border: 1px solid rgba(255,255,255,0.10);
       color: rgba(255,255,255,0.48);
       font-size: 10px;
-      font-weight: 850;
+      font-weight: 650;
       letter-spacing: -0.02em;
     }
 
@@ -5180,3 +5180,147 @@ function enhanceVexSprint11KeyboardComfort() {
 }
 
 initializeVexSprint11FinalQuality();
+
+
+function injectVexRC13LegibilityPatch() {
+  const existing = document.getElementById("vexRC13LegibilityPatch");
+  if (existing) existing.remove();
+
+  const style = document.createElement("style");
+  style.id = "vexRC13LegibilityPatch";
+  style.textContent = `
+    html, body, button, input, select, textarea, label, small, span, p, strong, h1, h2, h3, h4, h5, a {
+      font-family: "Segoe UI", Roboto, Arial, Helvetica, sans-serif !important;
+      -webkit-font-smoothing: antialiased !important;
+      -moz-osx-font-smoothing: grayscale !important;
+      text-rendering: optimizeLegibility !important;
+      text-shadow: none !important;
+    }
+
+    body { font-weight: 400 !important; }
+
+    h1, h2, .brand-panel h1, .vex-dashboard-hero h2, .section-header h2,
+    .commission-box strong, .month-goal-card strong {
+      font-weight: 700 !important;
+      letter-spacing: -0.045em !important;
+    }
+
+    label, #saleForm label, .form-card label, .login-card label, .profile-card label {
+      font-weight: 600 !important;
+      letter-spacing: 0.005em !important;
+      color: rgba(226, 232, 240, 0.78) !important;
+    }
+
+    input, select, textarea {
+      font-weight: 400 !important;
+      letter-spacing: 0 !important;
+      color: rgba(255,255,255,0.88) !important;
+    }
+
+    input::placeholder, textarea::placeholder {
+      font-weight: 400 !important;
+      letter-spacing: 0 !important;
+      color: rgba(226,232,240,0.44) !important;
+    }
+
+    button, .primary-btn, .secondary-btn, #authSubmitButton {
+      font-weight: 600 !important;
+      letter-spacing: -0.01em !important;
+    }
+
+    .vex-s6-row-main strong, .vex-vehicle-compact-title, .vex-vehicle-info h3,
+    .vex-vehicle-title-row h4, .vex-vehicle-card strong, .sale-card strong, .history-card strong {
+      font-weight: 500 !important;
+      letter-spacing: -0.006em !important;
+      line-height: 1.35 !important;
+      color: rgba(255,255,255,0.92) !important;
+      text-shadow: none !important;
+    }
+
+    .vex-s6-row-main small, .vex-vehicle-compact-subline, .vex-vehicle-meta,
+    .vex-vehicle-title-row p, .sale-card small, .history-card small {
+      font-weight: 400 !important;
+      letter-spacing: 0 !important;
+      line-height: 1.45 !important;
+      color: rgba(203,213,225,0.70) !important;
+      text-shadow: none !important;
+    }
+
+    .vex-s6-row-value, .vex-vehicle-price, .vex-vehicle-card-compact .vex-vehicle-price {
+      font-weight: 600 !important;
+      letter-spacing: -0.006em !important;
+    }
+
+    .vex-s6-row-status, .vex-status-badge, .vex-vehicle-card-compact .vex-status-badge, .role-badge {
+      font-weight: 600 !important;
+      letter-spacing: 0 !important;
+    }
+
+    #newSaleSection, #newSaleSection *, #saleForm, #saleForm * {
+      text-shadow: none !important;
+    }
+
+    #saleForm h2, #saleForm h3, #saleForm h4, #saleForm .vex-f03-extra-fields h3,
+    #saleForm .vex-extra-title, #newSaleSection .form-card h3 {
+      font-weight: 600 !important;
+      letter-spacing: -0.018em !important;
+      color: rgba(255,255,255,0.92) !important;
+    }
+
+    #saleForm label, #saleForm .field-label, #newSaleSection label {
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      color: rgba(203,213,225,0.72) !important;
+    }
+
+    #saleForm input, #saleForm select, #saleForm textarea {
+      font-size: 14px !important;
+      font-weight: 400 !important;
+      color: rgba(255,255,255,0.88) !important;
+    }
+
+    @media (min-width: 921px) {
+      .brand-panel {
+        justify-content: center !important;
+        min-height: 610px !important;
+        padding-top: 40px !important;
+        padding-bottom: 40px !important;
+      }
+      .brand-panel .vex-s7-logo-signature {
+        width: min(230px, 46%) !important;
+        margin: 0 0 42px 0 !important;
+      }
+      .brand-panel h1 { margin-top: 0 !important; }
+      .authenticity-seal {
+        margin-top: 34px !important;
+        max-width: 390px !important;
+        padding: 16px 18px !important;
+        border-radius: 20px !important;
+      }
+      .authenticity-seal span { font-weight: 600 !important; letter-spacing: 0.14em !important; }
+      .authenticity-seal strong { font-size: 19px !important; font-weight: 600 !important; }
+      .authenticity-seal small { font-size: 13px !important; font-weight: 400 !important; }
+      .vex-dashboard-hero > div:first-child {
+        justify-self: center !important;
+        transform: translateX(96px) !important;
+      }
+    }
+
+    @media (min-width: 1400px) {
+      .vex-dashboard-hero > div:first-child { transform: translateX(120px) !important; }
+    }
+
+    @media (max-width: 720px) {
+      .vex-dashboard-hero > div:first-child { transform: none !important; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", injectVexRC13LegibilityPatch);
+} else {
+  injectVexRC13LegibilityPatch();
+}
+setTimeout(injectVexRC13LegibilityPatch, 250);
+setTimeout(injectVexRC13LegibilityPatch, 1000);
