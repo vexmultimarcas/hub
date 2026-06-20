@@ -1,0 +1,83 @@
+
+
+
+/* =========================================================
+   VEX HUB PRO v2.0 — Fase 03 BUILD 02
+   Campos automotivos adicionais sem quebrar salvamento
+   ========================================================= */
+
+.vex-f03-extra-fields {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px;
+  margin: 8px 0;
+  border: 1px solid rgba(225, 6, 0, 0.20);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(225, 6, 0, 0.16), transparent 44%),
+    rgba(255, 255, 255, 0.035);
+}
+
+.vex-f03-extra-fields::before {
+  content: "🚗 Dados complementares do veículo";
+  grid-column: 1 / -1;
+  color: #ffffff;
+  font-weight: 950;
+  letter-spacing: -0.03em;
+  font-size: 18px;
+}
+
+.vex-f03-extra-fields label {
+  display: grid;
+  gap: 8px;
+  color: #e5e7eb;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.vex-f03-extra-fields input,
+.vex-f03-extra-fields select {
+  min-height: 50px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(3,7,18,.72);
+  color: #fff;
+  padding: 14px 15px;
+  outline: none;
+}
+
+.vex-f03-extra-fields input:focus,
+.vex-f03-extra-fields select:focus {
+  border-color: rgba(225,6,0,.62);
+  box-shadow: 0 0 0 4px rgba(225,6,0,.12);
+}
+
+.vex-vehicle-specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.vex-spec-pill {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 6px 9px;
+  background: rgba(255,255,255,.065);
+  border: 1px solid rgba(255,255,255,.08);
+  color: #d4d4d8;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+@media (max-width: 900px) {
+  .vex-f03-extra-fields {
+    grid-template-columns: 1fr;
+  }
+}
