@@ -3757,3 +3757,1426 @@ function injectVexPremiumUISprint6Styles() {
 }
 
 initializeVexPremiumUISprint6();
+
+
+/* =========================================================
+   VEX HUB PRO v1.0 PREMIUM UI — Sprint 7
+   Identidade Visual VEX + Polimento PWA
+   ========================================================= */
+
+function initializeVexIdentitySprint7() {
+  injectVexIdentitySprint7Styles();
+  applyVexOfficialLogo();
+  prepareVexPwaInstallExperience();
+  prepareVexIdentityCopy();
+}
+
+function applyVexOfficialLogo() {
+  const logoPath = "assets/logo/vex-logo-white.png";
+  const badges = document.querySelectorAll(".brand-badge");
+
+  badges.forEach(function (badge) {
+    if (badge.dataset.vexLogoApplied === "true") {
+      return;
+    }
+
+    badge.dataset.vexLogoApplied = "true";
+    badge.setAttribute("aria-label", "VEX Multimarcas");
+    badge.innerHTML = '<img src="' + logoPath + '" alt="VEX" loading="eager" />';
+  });
+
+  const brandPanel = document.querySelector(".brand-panel");
+  if (brandPanel && !brandPanel.querySelector(".vex-s7-logo-signature")) {
+    const signature = document.createElement("div");
+    signature.className = "vex-s7-logo-signature";
+    signature.innerHTML = '<img src="' + logoPath + '" alt="VEX Multimarcas" loading="eager" />';
+    brandPanel.insertBefore(signature, brandPanel.firstChild);
+  }
+}
+
+function prepareVexPwaInstallExperience() {
+  if (window.__vexS7PwaPrepared) {
+    return;
+  }
+
+  window.__vexS7PwaPrepared = true;
+  let deferredInstallPrompt = null;
+
+  window.addEventListener("beforeinstallprompt", function (event) {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    renderVexInstallButton();
+  });
+
+  window.addEventListener("appinstalled", function () {
+    deferredInstallPrompt = null;
+    const installButton = document.getElementById("vexInstallAppButton");
+    if (installButton) {
+      installButton.remove();
+    }
+  });
+
+  function renderVexInstallButton() {
+    const sidebarFooter = document.querySelector(".sidebar-footer");
+
+    if (!sidebarFooter || document.getElementById("vexInstallAppButton")) {
+      return;
+    }
+
+    const installButton = document.createElement("button");
+    installButton.id = "vexInstallAppButton";
+    installButton.className = "ghost-button vex-s7-install-button";
+    installButton.type = "button";
+    installButton.textContent = "Instalar app";
+
+    installButton.addEventListener("click", async function () {
+      if (!deferredInstallPrompt) {
+        return;
+      }
+
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      installButton.remove();
+    });
+
+    sidebarFooter.insertBefore(installButton, sidebarFooter.firstChild);
+  }
+}
+
+function prepareVexIdentityCopy() {
+  const brandTitle = document.querySelector(".brand-panel h1");
+  const brandText = document.querySelector(".brand-panel p");
+  const sidebarSubtitle = document.querySelector(".sidebar-brand span");
+
+  if (brandTitle) {
+    brandTitle.textContent = "VEX HUB";
+  }
+
+  if (brandText) {
+    brandText.textContent = "Gestão premium para vendas, comissões, pós-venda e operação automotiva em um app rápido, limpo e pronto para uso diário.";
+  }
+
+  if (sidebarSubtitle) {
+    sidebarSubtitle.textContent = "VEX Multimarcas";
+  }
+}
+
+function injectVexIdentitySprint7Styles() {
+  if (document.getElementById("vexIdentitySprint7Styles")) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = "vexIdentitySprint7Styles";
+  style.textContent = `
+    :root {
+      --vex-s7-red: #e10600;
+      --vex-s7-black: #050505;
+      --vex-s7-card: rgba(12, 12, 12, 0.82);
+      --vex-s7-line: rgba(255, 255, 255, 0.11);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 12% 4%, rgba(225, 6, 0, 0.24), transparent 30%),
+        radial-gradient(circle at 94% 8%, rgba(255, 255, 255, 0.055), transparent 24%),
+        linear-gradient(145deg, #030303 0%, #090909 48%, #111111 100%) !important;
+    }
+
+    .brand-panel {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand-panel::before {
+      content: "";
+      position: absolute;
+      inset: 1px;
+      border-radius: inherit;
+      background:
+        radial-gradient(circle at top left, rgba(225, 6, 0, 0.22), transparent 34%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.018));
+      pointer-events: none;
+    }
+
+    .brand-panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .vex-s7-logo-signature {
+      width: min(250px, 64%);
+      margin-bottom: 28px;
+      padding: 16px 18px;
+      border: 1px solid rgba(225, 6, 0, 0.26);
+      border-radius: 24px;
+      background: rgba(0, 0, 0, 0.24);
+      box-shadow: 0 22px 72px rgba(0, 0, 0, 0.34);
+    }
+
+    .vex-s7-logo-signature img {
+      display: block;
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .brand-panel > .brand-badge:not(.small) {
+      display: none;
+    }
+
+    .brand-badge,
+    .brand-badge.small {
+      padding: 7px;
+      background:
+        radial-gradient(circle at top, rgba(225, 6, 0, 0.42), transparent 60%),
+        #070707 !important;
+      border: 1px solid rgba(225, 6, 0, 0.30);
+      box-shadow: 0 16px 42px rgba(225, 6, 0, 0.20) !important;
+    }
+
+    .brand-badge img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .sidebar-brand .brand-badge.small {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      flex: 0 0 auto;
+    }
+
+    .sidebar-brand strong {
+      font-size: 14px;
+      letter-spacing: 0.02em;
+    }
+
+    .sidebar-brand span {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .login-card,
+    .form-card,
+    .filters-card,
+    .month-goal-card,
+    .metric-card,
+    .dashboard-card,
+    .reports-grid > div,
+    .admin-info-card,
+    .user-card,
+    .profile-card {
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.022)),
+        rgba(7, 7, 7, 0.82) !important;
+    }
+
+    .primary-button {
+      box-shadow: 0 14px 36px rgba(225, 6, 0, 0.22);
+    }
+
+    .primary-button:active,
+    .secondary-button:active,
+    .ghost-button:active,
+    .nav-item:active,
+    .vex-s6-vehicle-row:active {
+      transform: scale(0.985) !important;
+    }
+
+    .vex-s7-install-button {
+      border-color: rgba(225, 6, 0, 0.32) !important;
+      background: rgba(225, 6, 0, 0.10) !important;
+    }
+
+    @media (max-width: 860px) {
+      .vex-s7-logo-signature {
+        width: min(210px, 72%);
+        margin-bottom: 20px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .sidebar-brand .brand-badge.small {
+        width: 42px;
+        height: 42px;
+      }
+
+      .vex-s7-install-button {
+        display: none;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+initializeVexIdentitySprint7();
+
+
+/* =========================================================
+   VEX HUB PRO v1.0 PREMIUM UI — Sprint 8
+   App Mobile Premium + Responsividade Final
+   ========================================================= */
+
+function initializeVexMobileSprint8() {
+  injectVexMobileSprint8Styles();
+  prepareVexMobileNavigationSprint8();
+  prepareVexMobileQuickActionSprint8();
+  prepareVexSectionScrollSprint8();
+}
+
+function prepareVexMobileNavigationSprint8() {
+  const labels = {
+    dashboardSection: "Início",
+    newSaleSection: "Venda",
+    historySection: "Veículos",
+    reportsSection: "Dados",
+    profileSection: "Perfil",
+    usersSection: "Users"
+  };
+
+  document.querySelectorAll(".nav-item").forEach(function (button) {
+    const section = button.getAttribute("data-section") || "";
+    if (!button.dataset.vexS8Label) {
+      button.dataset.vexS8Label = labels[section] || button.textContent.trim();
+    }
+  });
+}
+
+function prepareVexMobileQuickActionSprint8() {
+  if (document.getElementById("vexS8QuickSaleButton")) {
+    return;
+  }
+
+  const dashboard = document.getElementById("dashboardScreen");
+  if (!dashboard) {
+    return;
+  }
+
+  const quickButton = document.createElement("button");
+  quickButton.id = "vexS8QuickSaleButton";
+  quickButton.className = "vex-s8-quick-sale";
+  quickButton.type = "button";
+  quickButton.setAttribute("aria-label", "Nova venda");
+  quickButton.textContent = "+";
+
+  quickButton.addEventListener("click", function () {
+    const newSaleButton = document.querySelector('.nav-item[data-section="newSaleSection"]');
+    if (newSaleButton) {
+      newSaleButton.click();
+    }
+  });
+
+  dashboard.appendChild(quickButton);
+}
+
+function prepareVexSectionScrollSprint8() {
+  if (window.__vexS8ScrollPrepared) {
+    return;
+  }
+
+  window.__vexS8ScrollPrepared = true;
+
+  document.querySelectorAll(".nav-item").forEach(function (button) {
+    button.addEventListener("click", function () {
+      const workspace = document.querySelector(".workspace");
+      if (workspace) {
+        workspace.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+}
+
+function injectVexMobileSprint8Styles() {
+  if (document.getElementById("vexMobileSprint8Styles")) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = "vexMobileSprint8Styles";
+  style.textContent = `
+    html {
+      scroll-behavior: smooth;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    body {
+      overscroll-behavior-y: none;
+    }
+
+    .workspace {
+      min-width: 0;
+    }
+
+    .content-section.active {
+      min-width: 0;
+    }
+
+    .vex-s8-quick-sale {
+      display: none;
+    }
+
+    .nav-item {
+      position: relative;
+    }
+
+    .nav-item::after {
+      content: "";
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 7px;
+      height: 2px;
+      border-radius: 999px;
+      background: rgba(225, 6, 0, 0.82);
+      transform: scaleX(0);
+      transform-origin: center;
+      transition: transform 0.2s ease;
+    }
+
+    .nav-item.active::after {
+      transform: scaleX(1);
+    }
+
+    @media (max-width: 760px) {
+      body {
+        background-attachment: fixed !important;
+      }
+
+      .screen.active#dashboardScreen,
+      #dashboardScreen.screen.active {
+        display: block;
+      }
+
+      .sidebar {
+        position: fixed !important;
+        z-index: 50;
+        left: 12px;
+        right: 12px;
+        bottom: calc(12px + env(safe-area-inset-bottom));
+        top: auto !important;
+        width: auto !important;
+        min-height: 0 !important;
+        height: 74px;
+        padding: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 24px;
+        background: rgba(6, 6, 6, 0.82) !important;
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.50);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+      }
+
+      .sidebar-brand,
+      .sidebar-footer {
+        display: none !important;
+      }
+
+      .sidebar-nav {
+        height: 100%;
+        display: grid !important;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 4px;
+        align-items: stretch;
+      }
+
+      .nav-item {
+        min-width: 0;
+        height: 58px;
+        padding: 10px 4px 8px !important;
+        border-radius: 18px !important;
+        display: grid;
+        place-items: center;
+        text-align: center !important;
+        font-size: 0 !important;
+        color: rgba(255, 255, 255, 0.68) !important;
+        background: transparent !important;
+      }
+
+      .nav-item::before {
+        content: attr(data-vex-s8-label);
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 11px;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      .nav-item::after {
+        left: 22%;
+        right: 22%;
+        bottom: 8px;
+      }
+
+      .nav-item.active {
+        color: #ffffff !important;
+        background: rgba(225, 6, 0, 0.13) !important;
+        border-color: rgba(225, 6, 0, 0.20) !important;
+      }
+
+      .nav-item[data-section="usersSection"].hidden,
+      .admin-only.hidden {
+        display: none !important;
+      }
+
+      .workspace {
+        width: 100%;
+        padding: 18px 14px 118px !important;
+        overflow: visible !important;
+      }
+
+      .section-header,
+      .premium-header {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+
+      .section-header h2,
+      .login-card h2 {
+        font-size: clamp(27px, 8vw, 34px) !important;
+      }
+
+      .section-header p {
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .executive-grid,
+      .dashboard-grid,
+      .reports-grid,
+      .form-grid,
+      .filters-card,
+      .report-preview {
+        grid-template-columns: 1fr !important;
+      }
+
+      .filters-card {
+        position: sticky;
+        top: 10px;
+        z-index: 8;
+        padding: 12px !important;
+        gap: 10px !important;
+        border-radius: 22px !important;
+      }
+
+      .metric-card,
+      .dashboard-card,
+      .reports-grid > div,
+      .form-card,
+      .filters-card,
+      .month-goal-card,
+      .commission-box {
+        border-radius: 22px !important;
+      }
+
+      .metric-card,
+      .dashboard-card,
+      .reports-grid > div {
+        min-height: auto !important;
+        padding: 18px !important;
+      }
+
+      .hero-metric {
+        grid-column: span 1 !important;
+      }
+
+      input,
+      select,
+      textarea,
+      button {
+        font-size: 16px;
+      }
+
+      .vex-s6-vehicle-row {
+        border-radius: 20px !important;
+      }
+
+      .vex-s8-quick-sale {
+        display: grid;
+        place-items: center;
+        position: fixed;
+        z-index: 60;
+        right: 20px;
+        bottom: calc(96px + env(safe-area-inset-bottom));
+        width: 56px;
+        height: 56px;
+        border: 1px solid rgba(225, 6, 0, 0.36);
+        border-radius: 20px;
+        color: #ffffff;
+        background: linear-gradient(145deg, rgba(225, 6, 0, 0.95), rgba(100, 0, 0, 0.95));
+        box-shadow: 0 20px 52px rgba(225, 6, 0, 0.28), 0 14px 44px rgba(0, 0, 0, 0.36);
+        font-size: 30px;
+        line-height: 1;
+        font-weight: 700;
+      }
+
+      #newSaleSection.active ~ .vex-s8-quick-sale,
+      body:has(#newSaleSection.active) .vex-s8-quick-sale {
+        display: none;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .login-layout {
+        width: min(100% - 24px, 420px) !important;
+      }
+
+      .brand-panel,
+      .login-card {
+        padding: 26px !important;
+      }
+
+      .brand-panel h1 {
+        font-size: clamp(42px, 14vw, 58px) !important;
+      }
+
+      .authenticity-seal {
+        width: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+initializeVexMobileSprint8();
+
+
+/* =========================================================
+   Sprint 9 — Premium Polish
+   Polimento visual/UX sem alterar Firebase, initialize() ou regras de negócio.
+   ========================================================= */
+function initializeVexSprint9PremiumPolish() {
+  injectVexSprint9Styles();
+  createVexSprint9ToastLayer();
+  enhanceVexSprint9NavigationFeedback();
+  enhanceVexSprint9FormsFeedback();
+  enhanceVexSprint9EmptyStates();
+  enhanceVexSprint9OfflineBadge();
+  window.addEventListener("online", function () { showVexSprint9Toast("Conexão restabelecida.", "success"); });
+  window.addEventListener("offline", function () { showVexSprint9Toast("Você está offline. O app continua disponível.", "warning"); });
+}
+
+function injectVexSprint9Styles() {
+  if (document.getElementById("vexSprint9PremiumPolishStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "vexSprint9PremiumPolishStyles";
+  style.textContent = `
+    :root {
+      --accent: #e10600;
+      --accent-2: #ff3b30;
+      --vex-s9-card: rgba(12, 12, 12, 0.78);
+      --vex-s9-card-strong: rgba(18, 18, 18, 0.94);
+      --vex-s9-line: rgba(255, 255, 255, 0.10);
+      --vex-s9-soft: rgba(255, 255, 255, 0.055);
+      --vex-s9-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background:
+        radial-gradient(circle at top left, rgba(225, 6, 0, 0.18), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.07), transparent 34%),
+        #050505 !important;
+    }
+
+    .content-section { animation: vexS9FadeIn 180ms ease both; }
+
+    .metric-card,
+    .dashboard-card,
+    .reports-grid > div,
+    .form-card,
+    .filters-card,
+    .login-card,
+    .brand-panel,
+    .month-goal-card,
+    .commission-box,
+    .executive-notification,
+    .vex-s6-vehicle-row,
+    .vex-vehicle-card-compact,
+    .empty-state,
+    .vex-s6-empty {
+      background: linear-gradient(145deg, var(--vex-s9-card-strong), rgba(8, 8, 8, 0.68)) !important;
+      border-color: var(--vex-s9-line) !important;
+      box-shadow: var(--vex-s9-shadow) !important;
+    }
+
+    .metric-card,
+    .dashboard-card,
+    .reports-grid > div,
+    .form-card,
+    .filters-card,
+    .vex-s6-vehicle-row,
+    .nav-item,
+    .primary-button,
+    .secondary-button,
+    .ghost-button {
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+    }
+
+    .metric-card:hover,
+    .dashboard-card:hover,
+    .reports-grid > div:hover,
+    .vex-s6-vehicle-row:hover {
+      transform: translateY(-2px);
+      border-color: rgba(225, 6, 0, 0.28) !important;
+    }
+
+    .primary-button,
+    .auth-submit-button,
+    button[type="submit"] {
+      background: linear-gradient(135deg, #e10600, #6f0000) !important;
+      box-shadow: 0 16px 42px rgba(225, 6, 0, 0.22);
+    }
+
+    button:active { transform: scale(0.985); }
+    button[aria-busy="true"] { opacity: 0.72; pointer-events: none; }
+
+    input,
+    select,
+    textarea {
+      background: rgba(0, 0, 0, 0.34) !important;
+      border-color: rgba(255, 255, 255, 0.11) !important;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(225, 6, 0, 0.62) !important;
+      box-shadow: 0 0 0 4px rgba(225, 6, 0, 0.12) !important;
+    }
+
+    .vex-s9-toast-layer {
+      position: fixed;
+      z-index: 9999;
+      top: calc(18px + env(safe-area-inset-top));
+      right: 18px;
+      display: grid;
+      gap: 10px;
+      width: min(360px, calc(100vw - 32px));
+      pointer-events: none;
+    }
+
+    .vex-s9-toast {
+      display: grid;
+      grid-template-columns: 10px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      background: rgba(10, 10, 10, 0.88);
+      color: #fff;
+      box-shadow: 0 20px 58px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      animation: vexS9ToastIn 180ms ease both;
+      font-size: 14px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .vex-s9-toast::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #e10600;
+      box-shadow: 0 0 0 5px rgba(225, 6, 0, 0.12);
+    }
+
+    .vex-s9-toast.success::before { background: #34d399; box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.12); }
+    .vex-s9-toast.warning::before { background: #fbbf24; box-shadow: 0 0 0 5px rgba(251, 191, 36, 0.12); }
+    .vex-s9-toast.error::before { background: #fb7185; box-shadow: 0 0 0 5px rgba(251, 113, 133, 0.12); }
+
+    .vex-s9-empty-polish {
+      position: relative;
+      overflow: hidden;
+      min-height: 138px;
+    }
+
+    .vex-s9-empty-polish::after {
+      content: "VEX";
+      position: absolute;
+      right: 20px;
+      bottom: 12px;
+      color: rgba(255, 255, 255, 0.035);
+      font-size: 54px;
+      font-weight: 950;
+      letter-spacing: -0.08em;
+      pointer-events: none;
+    }
+
+    .vex-s9-offline-badge {
+      position: fixed;
+      z-index: 9998;
+      left: 18px;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      display: none;
+      padding: 10px 13px;
+      border-radius: 999px;
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.22);
+      color: #fde68a;
+      font-size: 12px;
+      font-weight: 850;
+      backdrop-filter: blur(16px);
+    }
+
+    body.vex-s9-offline .vex-s9-offline-badge { display: block; }
+
+    .vex-s9-skeleton {
+      position: relative;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.06) !important;
+    }
+
+    .vex-s9-skeleton::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      transform: translateX(-100%);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+      animation: vexS9Skeleton 1.2s ease infinite;
+    }
+
+    @media (max-width: 760px) {
+      .vex-s9-toast-layer {
+        top: auto;
+        right: 12px;
+        bottom: calc(174px + env(safe-area-inset-bottom));
+        width: calc(100vw - 24px);
+      }
+
+      .vex-s9-offline-badge {
+        left: 14px;
+        bottom: calc(92px + env(safe-area-inset-bottom));
+      }
+    }
+
+    @keyframes vexS9FadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes vexS9ToastIn {
+      from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes vexS9Skeleton {
+      to { transform: translateX(100%); }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function createVexSprint9ToastLayer() {
+  if (document.querySelector(".vex-s9-toast-layer")) return;
+  const layer = document.createElement("div");
+  layer.className = "vex-s9-toast-layer";
+  layer.setAttribute("aria-live", "polite");
+  document.body.appendChild(layer);
+}
+
+function showVexSprint9Toast(message, type) {
+  const layer = document.querySelector(".vex-s9-toast-layer");
+  if (!layer || !message) return;
+  const toast = document.createElement("div");
+  toast.className = "vex-s9-toast " + (type || "info");
+  toast.textContent = message;
+  layer.appendChild(toast);
+  window.setTimeout(function () {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(-8px) scale(0.98)";
+  }, 2600);
+  window.setTimeout(function () { toast.remove(); }, 3000);
+}
+
+function enhanceVexSprint9NavigationFeedback() {
+  navButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      const label = (button.textContent || button.getAttribute("data-vex-s8-label") || "Tela").trim();
+      if (label) showVexSprint9Toast(label + " aberta.", "success");
+    });
+  });
+}
+
+function enhanceVexSprint9FormsFeedback() {
+  document.querySelectorAll("form").forEach(function (form) {
+    form.addEventListener("submit", function () {
+      const submit = form.querySelector('button[type="submit"], .primary-button');
+      if (!submit) return;
+      submit.setAttribute("aria-busy", "true");
+      window.setTimeout(function () { submit.removeAttribute("aria-busy"); }, 1800);
+    });
+  });
+}
+
+function enhanceVexSprint9EmptyStates() {
+  const observer = new MutationObserver(function () {
+    document.querySelectorAll(".empty-state, .vex-s6-empty").forEach(function (item) {
+      item.classList.add("vex-s9-empty-polish");
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+  document.querySelectorAll(".empty-state, .vex-s6-empty").forEach(function (item) {
+    item.classList.add("vex-s9-empty-polish");
+  });
+}
+
+function enhanceVexSprint9OfflineBadge() {
+  if (!document.querySelector(".vex-s9-offline-badge")) {
+    const badge = document.createElement("div");
+    badge.className = "vex-s9-offline-badge";
+    badge.textContent = "Modo offline";
+    document.body.appendChild(badge);
+  }
+
+  function syncOfflineState() {
+    document.body.classList.toggle("vex-s9-offline", navigator.onLine === false);
+  }
+
+  syncOfflineState();
+  window.addEventListener("online", syncOfflineState);
+  window.addEventListener("offline", syncOfflineState);
+}
+
+initializeVexSprint9PremiumPolish();
+
+/* =========================================================
+   VEX HUB PRO - Sprint 10
+   Performance Feel + Command UX (non-invasive)
+   Não altera Firebase, initializeApplication, Auth ou Firestore.
+========================================================= */
+function initializeVexSprint10PerformanceUX() {
+  injectVexSprint10Styles();
+  enhanceVexSprint10ViewTransitions();
+  enhanceVexSprint10KeyboardShortcuts();
+  enhanceVexSprint10FormFocus();
+  enhanceVexSprint10ScrollToTop();
+  enhanceVexSprint10SafeArea();
+}
+
+function injectVexSprint10Styles() {
+  if (document.getElementById("vex-s10-performance-ux-style")) return;
+  const style = document.createElement("style");
+  style.id = "vex-s10-performance-ux-style";
+  style.textContent = `
+    :root {
+      --vex-s10-fast: 140ms;
+      --vex-s10-med: 220ms;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      z-index: 10000;
+      background: linear-gradient(90deg, transparent, rgba(225, 6, 0, 0.95), transparent);
+      opacity: 0.72;
+      pointer-events: none;
+    }
+
+    .content-section {
+      content-visibility: auto;
+      contain-intrinsic-size: 900px;
+    }
+
+    .content-section.active {
+      content-visibility: visible;
+      animation: vexS10SectionIn var(--vex-s10-med) ease both;
+    }
+
+    .workspace,
+    .form-card,
+    .dashboard-card,
+    .metric-card,
+    .reports-grid > div,
+    .vex-vehicle-card,
+    .vex-vehicle-card-compact {
+      will-change: transform;
+      transform: translateZ(0);
+    }
+
+    .nav-item,
+    .vex-mobile-nav-item,
+    .primary-button,
+    .ghost-button,
+    .secondary-button,
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav-item:focus-visible,
+    .vex-mobile-nav-item:focus-visible,
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+      outline: 2px solid rgba(225, 6, 0, 0.78) !important;
+      outline-offset: 3px;
+    }
+
+    .vex-s10-focus-mode .form-card,
+    .vex-s10-focus-mode .login-card {
+      box-shadow: 0 28px 90px rgba(225, 6, 0, 0.13), 0 20px 70px rgba(0, 0, 0, 0.46) !important;
+    }
+
+    .vex-s10-focus-mode .sidebar,
+    .vex-s10-focus-mode .dashboard-grid,
+    .vex-s10-focus-mode .executive-grid {
+      opacity: 0.92;
+    }
+
+    .vex-s10-scroll-top {
+      position: fixed;
+      z-index: 9997;
+      right: 18px;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(10, 10, 10, 0.78);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      transform: translateY(8px) scale(0.96);
+      pointer-events: none;
+      transition: opacity var(--vex-s10-fast) ease, transform var(--vex-s10-fast) ease;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.36);
+    }
+
+    .vex-s10-scroll-top.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .vex-s10-shortcut-hint {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 8px;
+      min-width: 21px;
+      height: 21px;
+      padding: 0 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.10);
+      color: rgba(255,255,255,0.48);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: -0.02em;
+    }
+
+    @media (max-width: 760px) {
+      .vex-s10-shortcut-hint { display: none; }
+      .vex-s10-scroll-top {
+        right: 14px;
+        bottom: calc(96px + env(safe-area-inset-bottom));
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .content-section.active { animation: none; }
+      *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; }
+    }
+
+    @keyframes vexS10SectionIn {
+      from { opacity: 0; transform: translateY(7px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function enhanceVexSprint10ViewTransitions() {
+  document.querySelectorAll(".nav-item").forEach(function (button) {
+    button.addEventListener("click", function () {
+      document.body.classList.add("vex-s10-routing");
+      window.setTimeout(function () {
+        document.body.classList.remove("vex-s10-routing");
+      }, 180);
+    }, { passive: true });
+  });
+}
+
+function enhanceVexSprint10KeyboardShortcuts() {
+  const shortcuts = [
+    { selector: '[data-section="dashboardSection"]', key: "1" },
+    { selector: '[data-section="newSaleSection"]', key: "2" },
+    { selector: '[data-section="historySection"]', key: "3" },
+    { selector: '[data-section="reportsSection"]', key: "4" },
+    { selector: '[data-section="profileSection"]', key: "5" }
+  ];
+
+  shortcuts.forEach(function (item) {
+    const button = document.querySelector(item.selector);
+    if (!button || button.querySelector(".vex-s10-shortcut-hint")) return;
+    const hint = document.createElement("span");
+    hint.className = "vex-s10-shortcut-hint";
+    hint.textContent = item.key;
+    button.appendChild(hint);
+  });
+
+  document.addEventListener("keydown", function (event) {
+    const activeTag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
+    if (["input", "select", "textarea"].indexOf(activeTag) >= 0) return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+
+    const target = shortcuts.find(function (item) { return item.key === event.key; });
+    if (!target) return;
+    const button = document.querySelector(target.selector);
+    if (button && !button.classList.contains("hidden")) {
+      event.preventDefault();
+      button.click();
+    }
+  });
+}
+
+function enhanceVexSprint10FormFocus() {
+  document.querySelectorAll("input, select, textarea").forEach(function (field) {
+    field.addEventListener("focus", function () {
+      document.body.classList.add("vex-s10-focus-mode");
+    }, { passive: true });
+    field.addEventListener("blur", function () {
+      window.setTimeout(function () {
+        if (!document.querySelector("input:focus, select:focus, textarea:focus")) {
+          document.body.classList.remove("vex-s10-focus-mode");
+        }
+      }, 20);
+    }, { passive: true });
+  });
+}
+
+function enhanceVexSprint10ScrollToTop() {
+  if (document.querySelector(".vex-s10-scroll-top")) return;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "vex-s10-scroll-top";
+  button.setAttribute("aria-label", "Voltar ao topo");
+  button.textContent = "↑";
+  document.body.appendChild(button);
+
+  const workspace = document.querySelector(".workspace");
+  const scrollTarget = workspace || window;
+
+  function getScrollTop() {
+    return workspace ? workspace.scrollTop : window.scrollY;
+  }
+
+  function syncVisibility() {
+    button.classList.toggle("visible", getScrollTop() > 260);
+  }
+
+  button.addEventListener("click", function () {
+    if (workspace) workspace.scrollTo({ top: 0, behavior: "smooth" });
+    else window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  scrollTarget.addEventListener("scroll", syncVisibility, { passive: true });
+  syncVisibility();
+}
+
+function enhanceVexSprint10SafeArea() {
+  document.documentElement.style.setProperty("--vex-safe-top", "env(safe-area-inset-top)");
+  document.documentElement.style.setProperty("--vex-safe-bottom", "env(safe-area-inset-bottom)");
+}
+
+initializeVexSprint10PerformanceUX();
+
+/* Sprint 11 - Premium Final Quality Layer
+   Camada incremental de UX: não altera Firebase, initialize(), Auth, Firestore ou regras de negócio. */
+function initializeVexSprint11FinalQuality() {
+  injectVexSprint11Styles();
+  enhanceVexSprint11SectionAwareness();
+  enhanceVexSprint11SaleProgress();
+  enhanceVexSprint11ButtonFeedback();
+  enhanceVexSprint11KeyboardComfort();
+}
+
+function injectVexSprint11Styles() {
+  if (document.getElementById("vex-s11-style")) return;
+  const style = document.createElement("style");
+  style.id = "vex-s11-style";
+  style.textContent = `
+    :root {
+      --vex-s11-red: #e10600;
+      --vex-s11-ink: #0b0b0f;
+      --vex-s11-line: rgba(255,255,255,0.10);
+      --vex-s11-soft: rgba(255,255,255,0.06);
+      --vex-s11-radius: 24px;
+      --vex-s11-ease: cubic-bezier(.2,.8,.2,1);
+    }
+
+    body.vex-s11-ready .content-section.active {
+      animation: vexS11SectionIn 180ms var(--vex-s11-ease) both;
+    }
+
+    @keyframes vexS11SectionIn {
+      from { opacity: .78; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .vex-s11-command-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 0 18px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0.035));
+      box-shadow: 0 18px 48px rgba(0,0,0,0.18);
+      backdrop-filter: blur(16px);
+    }
+
+    .vex-s11-command-strip strong {
+      font-size: 13px;
+      letter-spacing: -0.01em;
+      color: rgba(255,255,255,0.92);
+    }
+
+    .vex-s11-command-strip span {
+      font-size: 11px;
+      color: rgba(255,255,255,0.58);
+    }
+
+    .vex-s11-command-strip .vex-s11-status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #34d399;
+      box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.10);
+      flex: 0 0 auto;
+    }
+
+    body.vex-s9-offline .vex-s11-command-strip .vex-s11-status-dot {
+      background: #fbbf24;
+      box-shadow: 0 0 0 5px rgba(251, 191, 36, 0.10);
+    }
+
+    .vex-s11-sale-progress {
+      margin: 0 0 18px;
+      padding: 14px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.09);
+      background: rgba(255,255,255,0.045);
+    }
+
+    .vex-s11-sale-progress-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.62);
+    }
+
+    .vex-s11-sale-progress-row strong {
+      color: rgba(255,255,255,0.92);
+      font-size: 13px;
+    }
+
+    .vex-s11-sale-progress-track {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .vex-s11-sale-progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--vex-s11-red), #ff4b45);
+      transition: width 180ms var(--vex-s11-ease);
+    }
+
+    .vex-s11-pressing {
+      transform: scale(.985) !important;
+      filter: brightness(1.04);
+    }
+
+    .primary-button, .nav-item, .secondary-button, button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      scroll-margin: 120px;
+    }
+
+    .form-card label:focus-within {
+      transform: translateY(-1px);
+    }
+
+    .vex-s11-field-filled input,
+    .vex-s11-field-filled select,
+    .vex-s11-field-filled textarea {
+      border-color: rgba(225, 6, 0, 0.28) !important;
+      box-shadow: 0 0 0 1px rgba(225, 6, 0, 0.06);
+    }
+
+    @media (max-width: 760px) {
+      .vex-s11-command-strip {
+        margin-bottom: 14px;
+        border-radius: 18px;
+      }
+
+      .vex-s11-command-strip span {
+        display: none;
+      }
+
+      .vex-s11-sale-progress {
+        border-radius: 18px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      body.vex-s11-ready .content-section.active { animation: none; }
+      .vex-s11-sale-progress-fill { transition: none; }
+      .vex-s11-pressing { transform: none !important; }
+    }
+  `;
+  document.head.appendChild(style);
+  document.body.classList.add("vex-s11-ready");
+}
+
+function enhanceVexSprint11SectionAwareness() {
+  const workspace = document.querySelector(".workspace");
+  if (!workspace || document.querySelector(".vex-s11-command-strip")) return;
+
+  const strip = document.createElement("div");
+  strip.className = "vex-s11-command-strip";
+  strip.innerHTML = '<div class="vex-s11-status-dot" aria-hidden="true"></div><div><strong id="vexS11CurrentSection">Dashboard</strong><br><span>Experiência premium otimizada para desktop e app instalado</span></div><span id="vexS11ConnectionLabel">Online</span>';
+  workspace.insertBefore(strip, workspace.firstChild);
+
+  const sectionTitle = document.getElementById("vexS11CurrentSection");
+  const connection = document.getElementById("vexS11ConnectionLabel");
+
+  function syncSection() {
+    const active = document.querySelector(".content-section.active .section-header h2");
+    if (active && sectionTitle) sectionTitle.textContent = active.textContent.trim();
+    if (connection) connection.textContent = navigator.onLine === false ? "Offline" : "Online";
+  }
+
+  document.querySelectorAll(".nav-item").forEach(function (button) {
+    button.addEventListener("click", function () { window.setTimeout(syncSection, 20); }, { passive: true });
+  });
+  window.addEventListener("online", syncSection);
+  window.addEventListener("offline", syncSection);
+  syncSection();
+}
+
+function enhanceVexSprint11SaleProgress() {
+  const form = document.getElementById("saleForm");
+  if (!form || document.querySelector(".vex-s11-sale-progress")) return;
+
+  const grid = form.querySelector(".form-grid");
+  if (!grid) return;
+
+  const progress = document.createElement("div");
+  progress.className = "vex-s11-sale-progress";
+  progress.innerHTML = '<div class="vex-s11-sale-progress-row"><strong>Progresso do cadastro</strong><span id="vexS11SaleProgressText">0%</span></div><div class="vex-s11-sale-progress-track"><div class="vex-s11-sale-progress-fill" id="vexS11SaleProgressFill"></div></div>';
+  form.insertBefore(progress, grid);
+
+  const fields = ["clientName", "clientPhone", "vehicleModel", "vehicleYear", "saleValue", "saleDate", "transferType", "afterSaleStatus"]
+    .map(function (id) { return document.getElementById(id); })
+    .filter(Boolean);
+  const text = document.getElementById("vexS11SaleProgressText");
+  const fill = document.getElementById("vexS11SaleProgressFill");
+
+  function syncProgress() {
+    const filled = fields.filter(function (field) { return String(field.value || "").trim().length > 0; }).length;
+    const percent = fields.length ? Math.round((filled / fields.length) * 100) : 0;
+    if (text) text.textContent = percent + "%";
+    if (fill) fill.style.width = percent + "%";
+
+    fields.forEach(function (field) {
+      const label = field.closest("label");
+      if (label) label.classList.toggle("vex-s11-field-filled", String(field.value || "").trim().length > 0);
+    });
+  }
+
+  fields.forEach(function (field) {
+    field.addEventListener("input", syncProgress, { passive: true });
+    field.addEventListener("change", syncProgress, { passive: true });
+  });
+  form.addEventListener("reset", function () { window.setTimeout(syncProgress, 20); });
+  syncProgress();
+}
+
+function enhanceVexSprint11ButtonFeedback() {
+  if (document.body.dataset.vexS11ButtonFeedback === "ready") return;
+  document.body.dataset.vexS11ButtonFeedback = "ready";
+
+  document.addEventListener("pointerdown", function (event) {
+    const button = event.target && event.target.closest ? event.target.closest("button, .nav-item, .primary-button") : null;
+    if (!button) return;
+    button.classList.add("vex-s11-pressing");
+  }, { passive: true });
+
+  ["pointerup", "pointercancel", "pointerleave"].forEach(function (eventName) {
+    document.addEventListener(eventName, function (event) {
+      const button = event.target && event.target.closest ? event.target.closest("button, .nav-item, .primary-button") : null;
+      if (button) button.classList.remove("vex-s11-pressing");
+    }, { passive: true });
+  });
+}
+
+function enhanceVexSprint11KeyboardComfort() {
+  if (document.body.dataset.vexS11KeyboardComfort === "ready") return;
+  document.body.dataset.vexS11KeyboardComfort = "ready";
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    const active = document.activeElement;
+    if (active && ["INPUT", "SELECT", "TEXTAREA"].indexOf(active.tagName) >= 0) {
+      active.blur();
+      event.preventDefault();
+    }
+  });
+}
+
+initializeVexSprint11FinalQuality();

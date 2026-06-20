@@ -1,13 +1,13 @@
 {
-  "name": "VEX HUB",
+  "name": "VEX HUB PRO",
   "short_name": "VEX HUB",
-  "description": "Gestão Inteligente de Vendas - VEX Multimarcas",
+  "description": "Gestão premium de vendas automotivas - VEX Multimarcas | Sprint 10 Performance UX",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0B0B0B",
-  "theme_color": "#0B0B0B",
+  "background_color": "#050505",
+  "theme_color": "#050505",
   "lang": "pt-BR",
   "icons": [
     {
@@ -34,5 +34,11 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "categories": [
+    "business",
+    "productivity",
+    "finance"
+  ],
+  "prefer_related_applications": false
 }

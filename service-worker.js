@@ -1,11 +1,20 @@
-const CACHE_NAME = "vex-hub-pro-v2-fase01";
+const CACHE_NAME = "vex-hub-pro-v1-premium-sprint11";
 
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
   "./css/style.css",
   "./js/app.js",
-  "./manifest.json"
+  "./manifest.json",
+  "./assets/logo/vex-logo.png",
+  "./assets/logo/vex-logo-white.png",
+  "./assets/icons/favicon.png",
+  "./assets/icons/apple-touch-icon.png",
+  "./assets/icons/icon-192.png",
+  "./assets/icons/icon-512.png",
+  "./assets/icons/maskable-icon-192.png",
+  "./assets/icons/maskable-icon-512.png",
+  "./assets/splash/splash.png"
 ];
 
 self.addEventListener("install", function (event) {
