@@ -1,4 +1,4 @@
-const CACHE_NAME = "vex-hub-rc2-01-mobile";
+const CACHE_NAME = "vex-hub-rc3-0-document-engine";
 
 const FILES_TO_CACHE = [
   "./",

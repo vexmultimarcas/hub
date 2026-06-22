@@ -60,6 +60,8 @@ let authMode = "login";
 let currentUserProfile = null;
 let unsubscribeUsers = null;
 let users = [];
+let editingSaleId = null;
+
 
 const ADMIN_EMAILS = [
   "frank.since96@gmail.com",
@@ -251,6 +253,19 @@ function initializeProfileForm() {
 }
 
 
+function getNextVexOrderNumber() {
+  const baseNumber = 1057430;
+  const existingNumbers = (sales || [])
+    .map(function(sale) { return Number(sale.orderNumber || sale.saleNumber || sale.protocol || 0); })
+    .filter(function(number) { return Number.isFinite(number) && number >= baseNumber; });
+
+  if (!existingNumbers.length) {
+    return baseNumber;
+  }
+
+  return Math.max.apply(null, existingNumbers) + 1;
+}
+
 function initializeSaleForm() {
   if (!saleForm) {
     return;
@@ -313,6 +328,7 @@ function initializeSaleForm() {
     }
 
     const newSale = {
+      orderNumber: getNextVexOrderNumber(),
       clientName: clientName,
       clientPhone: clientPhone,
       vehicleModel: vehicleModel,
@@ -337,7 +353,11 @@ function initializeSaleForm() {
       createdAtLocal: new Date().toISOString()
     };
 
-    await saveSale(newSale);
+    if (editingSaleId) {
+      await updateExistingSale(editingSaleId, newSale);
+    } else {
+      await saveSale(newSale);
+    }
   });
 }
 
@@ -354,12 +374,23 @@ function initializeHistoryFilters() {
     historyTransferFilter.addEventListener("change", renderHistory);
   }
 
+  const historyMonthFilter = document.getElementById("historyMonthFilter");
+  if (historyMonthFilter) {
+    historyMonthFilter.addEventListener("change", function () {
+      renderHistory();
+      updateReports();
+    });
+  }
+
   if (clearHistoryFiltersButton) {
     clearHistoryFiltersButton.addEventListener("click", function () {
       if (historySearch) historySearch.value = "";
       if (historyStatusFilter) historyStatusFilter.value = "";
       if (historyTransferFilter) historyTransferFilter.value = "";
+      const historyMonthFilter = document.getElementById("historyMonthFilter");
+      if (historyMonthFilter) historyMonthFilter.value = "current";
       renderHistory();
+      updateReports();
     });
   }
 }
@@ -473,6 +504,165 @@ async function saveSale(sale) {
       </div>
     `;
   }
+}
+
+
+async function updateExistingSale(saleId, updatedSale) {
+  if (!canManageContent()) {
+    alert("Apenas administradores podem editar vendas.");
+    return;
+  }
+
+  if (!salesCollection || !saleId) {
+    return;
+  }
+
+  try {
+    setSaleMessageLoading();
+
+    const payload = {
+      ...updatedSale,
+      updatedAtLocal: new Date().toISOString(),
+      editedByEmail: currentUser ? currentUser.email : ""
+    };
+
+    delete payload.createdAtLocal;
+
+    await salesCollection.doc(saleId).update(payload);
+
+    sales = sales.map(function (sale) {
+      if (sale.id === saleId) {
+        return {
+          ...sale,
+          ...payload
+        };
+      }
+      return sale;
+    });
+
+    const editedSale = {
+      id: saleId,
+      ...payload
+    };
+
+    clearSaleEditMode();
+    refreshApplication();
+    renderSaleConfirmation(editedSale, "Venda atualizada com sucesso.");
+    saleForm.reset();
+    goToSection("historySection");
+  } catch (error) {
+    console.error("Erro ao atualizar venda:", error);
+    saleMessage.innerHTML = `
+      <div class="empty-state">
+        Erro ao atualizar venda. Verifique sua conexão ou as regras do Firestore.
+      </div>
+    `;
+  }
+}
+
+function setSaleFieldValue(id, value) {
+  const element = document.getElementById(id);
+  if (element) {
+    element.value = value || "";
+  }
+}
+
+function startEditSale(saleId) {
+  if (!canManageContent()) {
+    alert("Apenas administradores podem editar vendas.");
+    return;
+  }
+
+  const sale = sales.find(function (item) {
+    return item.id === saleId;
+  });
+
+  if (!sale || !saleForm) {
+    return;
+  }
+
+  editingSaleId = saleId;
+
+  closeVexVehicleDrawer();
+  closeSaleDetails();
+
+  setSaleFieldValue("clientName", sale.clientName);
+  setSaleFieldValue("clientPhone", sale.clientPhone);
+  setSaleFieldValue("vehicleModel", sale.vehicleModel);
+  setSaleFieldValue("vehicleYear", sale.vehicleYear);
+  setSaleFieldValue("vehicleFipeValue", sale.vehicleFipeValue);
+  setSaleFieldValue("vehicleVersion", sale.vehicleVersion);
+  setSaleFieldValue("vehicleTransmission", sale.vehicleTransmission);
+  setSaleFieldValue("vehicleColor", sale.vehicleColor);
+  setSaleFieldValue("vehiclePlate", sale.vehiclePlate);
+  setSaleFieldValue("vehicleKm", sale.vehicleKm);
+  setSaleFieldValue("saleValue", sale.saleValue);
+  setSaleFieldValue("saleDate", sale.saleDate);
+  setSaleFieldValue("transferType", sale.transferType);
+  setSaleFieldValue("afterSaleStatus", sale.afterSaleStatus);
+  setSaleFieldValue("saleNotes", sale.saleNotes);
+
+  updateSaleEditModeUI(sale);
+  goToSection("newSaleSection");
+
+  window.setTimeout(function () {
+    const firstField = document.getElementById("clientName");
+    if (firstField) firstField.focus();
+  }, 120);
+}
+
+function updateSaleEditModeUI(sale) {
+  const submitButton = saleForm ? saleForm.querySelector('button[type="submit"]') : null;
+  const saleHeader = document.querySelector("#newSaleSection .section-header h2");
+  const saleDescription = document.querySelector("#newSaleSection .section-header p");
+
+  if (submitButton) {
+    submitButton.textContent = "Salvar alterações";
+  }
+
+  if (saleHeader) {
+    saleHeader.textContent = "Editar Venda";
+  }
+
+  if (saleDescription) {
+    saleDescription.textContent = "Modo ADM: atualize os dados da venda existente sem criar uma nova venda.";
+  }
+
+  if (saleMessage) {
+    saleMessage.innerHTML = `
+      <div class="empty-state vex-edit-mode-message">
+        Editando: <strong>${escapeHTML(sale.vehicleModel || "Veículo")}</strong> • ${escapeHTML(sale.clientName || "Cliente")}
+        <br>
+        <button class="secondary-button" type="button" onclick="cancelSaleEditMode()">Cancelar edição</button>
+      </div>
+    `;
+  }
+}
+
+function clearSaleEditMode() {
+  editingSaleId = null;
+
+  const submitButton = saleForm ? saleForm.querySelector('button[type="submit"]') : null;
+  const saleHeader = document.querySelector("#newSaleSection .section-header h2");
+  const saleDescription = document.querySelector("#newSaleSection .section-header p");
+
+  if (submitButton) {
+    submitButton.textContent = canManageContent() ? "Salvar venda" : "Somente ADM pode salvar venda";
+  }
+
+  if (saleHeader) {
+    saleHeader.textContent = "Nova Venda";
+  }
+
+  if (saleDescription) {
+    saleDescription.textContent = "Cadastro organizado por cliente, veículo, financeiro e entrega.";
+  }
+}
+
+function cancelSaleEditMode() {
+  clearSaleEditMode();
+  if (saleForm) saleForm.reset();
+  if (saleMessage) saleMessage.innerHTML = "";
 }
 
 function goToSection(sectionId) {
@@ -906,9 +1096,11 @@ function openSaleDetails(saleId) {
       <p class="drawer-notes">${escapeHTML(sale.saleNotes || "Sem observações cadastradas.")}</p>
     </div>
 
-    <div class="drawer-actions">
-      ${canManageContent() ? `<button class="secondary-button" type="button" onclick="deleteSale('${sale.id}'); closeSaleDetails();">Excluir</button>` : ""}
-      <button class="primary-button" type="button" onclick="closeSaleDetails();">Concluir</button>
+    <div class="drawer-actions vex-drawer-actions-safe">
+      ${canManageContent() ? `<button class="primary-button" type="button" onclick="startEditSale('${sale.id}')">Editar</button>` : ""}
+      <button class="primary-button" type="button" onclick="openVexFormalization('${sale.id}')">Formalização</button>
+      <button class="secondary-button" type="button" onclick="closeSaleDetails();">Fechar</button>
+      ${canManageContent() ? `<button class="danger-button" type="button" onclick="deleteSale('${sale.id}'); closeSaleDetails();">Excluir</button>` : ""}
     </div>
   `;
 
@@ -1458,6 +1650,10 @@ function prepareVexDashboardLayout() {
           </div>
 
           <strong id="vexMonthlyCommission">R$ 0,00</strong>
+          <div id="vexCommissionBreakdown" class="vex-commission-breakdown">
+            <span>Lucas: R$ 0,00</span>
+            <span>Frank: R$ 0,00</span>
+          </div>
 
           <div class="vex-progress-info">
             <span id="vexGoalLabel">Meta: R$ 6.000,00</span>
@@ -2675,11 +2871,19 @@ function formatCurrencyToBrazil(value) {
 }
 
 function formatDateToBrazil(date) {
-  if (!date || !date.includes("-")) {
+  if (!date) {
     return "Data inválida";
   }
 
-  const dateParts = date.split("-");
+  if (String(date).includes("/")) {
+    return String(date);
+  }
+
+  if (!String(date).includes("-")) {
+    return "Data inválida";
+  }
+
+  const dateParts = String(date).split("-");
   const year = dateParts[0];
   const month = dateParts[1];
   const day = dateParts[2];
@@ -2832,6 +3036,8 @@ function renderVexVehiclesPremium() {
       ${filteredSales.map(function (sale) {
         const statusClass = getVexStatusClass(sale.afterSaleStatus);
         const vehicleName = `${sale.vehicleModel || "Veículo"} ${sale.vehicleYear || ""}`.trim();
+        const transferData = typeof getVexFormalizationTransferData === "function" ? getVexFormalizationTransferData(sale) : { responsible: sale.transferType || "" };
+        const transferStatus = typeof getVexTransferStatus === "function" ? getVexTransferStatus(transferData) : null;
 
         return `
           <article class="vex-vehicle-card vex-vehicle-card-compact" onclick="openVexVehicleDrawer('${sale.id}')">
@@ -2841,6 +3047,7 @@ function renderVexVehiclesPremium() {
                 <span>${escapeHTML(sale.clientName || "Cliente não informado")}</span>
                 <span>${formatDateToBrazil(sale.saleDate)}</span>
                 <span>${escapeHTML(sale.transferType || "Transferência não informada")}</span>
+                ${transferStatus ? `<span>${transferStatus.icon} ${escapeHTML(transferStatus.label)}</span>` : ""}
               </div>
             </div>
 
@@ -2977,9 +3184,2856 @@ function openVexVehicleDrawer(saleId) {
         </div>
       </div>
 
-      <div class="vex-drawer-actions">
+      <div class="vex-drawer-actions vex-drawer-actions-safe">
+        ${canManageContent() ? `<button class="primary-button" type="button" onclick="startEditSale('${sale.id}')">Editar</button>` : ""}
+        <button class="primary-button" type="button" onclick="openVexFormalization('${sale.id}')">Formalização</button>
         <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
-        ${canManageContent() ? `<button class="secondary-button" type="button" onclick="deleteSale('${sale.id}')">Excluir</button>` : ""}
+        ${canManageContent() ? `<button class="danger-button" type="button" onclick="deleteSale('${sale.id}'); closeVexVehicleDrawer();">Excluir</button>` : ""}
+      </div>
+    </aside>
+  `;
+
+  drawer.classList.add("active");
+}
+
+
+function getVexFormalizationStatus(step) {
+  return step.done ? "Concluído" : "Pendente";
+}
+
+function renderVexFormalizationSummaryItem(label, value) {
+  return `
+    <div class="vex-formalization-summary-item">
+      <span>${escapeHTML(label)}</span>
+      <strong>${escapeHTML(value || "Não informado")}</strong>
+    </div>
+  `;
+}
+
+
+function getVexFormalizationClientData(sale) {
+  const client = sale && sale.formalization && sale.formalization.client ? sale.formalization.client : {};
+
+  return {
+    clientName: client.clientName || sale.clientName || "",
+    clientCpf: client.clientCpf || sale.clientCpf || "",
+    clientRg: client.clientRg || sale.clientRg || "",
+    clientRgIssuer: client.clientRgIssuer || sale.clientRgIssuer || "",
+    clientRgIssuerUf: client.clientRgIssuerUf || sale.clientRgIssuerUf || "",
+    clientBirthDate: client.clientBirthDate || sale.clientBirthDate || "",
+    clientCivilStatus: client.clientCivilStatus || sale.clientCivilStatus || "",
+    clientProfession: client.clientProfession || sale.clientProfession || "",
+    clientPhone: client.clientPhone || sale.clientPhone || "",
+    clientEmail: client.clientEmail || sale.clientEmail || "",
+    clientCep: client.clientCep || sale.clientCep || "",
+    clientStreet: client.clientStreet || sale.clientStreet || "",
+    clientNumber: client.clientNumber || sale.clientNumber || "",
+    clientComplement: client.clientComplement || sale.clientComplement || "",
+    clientDistrict: client.clientDistrict || sale.clientDistrict || "",
+    clientCity: client.clientCity || sale.clientCity || "",
+    clientState: client.clientState || sale.clientState || ""
+  };
+}
+
+function getVexClientCompletion(clientData) {
+  const requiredFields = [
+    "clientName",
+    "clientCpf",
+    "clientRg",
+    "clientRgIssuer",
+    "clientRgIssuerUf",
+    "clientPhone",
+    "clientEmail",
+    "clientCep",
+    "clientStreet",
+    "clientNumber",
+    "clientDistrict",
+    "clientCity",
+    "clientState"
+  ];
+
+  const doneFields = requiredFields.filter(function(field) {
+    return Boolean(clientData[field]);
+  }).length;
+
+  return {
+    done: doneFields,
+    total: requiredFields.length,
+    percent: Math.round((doneFields / requiredFields.length) * 100),
+    complete: doneFields === requiredFields.length
+  };
+}
+
+function renderVexFormalizationField(id, label, value, type) {
+  return `
+    <label class="vex-formalization-field">
+      <span>${escapeHTML(label)}</span>
+      <input id="${escapeHTML(id)}" type="${escapeHTML(type || "text")}" value="${escapeHTML(value || "")}" autocomplete="off">
+    </label>
+  `;
+}
+
+function openVexFormalizationClient(saleId) {
+  const sale = sales.find(function(item) {
+    return item.id === saleId;
+  });
+
+  if (!sale) {
+    return;
+  }
+
+  const drawer = document.getElementById("vexVehicleDrawerRoot");
+  if (!drawer) {
+    return;
+  }
+
+  const client = getVexFormalizationClientData(sale);
+  const completion = getVexClientCompletion(client);
+  const statusLabel = completion.complete ? "Cliente concluído" : "Cliente pendente";
+  const statusIcon = completion.complete ? "🟢" : "🟡";
+
+  drawer.innerHTML = `
+    <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
+
+    <aside class="vex-drawer-panel vex-formalization-panel">
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+
+      <section class="vex-drawer-hero vex-formalization-hero">
+        <div class="vex-vehicle-icon">👤</div>
+        <span class="eyebrow">Formalização • Cliente</span>
+        <h2>${escapeHTML(client.clientName || sale.clientName || "Cliente")}</h2>
+        <p>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</p>
+
+        <div class="vex-formalization-status-pill">
+          ${statusIcon} ${escapeHTML(statusLabel)}
+        </div>
+
+        <div class="vex-formalization-progress">
+          <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
+        </div>
+        <strong>${completion.done} de ${completion.total} campos obrigatórios • ${completion.percent}%</strong>
+      </section>
+
+      <form class="vex-formalization-form" onsubmit="saveVexFormalizationClient(event, '${sale.id}')">
+        <div class="vex-formalization-form-card">
+          <h3>Dados do comprador</h3>
+          <div class="vex-formalization-form-grid">
+            ${renderVexFormalizationField("formalClientName", "Nome completo", client.clientName)}
+            ${renderVexFormalizationField("formalClientCpf", "CPF", client.clientCpf)}
+            ${renderVexFormalizationField("formalClientRg", "RG", client.clientRg)}
+            ${renderVexFormalizationField("formalClientRgIssuer", "Órgão emissor", client.clientRgIssuer)}
+            ${renderVexFormalizationField("formalClientRgIssuerUf", "UF emissor", client.clientRgIssuerUf)}
+            ${renderVexFormalizationField("formalClientBirthDate", "Data de nascimento", client.clientBirthDate, "date")}
+            ${renderVexFormalizationField("formalClientCivilStatus", "Estado civil", client.clientCivilStatus)}
+            ${renderVexFormalizationField("formalClientProfession", "Profissão", client.clientProfession)}
+            ${renderVexFormalizationField("formalClientPhone", "Telefone", client.clientPhone)}
+            ${renderVexFormalizationField("formalClientEmail", "E-mail", client.clientEmail, "email")}
+          </div>
+        </div>
+
+        <div class="vex-formalization-form-card">
+          <h3>Endereço do comprador</h3>
+          <p>Regra padrão: usar sempre o endereço real do cliente. Endereço da loja só em exceção manual e consciente.</p>
+          <div class="vex-formalization-form-grid">
+            ${renderVexFormalizationField("formalClientCep", "CEP", client.clientCep)}
+            ${renderVexFormalizationField("formalClientStreet", "Rua / Avenida", client.clientStreet)}
+            ${renderVexFormalizationField("formalClientNumber", "Número", client.clientNumber)}
+            ${renderVexFormalizationField("formalClientComplement", "Complemento", client.clientComplement)}
+            ${renderVexFormalizationField("formalClientDistrict", "Bairro", client.clientDistrict)}
+            ${renderVexFormalizationField("formalClientCity", "Cidade", client.clientCity)}
+            ${renderVexFormalizationField("formalClientState", "Estado", client.clientState)}
+          </div>
+        </div>
+
+        <div id="formalClientMessage" class="vex-formalization-inline-message"></div>
+
+        <div class="vex-drawer-actions vex-drawer-actions-safe">
+          ${canManageContent() ? `<button class="primary-button" type="submit">Salvar cliente</button>` : ""}
+          <button class="secondary-button" type="button" onclick="openVexFormalization('${sale.id}')">Voltar</button>
+          <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
+        </div>
+      </form>
+    </aside>
+  `;
+
+  drawer.classList.add("active");
+}
+
+function getVexFormalizationInputValue(id) {
+  const element = document.getElementById(id);
+  return element ? element.value.trim() : "";
+}
+
+async function saveVexFormalizationClient(event, saleId) {
+  event.preventDefault();
+
+  if (!canManageContent()) {
+    alert("Apenas administradores podem atualizar a formalização.");
+    return;
+  }
+
+  if (!salesCollection || !saleId) {
+    return;
+  }
+
+  const clientPayload = {
+    clientName: getVexFormalizationInputValue("formalClientName"),
+    clientCpf: getVexFormalizationInputValue("formalClientCpf"),
+    clientRg: getVexFormalizationInputValue("formalClientRg"),
+    clientRgIssuer: getVexFormalizationInputValue("formalClientRgIssuer"),
+    clientRgIssuerUf: getVexFormalizationInputValue("formalClientRgIssuerUf"),
+    clientBirthDate: getVexFormalizationInputValue("formalClientBirthDate"),
+    clientCivilStatus: getVexFormalizationInputValue("formalClientCivilStatus"),
+    clientProfession: getVexFormalizationInputValue("formalClientProfession"),
+    clientPhone: getVexFormalizationInputValue("formalClientPhone"),
+    clientEmail: getVexFormalizationInputValue("formalClientEmail"),
+    clientCep: getVexFormalizationInputValue("formalClientCep"),
+    clientStreet: getVexFormalizationInputValue("formalClientStreet"),
+    clientNumber: getVexFormalizationInputValue("formalClientNumber"),
+    clientComplement: getVexFormalizationInputValue("formalClientComplement"),
+    clientDistrict: getVexFormalizationInputValue("formalClientDistrict"),
+    clientCity: getVexFormalizationInputValue("formalClientCity"),
+    clientState: getVexFormalizationInputValue("formalClientState")
+  };
+
+  const message = document.getElementById("formalClientMessage");
+  if (message) {
+    message.innerHTML = `<div class="empty-state">Salvando dados do cliente...</div>`;
+  }
+
+  try {
+    await salesCollection.doc(saleId).update({
+      "formalization.client": clientPayload,
+      "formalization.updatedAtLocal": new Date().toISOString(),
+      updatedAtLocal: new Date().toISOString()
+    });
+
+    sales = sales.map(function(sale) {
+      if (sale.id === saleId) {
+        return {
+          ...sale,
+          formalization: {
+            ...(sale.formalization || {}),
+            client: clientPayload,
+            updatedAtLocal: new Date().toISOString()
+          }
+        };
+      }
+      return sale;
+    });
+
+    openVexFormalizationClient(saleId);
+  } catch (error) {
+    console.error("Erro ao salvar cliente da formalização:", error);
+    if (message) {
+      message.innerHTML = `<div class="empty-state">Erro ao salvar. Verifique sua conexão ou as regras do Firestore.</div>`;
+    } else {
+      alert("Erro ao salvar cliente da formalização.");
+    }
+  }
+}
+
+
+function getVexFormalizationVehicleData(sale) {
+  const vehicle = sale && sale.formalization && sale.formalization.vehicle ? sale.formalization.vehicle : {};
+
+  return {
+    vehicleBrand: vehicle.vehicleBrand || sale.vehicleBrand || "",
+    vehicleModel: vehicle.vehicleModel || sale.vehicleModel || "",
+    vehicleVersion: vehicle.vehicleVersion || sale.vehicleVersion || "",
+    vehicleType: vehicle.vehicleType || sale.vehicleType || "",
+    vehicleYear: vehicle.vehicleYear || sale.vehicleYear || "",
+    vehicleColor: vehicle.vehicleColor || sale.vehicleColor || "",
+    vehicleKm: vehicle.vehicleKm || sale.vehicleKm || "",
+    vehiclePlate: vehicle.vehiclePlate || sale.vehiclePlate || "",
+    vehicleChassis: vehicle.vehicleChassis || sale.vehicleChassis || "",
+    vehicleRenavam: vehicle.vehicleRenavam || sale.vehicleRenavam || "",
+    vehicleFuel: vehicle.vehicleFuel || sale.vehicleFuel || "",
+    vehicleTransmission: vehicle.vehicleTransmission || sale.vehicleTransmission || "",
+    vehicleDoors: vehicle.vehicleDoors || sale.vehicleDoors || "",
+    vehicleCategory: vehicle.vehicleCategory || sale.vehicleCategory || ""
+  };
+}
+
+function getVexVehicleCompletion(vehicleData) {
+  const requiredFields = [
+    "vehicleBrand",
+    "vehicleModel",
+    "vehicleVersion",
+    "vehicleType",
+    "vehicleYear",
+    "vehicleColor",
+    "vehicleKm",
+    "vehiclePlate",
+    "vehicleChassis",
+    "vehicleRenavam",
+    "vehicleFuel",
+    "vehicleTransmission",
+    "vehicleDoors",
+    "vehicleCategory"
+  ];
+
+  const doneFields = requiredFields.filter(function(field) {
+    return Boolean(vehicleData[field]);
+  }).length;
+
+  return {
+    done: doneFields,
+    total: requiredFields.length,
+    percent: Math.round((doneFields / requiredFields.length) * 100),
+    complete: doneFields === requiredFields.length
+  };
+}
+
+function openVexFormalizationVehicle(saleId) {
+  const sale = sales.find(function(item) {
+    return item.id === saleId;
+  });
+
+  if (!sale) {
+    return;
+  }
+
+  const drawer = document.getElementById("vexVehicleDrawerRoot");
+  if (!drawer) {
+    return;
+  }
+
+  const vehicle = getVexFormalizationVehicleData(sale);
+  const completion = getVexVehicleCompletion(vehicle);
+  const statusLabel = completion.complete ? "Veículo concluído" : "Veículo pendente";
+  const statusIcon = completion.complete ? "🟢" : "🟡";
+  const vehicleTitle = `${vehicle.vehicleBrand || ""} ${vehicle.vehicleModel || sale.vehicleModel || "Veículo"} ${vehicle.vehicleYear || ""}`.trim();
+
+  drawer.innerHTML = `
+    <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
+
+    <aside class="vex-drawer-panel vex-formalization-panel">
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+
+      <section class="vex-drawer-hero vex-formalization-hero">
+        <div class="vex-vehicle-icon">🚗</div>
+        <span class="eyebrow">Formalização • Veículo</span>
+        <h2>${escapeHTML(vehicleTitle)}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente não informado")}</p>
+
+        <div class="vex-formalization-status-pill">
+          ${statusIcon} ${escapeHTML(statusLabel)}
+        </div>
+
+        <div class="vex-formalization-progress">
+          <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
+        </div>
+        <strong>${completion.done} de ${completion.total} campos obrigatórios • ${completion.percent}%</strong>
+      </section>
+
+      <form class="vex-formalization-form" onsubmit="saveVexFormalizationVehicle(event, '${sale.id}')">
+        <div class="vex-formalization-form-card">
+          <h3>Dados do veículo</h3>
+          <p>Confira os dados que já vieram da venda e complete apenas o que faltar para documentos e transferência.</p>
+          <div class="vex-formalization-form-grid">
+            ${renderVexFormalizationField("formalVehicleBrand", "Marca", vehicle.vehicleBrand)}
+            ${renderVexFormalizationField("formalVehicleModel", "Modelo", vehicle.vehicleModel)}
+            ${renderVexFormalizationField("formalVehicleVersion", "Versão", vehicle.vehicleVersion)}
+            ${renderVexFormalizationField("formalVehicleType", "Tipo", vehicle.vehicleType)}
+            ${renderVexFormalizationField("formalVehicleYear", "Ano / Modelo", vehicle.vehicleYear)}
+            ${renderVexFormalizationField("formalVehicleColor", "Cor", vehicle.vehicleColor)}
+            ${renderVexFormalizationField("formalVehicleKm", "KM confirmado", vehicle.vehicleKm)}
+            ${renderVexFormalizationField("formalVehiclePlate", "Placa", vehicle.vehiclePlate)}
+          </div>
+        </div>
+
+        <div class="vex-formalization-form-card">
+          <h3>Dados para transferência</h3>
+          <div class="vex-formalization-form-grid">
+            ${renderVexFormalizationField("formalVehicleChassis", "Chassi", vehicle.vehicleChassis)}
+            ${renderVexFormalizationField("formalVehicleRenavam", "Renavam", vehicle.vehicleRenavam)}
+            ${renderVexFormalizationField("formalVehicleFuel", "Combustível", vehicle.vehicleFuel)}
+            ${renderVexFormalizationField("formalVehicleTransmission", "Câmbio", vehicle.vehicleTransmission)}
+            ${renderVexFormalizationField("formalVehicleDoors", "Portas", vehicle.vehicleDoors)}
+            ${renderVexFormalizationField("formalVehicleCategory", "Categoria", vehicle.vehicleCategory)}
+          </div>
+        </div>
+
+        <div id="formalVehicleMessage" class="vex-formalization-inline-message"></div>
+
+        <div class="vex-drawer-actions vex-drawer-actions-safe">
+          ${canManageContent() ? `<button class="primary-button" type="submit">Salvar veículo</button>` : ""}
+          <button class="secondary-button" type="button" onclick="openVexFormalization('${sale.id}')">Voltar</button>
+          <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
+        </div>
+      </form>
+    </aside>
+  `;
+
+  drawer.classList.add("active");
+}
+
+async function saveVexFormalizationVehicle(event, saleId) {
+  event.preventDefault();
+
+  if (!canManageContent()) {
+    alert("Apenas administradores podem atualizar a formalização.");
+    return;
+  }
+
+  if (!salesCollection || !saleId) {
+    return;
+  }
+
+  const vehiclePayload = {
+    vehicleBrand: getVexFormalizationInputValue("formalVehicleBrand"),
+    vehicleModel: getVexFormalizationInputValue("formalVehicleModel"),
+    vehicleVersion: getVexFormalizationInputValue("formalVehicleVersion"),
+    vehicleType: getVexFormalizationInputValue("formalVehicleType"),
+    vehicleYear: getVexFormalizationInputValue("formalVehicleYear"),
+    vehicleColor: getVexFormalizationInputValue("formalVehicleColor"),
+    vehicleKm: getVexFormalizationInputValue("formalVehicleKm"),
+    vehiclePlate: getVexFormalizationInputValue("formalVehiclePlate"),
+    vehicleChassis: getVexFormalizationInputValue("formalVehicleChassis"),
+    vehicleRenavam: getVexFormalizationInputValue("formalVehicleRenavam"),
+    vehicleFuel: getVexFormalizationInputValue("formalVehicleFuel"),
+    vehicleTransmission: getVexFormalizationInputValue("formalVehicleTransmission"),
+    vehicleDoors: getVexFormalizationInputValue("formalVehicleDoors"),
+    vehicleCategory: getVexFormalizationInputValue("formalVehicleCategory")
+  };
+
+  const message = document.getElementById("formalVehicleMessage");
+  if (message) {
+    message.innerHTML = `<div class="empty-state">Salvando dados do veículo...</div>`;
+  }
+
+  try {
+    await salesCollection.doc(saleId).update({
+      "formalization.vehicle": vehiclePayload,
+      "formalization.updatedAtLocal": new Date().toISOString(),
+      updatedAtLocal: new Date().toISOString()
+    });
+
+    sales = sales.map(function(sale) {
+      if (sale.id === saleId) {
+        return {
+          ...sale,
+          formalization: {
+            ...(sale.formalization || {}),
+            vehicle: vehiclePayload,
+            updatedAtLocal: new Date().toISOString()
+          }
+        };
+      }
+      return sale;
+    });
+
+    openVexFormalizationVehicle(saleId);
+  } catch (error) {
+    console.error("Erro ao salvar veículo da formalização:", error);
+    if (message) {
+      message.innerHTML = `<div class="empty-state">Erro ao salvar. Verifique sua conexão ou as regras do Firestore.</div>`;
+    } else {
+      alert("Erro ao salvar veículo da formalização.");
+    }
+  }
+}
+
+
+function getVexFormalizationPaymentData(sale) {
+  const payment = sale && sale.formalization && sale.formalization.payment ? sale.formalization.payment : {};
+  const saleTotal = sale && sale.saleValueNumber ? Number(sale.saleValueNumber) : parseSaleCurrencyValue(sale ? sale.saleValue : "");
+
+  const methods = Array.isArray(payment.methods) && payment.methods.length
+    ? payment.methods
+    : [{ type: "PIX", value: sale && sale.saleValue ? sale.saleValue : "" }];
+
+  return {
+    methods: methods.map(function(method) {
+      return {
+        type: method.type || "PIX",
+        value: method.value || ""
+      };
+    }),
+    vehicleTotal: payment.vehicleTotal || (saleTotal ? formatCurrencyToBrazil(saleTotal) : ""),
+    transferCharged: payment.transferCharged || "Não",
+    transferValue: payment.transferValue || "",
+    ipvaValue: payment.ipvaValue || "",
+    ipvaPaidBy: payment.ipvaPaidBy || "Loja",
+    licensingValue: payment.licensingValue || "",
+    licensingPaidBy: payment.licensingPaidBy || "Loja",
+    notes: payment.notes || ""
+  };
+}
+
+function getVexPaymentMethodsTotal(methods) {
+  return (methods || []).reduce(function(total, method) {
+    return total + parseSaleCurrencyValue(method.value);
+  }, 0);
+}
+
+function getVexPaymentCustomerExtrasTotal(payment) {
+  let total = 0;
+  if (payment.transferCharged === "Sim") {
+    total += parseSaleCurrencyValue(payment.transferValue);
+  }
+  if (payment.ipvaPaidBy === "Cliente") {
+    total += parseSaleCurrencyValue(payment.ipvaValue);
+  }
+  if (payment.licensingPaidBy === "Cliente") {
+    total += parseSaleCurrencyValue(payment.licensingValue);
+  }
+  return total;
+}
+
+function getVexPaymentCompletion(payment, sale) {
+  const vehicleTotal = sale && sale.saleValueNumber ? Number(sale.saleValueNumber) : parseSaleCurrencyValue(sale ? sale.saleValue : "");
+  const methods = (payment.methods || []).filter(function(method) {
+    return method.type && parseSaleCurrencyValue(method.value) > 0;
+  });
+  const methodsTotal = getVexPaymentMethodsTotal(payment.methods);
+  const hasPayment = methods.length > 0;
+  const totalOk = vehicleTotal > 0 ? Math.abs(methodsTotal - vehicleTotal) < 0.01 : hasPayment;
+  const transferOk = payment.transferCharged === "Não" || parseSaleCurrencyValue(payment.transferValue) > 0;
+
+  const checks = [hasPayment, totalOk, transferOk, Boolean(payment.ipvaPaidBy), Boolean(payment.licensingPaidBy)];
+  const doneFields = checks.filter(Boolean).length;
+
+  return {
+    done: doneFields,
+    total: checks.length,
+    percent: Math.round((doneFields / checks.length) * 100),
+    complete: checks.every(Boolean),
+    methodsTotal: methodsTotal,
+    vehicleTotal: vehicleTotal,
+    customerTotal: methodsTotal + getVexPaymentCustomerExtrasTotal(payment),
+    totalOk: totalOk
+  };
+}
+
+function renderVexFormalizationSelect(id, label, value, options) {
+  return `
+    <label class="vex-formalization-field">
+      <span>${escapeHTML(label)}</span>
+      <select id="${escapeHTML(id)}">
+        ${options.map(function(option) {
+          return `<option value="${escapeHTML(option)}" ${option === value ? "selected" : ""}>${escapeHTML(option)}</option>`;
+        }).join("")}
+      </select>
+    </label>
+  `;
+}
+
+function renderVexPaymentMethodRow(method, index) {
+  const options = ["PIX", "Financiamento", "Veículo troca", "Cartão de crédito", "Crédito em conta", "Parcelamento loja", "Dinheiro", "Outro"];
+  return `
+    <div class="vex-payment-method-row" data-payment-row="true">
+      <label class="vex-formalization-field">
+        <span>Forma</span>
+        <select class="formalPaymentMethodType">
+          ${options.map(function(option) {
+            return `<option value="${escapeHTML(option)}" ${option === method.type ? "selected" : ""}>${escapeHTML(option)}</option>`;
+          }).join("")}
+        </select>
+      </label>
+      <label class="vex-formalization-field">
+        <span>Valor</span>
+        <input class="formalPaymentMethodValue" type="text" value="${escapeHTML(method.value || "")}" placeholder="Ex: R$ 10.000,00" autocomplete="off">
+      </label>
+      <button class="secondary-button vex-payment-remove" type="button" onclick="removeVexPaymentMethodRow(this)">Remover</button>
+    </div>
+  `;
+}
+
+function addVexPaymentMethodRow() {
+  const list = document.getElementById("formalPaymentMethodsList");
+  if (!list) return;
+  list.insertAdjacentHTML("beforeend", renderVexPaymentMethodRow({ type: "PIX", value: "" }, Date.now()));
+}
+
+function removeVexPaymentMethodRow(button) {
+  const list = document.getElementById("formalPaymentMethodsList");
+  const rows = list ? list.querySelectorAll("[data-payment-row='true']") : [];
+  if (rows.length <= 1) {
+    const row = button.closest("[data-payment-row='true']");
+    if (row) {
+      const value = row.querySelector(".formalPaymentMethodValue");
+      if (value) value.value = "";
+    }
+    return;
+  }
+  const row = button.closest("[data-payment-row='true']");
+  if (row) row.remove();
+}
+
+function openVexFormalizationPayment(saleId) {
+  const sale = sales.find(function(item) {
+    return item.id === saleId;
+  });
+
+  if (!sale) {
+    return;
+  }
+
+  const drawer = document.getElementById("vexVehicleDrawerRoot");
+  if (!drawer) {
+    return;
+  }
+
+  const payment = getVexFormalizationPaymentData(sale);
+  const completion = getVexPaymentCompletion(payment, sale);
+  const statusLabel = completion.complete ? "Pagamento concluído" : "Pagamento pendente";
+  const statusIcon = completion.complete ? "🟢" : "🟡";
+  const diff = completion.vehicleTotal - completion.methodsTotal;
+
+  drawer.innerHTML = `
+    <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
+
+    <aside class="vex-drawer-panel vex-formalization-panel">
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+
+      <section class="vex-drawer-hero vex-formalization-hero">
+        <div class="vex-vehicle-icon">💰</div>
+        <span class="eyebrow">Formalização • Pagamento</span>
+        <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente não informado")}</p>
+
+        <div class="vex-formalization-status-pill">
+          ${statusIcon} ${escapeHTML(statusLabel)}
+        </div>
+
+        <div class="vex-formalization-progress">
+          <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
+        </div>
+        <strong>${completion.done} de ${completion.total} conferências • ${completion.percent}%</strong>
+      </section>
+
+      <form class="vex-formalization-form" onsubmit="saveVexFormalizationPayment(event, '${sale.id}')">
+        <div class="vex-formalization-form-card">
+          <h3>Formas de pagamento do veículo</h3>
+          <p>Informe uma ou mais formas. O total das formas deve bater com o valor do veículo para contrato.</p>
+          <div id="formalPaymentMethodsList" class="vex-payment-method-list">
+            ${payment.methods.map(renderVexPaymentMethodRow).join("")}
+          </div>
+          <button class="secondary-button" type="button" onclick="addVexPaymentMethodRow()">+ Adicionar forma</button>
+        </div>
+
+        <div class="vex-formalization-form-card">
+          <h3>Conferência</h3>
+          <div class="vex-formalization-summary">
+            ${renderVexFormalizationSummaryItem("Valor do veículo", formatCurrencyToBrazil(completion.vehicleTotal || 0))}
+            ${renderVexFormalizationSummaryItem("Total informado nas formas", formatCurrencyToBrazil(completion.methodsTotal || 0))}
+            ${renderVexFormalizationSummaryItem("Status", completion.totalOk ? "Conferido" : "Divergência de " + formatCurrencyToBrazil(Math.abs(diff)))}
+          </div>
+        </div>
+
+        <div class="vex-formalization-form-card">
+          <h3>Transferência e taxas da negociação</h3>
+          <p>Esses dados serão usados principalmente na mensagem do Grupo Vendas e, quando necessário, nos documentos.</p>
+          <div class="vex-formalization-form-grid">
+            ${renderVexFormalizationSelect("formalTransferCharged", "Transferência cobrada do cliente?", payment.transferCharged, ["Não", "Sim"])}
+            ${renderVexFormalizationField("formalTransferValue", "Valor da transferência", payment.transferValue)}
+            ${renderVexFormalizationField("formalIpvaValue", "IPVA", payment.ipvaValue)}
+            ${renderVexFormalizationSelect("formalIpvaPaidBy", "IPVA pago por", payment.ipvaPaidBy, ["Loja", "Cliente", "Não se aplica"])}
+            ${renderVexFormalizationField("formalLicensingValue", "Licenciamento", payment.licensingValue)}
+            ${renderVexFormalizationSelect("formalLicensingPaidBy", "Licenciamento pago por", payment.licensingPaidBy, ["Loja", "Cliente", "Não se aplica"])}
+          </div>
+        </div>
+
+        <div class="vex-formalization-form-card">
+          <h3>Resumo para o grupo</h3>
+          <div class="vex-formalization-summary">
+            ${renderVexFormalizationSummaryItem("Total pago/cobrado do cliente", formatCurrencyToBrazil(completion.customerTotal || 0))}
+            ${renderVexFormalizationSummaryItem("Observação automática", getVexPaymentResponsibilityText(payment))}
+          </div>
+          <label class="vex-formalization-field full">
+            <span>Observações da negociação</span>
+            <textarea id="formalPaymentNotes" rows="3" placeholder="Ex: IPVA e licenciamento pagos pela loja. Condição autorizada pela gerência.">${escapeHTML(payment.notes || "")}</textarea>
+          </label>
+        </div>
+
+        <div id="formalPaymentMessage" class="vex-formalization-inline-message"></div>
+
+        <div class="vex-drawer-actions vex-drawer-actions-safe">
+          ${canManageContent() ? `<button class="primary-button" type="submit">Salvar pagamento</button>` : ""}
+          <button class="secondary-button" type="button" onclick="openVexFormalization('${sale.id}')">Voltar</button>
+          <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
+        </div>
+      </form>
+    </aside>
+  `;
+
+  drawer.classList.add("active");
+}
+
+function getVexPaymentResponsibilityText(payment) {
+  const parts = [];
+  if (payment.ipvaPaidBy && payment.ipvaPaidBy !== "Não se aplica" && parseSaleCurrencyValue(payment.ipvaValue) > 0) {
+    parts.push("IPVA pago " + (payment.ipvaPaidBy === "Loja" ? "pela loja" : "pelo cliente"));
+  }
+  if (payment.licensingPaidBy && payment.licensingPaidBy !== "Não se aplica" && parseSaleCurrencyValue(payment.licensingValue) > 0) {
+    parts.push("Licenciamento pago " + (payment.licensingPaidBy === "Loja" ? "pela loja" : "pelo cliente"));
+  }
+  return parts.length ? parts.join(". ") + "." : "Sem observação automática.";
+}
+
+function collectVexPaymentMethodsFromForm() {
+  const list = document.getElementById("formalPaymentMethodsList");
+  const rows = list ? Array.from(list.querySelectorAll("[data-payment-row='true']")) : [];
+
+  return rows.map(function(row) {
+    const type = row.querySelector(".formalPaymentMethodType");
+    const value = row.querySelector(".formalPaymentMethodValue");
+    return {
+      type: type ? type.value : "PIX",
+      value: value ? value.value.trim() : ""
+    };
+  }).filter(function(method) {
+    return method.type || method.value;
+  });
+}
+
+async function saveVexFormalizationPayment(event, saleId) {
+  event.preventDefault();
+
+  if (!canManageContent()) {
+    alert("Apenas administradores podem atualizar a formalização.");
+    return;
+  }
+
+  if (!salesCollection || !saleId) {
+    return;
+  }
+
+  const paymentPayload = {
+    methods: collectVexPaymentMethodsFromForm(),
+    transferCharged: getVexFormalizationInputValue("formalTransferCharged"),
+    transferValue: getVexFormalizationInputValue("formalTransferValue"),
+    ipvaValue: getVexFormalizationInputValue("formalIpvaValue"),
+    ipvaPaidBy: getVexFormalizationInputValue("formalIpvaPaidBy"),
+    licensingValue: getVexFormalizationInputValue("formalLicensingValue"),
+    licensingPaidBy: getVexFormalizationInputValue("formalLicensingPaidBy"),
+    notes: getVexFormalizationInputValue("formalPaymentNotes")
+  };
+
+  paymentPayload.methodsTotalNumber = getVexPaymentMethodsTotal(paymentPayload.methods);
+  paymentPayload.customerTotalNumber = paymentPayload.methodsTotalNumber + getVexPaymentCustomerExtrasTotal(paymentPayload);
+
+  const message = document.getElementById("formalPaymentMessage");
+  if (message) {
+    message.innerHTML = `<div class="empty-state">Salvando dados de pagamento...</div>`;
+  }
+
+  try {
+    await salesCollection.doc(saleId).update({
+      "formalization.payment": paymentPayload,
+      "formalization.updatedAtLocal": new Date().toISOString(),
+      updatedAtLocal: new Date().toISOString()
+    });
+
+    sales = sales.map(function(sale) {
+      if (sale.id === saleId) {
+        return {
+          ...sale,
+          formalization: {
+            ...(sale.formalization || {}),
+            payment: paymentPayload,
+            updatedAtLocal: new Date().toISOString()
+          }
+        };
+      }
+      return sale;
+    });
+
+    openVexFormalizationPayment(saleId);
+  } catch (error) {
+    console.error("Erro ao salvar pagamento da formalização:", error);
+    if (message) {
+      message.innerHTML = `<div class="empty-state">Erro ao salvar. Verifique sua conexão ou as regras do Firestore.</div>`;
+    } else {
+      alert("Erro ao salvar pagamento da formalização.");
+    }
+  }
+}
+
+
+function getVexFormalizationRepasseData(sale) {
+  const repasse = sale && sale.formalization && sale.formalization.repasse ? sale.formalization.repasse : {};
+  const saleTotal = sale && sale.saleValueNumber ? Number(sale.saleValueNumber) : parseSaleCurrencyValue(sale ? sale.saleValue : "");
+  const fipeTotal = sale && sale.vehicleFipeValueNumber ? Number(sale.vehicleFipeValueNumber) : parseSaleCurrencyValue(sale ? sale.vehicleFipeValue : "");
+  const items = Array.isArray(repasse.items) ? repasse.items : [];
+
+  return {
+    saleCondition: repasse.saleCondition || "Sem garantia",
+    fipeValue: repasse.fipeValue || (fipeTotal ? formatCurrencyToBrazil(fipeTotal) : ""),
+    saleValue: repasse.saleValue || (saleTotal ? formatCurrencyToBrazil(saleTotal) : ""),
+    items: items.map(function(item) {
+      return {
+        category: item.category || "Outros",
+        description: item.description || ""
+      };
+    }),
+    notes: repasse.notes || ""
+  };
+}
+
+function getVexRepasseDiscountValue(repasse) {
+  const fipe = parseSaleCurrencyValue(repasse.fipeValue);
+  const saleValue = parseSaleCurrencyValue(repasse.saleValue);
+  return Math.max(0, fipe - saleValue);
+}
+
+function getVexRepasseItems(repasse) {
+  return (repasse.items || []).filter(function(item) {
+    return item.description && item.description.trim();
+  });
+}
+
+function getVexRepasseCompletion(repasse) {
+  const items = getVexRepasseItems(repasse);
+  const fipeValue = parseSaleCurrencyValue(repasse.fipeValue);
+  const saleValue = parseSaleCurrencyValue(repasse.saleValue);
+  const discountValue = getVexRepasseDiscountValue(repasse);
+
+  const checks = [
+    Boolean(repasse.saleCondition),
+    fipeValue > 0,
+    saleValue > 0,
+    discountValue >= 0,
+    items.length > 0
+  ];
+
+  const doneFields = checks.filter(Boolean).length;
+
+  return {
+    done: doneFields,
+    total: checks.length,
+    percent: Math.round((doneFields / checks.length) * 100),
+    complete: checks.every(Boolean),
+    fipeValue: fipeValue,
+    saleValue: saleValue,
+    discountValue: discountValue,
+    itemsCount: items.length
+  };
+}
+
+function renderVexOperationalItemRow(item) {
+  const categories = ["Histórico", "Estrutural", "Mecânica", "Estética", "Documentação", "Outros"];
+  const safeItem = item || { category: "Outros", description: "" };
+
+  return `
+    <div class="vex-operational-item-row" data-operational-item-row="true">
+      <label class="vex-formalization-field">
+        <span>Categoria</span>
+        <select class="formalOperationalItemCategory">
+          ${categories.map(function(category) {
+            return `<option value="${escapeHTML(category)}" ${category === safeItem.category ? "selected" : ""}>${escapeHTML(category)}</option>`;
+          }).join("")}
+        </select>
+      </label>
+      <label class="vex-formalization-field">
+        <span>Descrição</span>
+        <input class="formalOperationalItemDescription" type="text" value="${escapeHTML(safeItem.description || "")}" placeholder="Ex: Leilão média monta" autocomplete="off">
+      </label>
+      <button class="secondary-button vex-payment-remove" type="button" onclick="removeVexOperationalItemRow(this)">Remover</button>
+    </div>
+  `;
+}
+
+function addVexOperationalItemRow() {
+  const list = document.getElementById("formalOperationalItemsList");
+  if (!list) return;
+  list.insertAdjacentHTML("beforeend", renderVexOperationalItemRow({ category: "Outros", description: "" }));
+}
+
+function removeVexOperationalItemRow(button) {
+  const list = document.getElementById("formalOperationalItemsList");
+  const rows = list ? list.querySelectorAll("[data-operational-item-row='true']") : [];
+  if (rows.length <= 1) {
+    const row = button.closest("[data-operational-item-row='true']");
+    if (row) {
+      const description = row.querySelector(".formalOperationalItemDescription");
+      if (description) description.value = "";
+    }
+    return;
+  }
+
+  const row = button.closest("[data-operational-item-row='true']");
+  if (row) row.remove();
+}
+
+function collectVexOperationalItemsFromForm() {
+  const list = document.getElementById("formalOperationalItemsList");
+  const rows = list ? Array.from(list.querySelectorAll("[data-operational-item-row='true']")) : [];
+
+  return rows.map(function(row) {
+    const category = row.querySelector(".formalOperationalItemCategory");
+    const description = row.querySelector(".formalOperationalItemDescription");
+    return {
+      category: category ? category.value : "Outros",
+      description: description ? description.value.trim() : ""
+    };
+  }).filter(function(item) {
+    return item.description;
+  });
+}
+
+function openVexFormalizationRepasse(saleId) {
+  const sale = sales.find(function(item) {
+    return item.id === saleId;
+  });
+
+  if (!sale) {
+    return;
+  }
+
+  const drawer = document.getElementById("vexVehicleDrawerRoot");
+  if (!drawer) {
+    return;
+  }
+
+  const repasse = getVexFormalizationRepasseData(sale);
+  const completion = getVexRepasseCompletion(repasse);
+  const statusLabel = completion.complete ? "Repasse concluído" : "Repasse pendente";
+  const statusIcon = completion.complete ? "🟢" : "🟡";
+  const rows = repasse.items.length ? repasse.items : [{ category: "Histórico", description: "" }];
+
+  drawer.innerHTML = `
+    <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
+
+    <aside class="vex-drawer-panel vex-formalization-panel">
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+
+      <section class="vex-drawer-hero vex-formalization-hero">
+        <div class="vex-vehicle-icon">🛡️</div>
+        <span class="eyebrow">Formalização • Repasse e Gastos</span>
+        <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente não informado")}</p>
+
+        <div class="vex-formalization-status-pill">
+          ${statusIcon} ${escapeHTML(statusLabel)}
+        </div>
+
+        <div class="vex-formalization-progress">
+          <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
+        </div>
+        <strong>${completion.done} de ${completion.total} conferências • ${completion.percent}%</strong>
+      </section>
+
+      <form class="vex-formalization-form" onsubmit="saveVexFormalizationRepasse(event, '${sale.id}')">
+        <div class="vex-formalization-form-card">
+          <h3>Tipo de venda</h3>
+          <p>Esta informação será reutilizada no Grupo Vendas, no contrato e no termo de repasse.</p>
+          <div class="vex-formalization-form-grid">
+            ${renderVexFormalizationSelect("formalSaleCondition", "Condição da venda", repasse.saleCondition, ["Com garantia", "Sem garantia", "Repasse"])}
+          </div>
+        </div>
+
+        <div class="vex-formalization-form-card">
+          <h3>Abatimento FIPE</h3>
+          <p>O abatimento é calculado automaticamente pela diferença entre FIPE/tabela e valor de venda.</p>
+          <div class="vex-formalization-form-grid">
+            ${renderVexFormalizationField("formalFipeValue", "Valor FIPE / tabela", repasse.fipeValue)}
+            ${renderVexFormalizationField("formalRepasseSaleValue", "Valor de venda", repasse.saleValue)}
+          </div>
+          <div class="vex-formalization-summary">
+            ${renderVexFormalizationSummaryItem("FIPE / tabela", formatCurrencyToBrazil(completion.fipeValue || 0))}
+            ${renderVexFormalizationSummaryItem("Valor de venda", formatCurrencyToBrazil(completion.saleValue || 0))}
+            ${renderVexFormalizationSummaryItem("Abatimento", formatCurrencyToBrazil(completion.discountValue || 0))}
+          </div>
+        </div>
+
+        <div class="vex-formalization-form-card">
+          <h3>Gastos / Material do veículo</h3>
+          <p>Cadastre em itens separados. Essa lista será reutilizada no Grupo Preparação, Grupo Vendas, contrato e termo.</p>
+          <div id="formalOperationalItemsList" class="vex-operational-item-list">
+            ${rows.map(renderVexOperationalItemRow).join("")}
+          </div>
+          <button class="secondary-button" type="button" onclick="addVexOperationalItemRow()">+ Adicionar item</button>
+        </div>
+
+        <div class="vex-formalization-form-card">
+          <h3>Observações internas</h3>
+          <label class="vex-formalization-field full">
+            <span>Observações</span>
+            <textarea id="formalRepasseNotes" rows="3" placeholder="Observação interna sobre repasse, garantia ou condição autorizada pela gerência.">${escapeHTML(repasse.notes || "")}</textarea>
+          </label>
+        </div>
+
+        <div id="formalRepasseMessage" class="vex-formalization-inline-message"></div>
+
+        <div class="vex-drawer-actions vex-drawer-actions-safe">
+          ${canManageContent() ? `<button class="primary-button" type="submit">Salvar repasse/gastos</button>` : ""}
+          <button class="secondary-button" type="button" onclick="openVexFormalization('${sale.id}')">Voltar</button>
+          <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
+        </div>
+      </form>
+    </aside>
+  `;
+
+  drawer.classList.add("active");
+}
+
+async function saveVexFormalizationRepasse(event, saleId) {
+  event.preventDefault();
+
+  if (!canManageContent()) {
+    alert("Apenas administradores podem atualizar a formalização.");
+    return;
+  }
+
+  if (!salesCollection || !saleId) {
+    return;
+  }
+
+  const repassePayload = {
+    saleCondition: getVexFormalizationInputValue("formalSaleCondition"),
+    fipeValue: getVexFormalizationInputValue("formalFipeValue"),
+    saleValue: getVexFormalizationInputValue("formalRepasseSaleValue"),
+    discountValue: formatCurrencyToBrazil(Math.max(0, parseSaleCurrencyValue(getVexFormalizationInputValue("formalFipeValue")) - parseSaleCurrencyValue(getVexFormalizationInputValue("formalRepasseSaleValue")))),
+    discountValueNumber: Math.max(0, parseSaleCurrencyValue(getVexFormalizationInputValue("formalFipeValue")) - parseSaleCurrencyValue(getVexFormalizationInputValue("formalRepasseSaleValue"))),
+    items: collectVexOperationalItemsFromForm(),
+    notes: getVexFormalizationInputValue("formalRepasseNotes")
+  };
+
+  const message = document.getElementById("formalRepasseMessage");
+  if (message) {
+    message.innerHTML = `<div class="empty-state">Salvando repasse e gastos...</div>`;
+  }
+
+  try {
+    await salesCollection.doc(saleId).update({
+      "formalization.repasse": repassePayload,
+      "formalization.updatedAtLocal": new Date().toISOString(),
+      updatedAtLocal: new Date().toISOString()
+    });
+
+    sales = sales.map(function(sale) {
+      if (sale.id === saleId) {
+        return {
+          ...sale,
+          formalization: {
+            ...(sale.formalization || {}),
+            repasse: repassePayload,
+            updatedAtLocal: new Date().toISOString()
+          }
+        };
+      }
+      return sale;
+    });
+
+    openVexFormalizationRepasse(saleId);
+  } catch (error) {
+    console.error("Erro ao salvar repasse/gastos da formalização:", error);
+    if (message) {
+      message.innerHTML = `<div class="empty-state">Erro ao salvar. Verifique sua conexão ou as regras do Firestore.</div>`;
+    } else {
+      alert("Erro ao salvar repasse/gastos da formalização.");
+    }
+  }
+}
+
+
+function getVexFormalizationTransferData(sale) {
+  const transfer = sale && sale.formalization && sale.formalization.transfer ? sale.formalization.transfer : {};
+
+  return {
+    responsible: transfer.responsible || sale.transferType || "Cliente",
+    recognitionDate: transfer.recognitionDate || "",
+    protocol: transfer.protocol || "",
+    notes: transfer.notes || ""
+  };
+}
+
+function normalizeVexTransferResponsible(value) {
+  const normalized = String(value || "").toLowerCase();
+  if (normalized.includes("loja") || normalized.includes("gente") || normalized.includes("vex")) {
+    return "Loja";
+  }
+  if (normalized.includes("cliente")) {
+    return "Cliente";
+  }
+  return value || "Cliente";
+}
+
+function addDaysToIsoDate(isoDate, days) {
+  if (!isoDate || !isoDate.includes("-")) {
+    return "";
+  }
+
+  const date = new Date(isoDate + "T12:00:00");
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function getVexDaysUntil(isoDate) {
+  if (!isoDate || !isoDate.includes("-")) {
+    return null;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(isoDate + "T00:00:00");
+  if (Number.isNaN(target.getTime())) {
+    return null;
+  }
+
+  return Math.ceil((target.getTime() - today.getTime()) / 86400000);
+}
+
+function getVexTransferStatus(transfer) {
+  const responsible = normalizeVexTransferResponsible(transfer.responsible);
+
+  if (responsible === "Cliente") {
+    return {
+      label: "Controle encerrado",
+      description: "Transferência por conta do cliente. Procuração não necessária.",
+      icon: "🟢",
+      className: "done",
+      dueDate: "",
+      daysLeft: null
+    };
+  }
+
+  if (!transfer.recognitionDate) {
+    return {
+      label: "Aguardando reconhecimento",
+      description: "Informe a data do reconhecimento da venda para iniciar o prazo de 30 dias.",
+      icon: "🟡",
+      className: "pending",
+      dueDate: "",
+      daysLeft: null
+    };
+  }
+
+  const dueDate = addDaysToIsoDate(transfer.recognitionDate, 30);
+  const daysLeft = getVexDaysUntil(dueDate);
+
+  if (daysLeft === null) {
+    return {
+      label: "Data inválida",
+      description: "Revise a data informada.",
+      icon: "🟡",
+      className: "pending",
+      dueDate: "",
+      daysLeft: null
+    };
+  }
+
+  if (daysLeft < 0) {
+    return {
+      label: "Transferência vencida",
+      description: `Vencida há ${Math.abs(daysLeft)} dia(s).`,
+      icon: "🔴",
+      className: "danger",
+      dueDate,
+      daysLeft
+    };
+  }
+
+  if (daysLeft <= 3) {
+    return {
+      label: "Vencendo",
+      description: `Vence em ${daysLeft} dia(s).`,
+      icon: "🟠",
+      className: "warning",
+      dueDate,
+      daysLeft
+    };
+  }
+
+  if (daysLeft <= 10) {
+    return {
+      label: "Atenção",
+      description: `Vence em ${daysLeft} dia(s).`,
+      icon: "🟡",
+      className: "pending",
+      dueDate,
+      daysLeft
+    };
+  }
+
+  return {
+    label: "Em dia",
+    description: `Vence em ${daysLeft} dia(s).`,
+    icon: "🟢",
+    className: "done",
+    dueDate,
+    daysLeft
+  };
+}
+
+function getVexTransferCompletion(transfer) {
+  const responsible = normalizeVexTransferResponsible(transfer.responsible);
+  const responsibleOk = responsible === "Loja" || responsible === "Cliente";
+  const dateOk = responsible === "Cliente" || Boolean(transfer.recognitionDate);
+  const status = getVexTransferStatus({ ...transfer, responsible });
+  const complete = responsibleOk && dateOk;
+
+  return {
+    done: [responsibleOk, dateOk].filter(Boolean).length,
+    total: 2,
+    percent: complete ? 100 : Math.round(([responsibleOk, dateOk].filter(Boolean).length / 2) * 100),
+    complete,
+    status
+  };
+}
+
+function openVexFormalizationTransfer(saleId) {
+  const sale = sales.find(function(item) {
+    return item.id === saleId;
+  });
+
+  if (!sale) {
+    return;
+  }
+
+  const drawer = document.getElementById("vexVehicleDrawerRoot");
+  if (!drawer) {
+    return;
+  }
+
+  const transfer = getVexFormalizationTransferData(sale);
+  transfer.responsible = normalizeVexTransferResponsible(transfer.responsible);
+  const completion = getVexTransferCompletion(transfer);
+  const status = completion.status;
+  const dueDateLabel = status.dueDate ? formatDateToBrazil(status.dueDate) : "Calculado após informar a data";
+  const recognitionDateLabel = transfer.recognitionDate ? formatDateToBrazil(transfer.recognitionDate) : "Não informado";
+  const showLojaFields = transfer.responsible === "Loja";
+
+  drawer.innerHTML = `
+    <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
+
+    <aside class="vex-drawer-panel vex-formalization-panel">
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+
+      <section class="vex-drawer-hero vex-formalization-hero">
+        <div class="vex-vehicle-icon">🚛</div>
+        <span class="eyebrow">Formalização • Transferência</span>
+        <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente não informado")} • ${formatDateToBrazil(sale.saleDate)}</p>
+
+        <div class="vex-formalization-status-pill">
+          ${status.icon} ${escapeHTML(status.label)}
+        </div>
+
+        <div class="vex-formalization-progress">
+          <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
+        </div>
+        <strong>${completion.done} de ${completion.total} etapas concluídas • ${completion.percent}%</strong>
+      </section>
+
+      <form class="vex-formalization-form" onsubmit="saveVexFormalizationTransfer(event, '${sale.id}')">
+        <div class="vex-formalization-form-card">
+          <h3>Responsável pela transferência</h3>
+          <p>Defina quem fará a transferência. Se for pelo cliente, a procuração fica marcada como não necessária.</p>
+          <div class="vex-formalization-form-grid">
+            <label class="vex-formalization-field full">
+              <span>Responsável</span>
+              <select id="formalTransferResponsible" onchange="openVexFormalizationTransferPreview('${sale.id}', this.value)">
+                <option value="Cliente" ${transfer.responsible === "Cliente" ? "selected" : ""}>Cliente</option>
+                <option value="Loja" ${transfer.responsible === "Loja" ? "selected" : ""}>Loja</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="vex-formalization-form-card">
+          <h3>Painel de acompanhamento</h3>
+          <div class="vex-formalization-summary">
+            ${renderVexFormalizationSummaryItem("Responsável", transfer.responsible)}
+            ${renderVexFormalizationSummaryItem("Reconhecimento", recognitionDateLabel)}
+            ${renderVexFormalizationSummaryItem("Prazo legal", transfer.responsible === "Loja" ? "30 dias" : "Não necessário")}
+            ${renderVexFormalizationSummaryItem("Vencimento", dueDateLabel)}
+            ${renderVexFormalizationSummaryItem("Status", `${status.icon} ${status.label}`)}
+            ${renderVexFormalizationSummaryItem("Procuração", transfer.responsible === "Loja" ? "Necessária" : "Não necessária")}
+          </div>
+          <p class="vex-transfer-status-text">${escapeHTML(status.description)}</p>
+        </div>
+
+        ${showLojaFields ? `
+          <div class="vex-formalization-form-card">
+            <h3>Dados para controle da loja</h3>
+            <div class="vex-formalization-form-grid">
+              <label class="vex-formalization-field">
+                <span>Data do reconhecimento</span>
+                <input id="formalTransferRecognitionDate" type="date" value="${escapeHTML(transfer.recognitionDate || "")}">
+              </label>
+              <label class="vex-formalization-field">
+                <span>Protocolo / observação curta</span>
+                <input id="formalTransferProtocol" type="text" value="${escapeHTML(transfer.protocol || "")}" placeholder="Opcional">
+              </label>
+            </div>
+          </div>
+        ` : `
+          <input id="formalTransferRecognitionDate" type="hidden" value="">
+          <input id="formalTransferProtocol" type="hidden" value="${escapeHTML(transfer.protocol || "")}">
+        `}
+
+        <div class="vex-formalization-form-card">
+          <h3>Observações internas</h3>
+          <label class="vex-formalization-field full">
+            <span>Observações</span>
+            <textarea id="formalTransferNotes" rows="3" placeholder="Ex.: Cliente fará a transferência por conta própria, loja apenas entregou documentos.">${escapeHTML(transfer.notes || "")}</textarea>
+          </label>
+        </div>
+
+        <div id="formalTransferMessage" class="vex-formalization-inline-message"></div>
+
+        <div class="vex-drawer-actions vex-drawer-actions-safe">
+          ${canManageContent() ? `<button class="primary-button" type="submit">Salvar transferência</button>` : ""}
+          <button class="secondary-button" type="button" onclick="openVexFormalization('${sale.id}')">Voltar</button>
+          <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
+        </div>
+      </form>
+    </aside>
+  `;
+
+  drawer.classList.add("active");
+}
+
+function openVexFormalizationTransferPreview(saleId, responsible) {
+  const sale = sales.find(function(item) {
+    return item.id === saleId;
+  });
+
+  if (!sale) {
+    return;
+  }
+
+  sale.formalization = sale.formalization || {};
+  sale.formalization.transfer = {
+    ...(sale.formalization.transfer || {}),
+    responsible: responsible
+  };
+
+  openVexFormalizationTransfer(saleId);
+}
+
+async function saveVexFormalizationTransfer(event, saleId) {
+  event.preventDefault();
+
+  if (!canManageContent()) {
+    alert("Apenas administradores podem atualizar a formalização.");
+    return;
+  }
+
+  if (!salesCollection || !saleId) {
+    return;
+  }
+
+  const responsible = normalizeVexTransferResponsible(getVexFormalizationInputValue("formalTransferResponsible"));
+  const transferPayload = {
+    responsible: responsible,
+    recognitionDate: responsible === "Loja" ? getVexFormalizationInputValue("formalTransferRecognitionDate") : "",
+    dueDate: responsible === "Loja" ? addDaysToIsoDate(getVexFormalizationInputValue("formalTransferRecognitionDate"), 30) : "",
+    protocol: getVexFormalizationInputValue("formalTransferProtocol"),
+    notes: getVexFormalizationInputValue("formalTransferNotes")
+  };
+
+  const transferStatus = getVexTransferStatus(transferPayload);
+  transferPayload.status = transferStatus.label;
+  transferPayload.statusDescription = transferStatus.description;
+  transferPayload.daysLeft = transferStatus.daysLeft;
+  transferPayload.procurationRequired = responsible === "Loja";
+
+  const message = document.getElementById("formalTransferMessage");
+  if (message) {
+    message.innerHTML = `<div class="empty-state">Salvando transferência...</div>`;
+  }
+
+  try {
+    await salesCollection.doc(saleId).update({
+      "formalization.transfer": transferPayload,
+      "formalization.updatedAtLocal": new Date().toISOString(),
+      updatedAtLocal: new Date().toISOString()
+    });
+
+    sales = sales.map(function(sale) {
+      if (sale.id === saleId) {
+        return {
+          ...sale,
+          transferType: responsible === "Loja" ? "Pela loja" : "Pelo cliente",
+          formalization: {
+            ...(sale.formalization || {}),
+            transfer: transferPayload,
+            updatedAtLocal: new Date().toISOString()
+          }
+        };
+      }
+      return sale;
+    });
+
+    openVexFormalizationTransfer(saleId);
+  } catch (error) {
+    console.error("Erro ao salvar transferência da formalização:", error);
+    if (message) {
+      message.innerHTML = `<div class="empty-state">Erro ao salvar. Verifique sua conexão ou as regras do Firestore.</div>`;
+    } else {
+      alert("Erro ao salvar transferência da formalização.");
+    }
+  }
+}
+
+
+function getVexFormalizationReceivedDocsData(sale) {
+  const docs = sale && sale.formalization && sale.formalization.receivedDocs ? sale.formalization.receivedDocs : {};
+
+  return {
+    idDocument: docs.idDocument || "Pendente",
+    addressProof: docs.addressProof || "Pendente",
+    paymentProof: docs.paymentProof || "Pendente",
+    notes: docs.notes || ""
+  };
+}
+
+function getVexReceivedDocsCompletion(docs) {
+  const idOk = docs.idDocument === "CNH" || docs.idDocument === "RG" || docs.idDocument === "CNH + RG";
+  const addressOk = docs.addressProof === "Recebido";
+  const paymentOk = docs.paymentProof === "Recebido";
+  const checks = [idOk, addressOk, paymentOk];
+  const doneFields = checks.filter(Boolean).length;
+
+  return {
+    done: doneFields,
+    total: checks.length,
+    percent: Math.round((doneFields / checks.length) * 100),
+    complete: doneFields === checks.length
+  };
+}
+
+function renderVexReceivedDocsSelect(id, label, options, currentValue) {
+  return `
+    <label class="vex-formalization-field">
+      <span>${escapeHTML(label)}</span>
+      <select id="${escapeHTML(id)}">
+        ${options.map(function(option) {
+          return `<option value="${escapeHTML(option)}" ${option === currentValue ? "selected" : ""}>${escapeHTML(option)}</option>`;
+        }).join("")}
+      </select>
+    </label>
+  `;
+}
+
+function getVexReceivedDocsMessagePreview(docs) {
+  const lines = [];
+
+  if (docs.idDocument === "CNH") {
+    lines.push("CNH: ✅ Em anexo");
+  } else if (docs.idDocument === "RG") {
+    lines.push("RG: ✅ Em anexo");
+  } else if (docs.idDocument === "CNH + RG") {
+    lines.push("CNH: ✅ Em anexo");
+    lines.push("RG: ✅ Em anexo");
+  } else {
+    lines.push("Documento de identificação: ⚠️ Pendente");
+  }
+
+  lines.push(`Comprovante de endereço: ${docs.addressProof === "Recebido" ? "✅ Em anexo" : "⚠️ Pendente"}`);
+  lines.push(`Comprovantes de pagamento: ${docs.paymentProof === "Recebido" ? "✅ Em anexo" : "⚠️ Pendente"}`);
+
+  return lines.join("\n");
+}
+
+function openVexFormalizationReceivedDocs(saleId) {
+  const sale = sales.find(function(item) {
+    return item.id === saleId;
+  });
+
+  if (!sale) {
+    return;
+  }
+
+  const drawer = document.getElementById("vexVehicleDrawerRoot");
+  if (!drawer) {
+    return;
+  }
+
+  const docs = getVexFormalizationReceivedDocsData(sale);
+  const completion = getVexReceivedDocsCompletion(docs);
+  const statusLabel = completion.complete ? "Documentos recebidos concluído" : "Documentos recebidos pendente";
+  const statusIcon = completion.complete ? "🟢" : "🟡";
+  const preview = getVexReceivedDocsMessagePreview(docs);
+
+  drawer.innerHTML = `
+    <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
+
+    <aside class="vex-drawer-panel vex-formalization-panel">
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+
+      <section class="vex-drawer-hero vex-formalization-hero">
+        <div class="vex-vehicle-icon">📄</div>
+        <span class="eyebrow">Formalização • Documentos Recebidos</span>
+        <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente não informado")} • ${formatDateToBrazil(sale.saleDate)}</p>
+
+        <div class="vex-formalization-status-pill">
+          ${statusIcon} ${escapeHTML(statusLabel)}
+        </div>
+
+        <div class="vex-formalization-progress">
+          <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
+        </div>
+        <strong>${completion.done} de ${completion.total} itens conferidos • ${completion.percent}%</strong>
+      </section>
+
+      <form class="vex-formalization-form" onsubmit="saveVexFormalizationReceivedDocs(event, '${sale.id}')">
+        <div class="vex-formalization-form-card">
+          <h3>Documentos para comunicação e contrato</h3>
+          <p>Marque o que já foi recebido. Esses dados serão usados no Grupo Vendas e na conferência da formalização.</p>
+          <div class="vex-formalization-form-grid">
+            ${renderVexReceivedDocsSelect("formalDocsIdDocument", "Documento de identificação", ["Pendente", "CNH", "RG", "CNH + RG"], docs.idDocument)}
+            ${renderVexReceivedDocsSelect("formalDocsAddressProof", "Comprovante de endereço", ["Pendente", "Recebido"], docs.addressProof)}
+            ${renderVexReceivedDocsSelect("formalDocsPaymentProof", "Comprovantes de pagamento", ["Pendente", "Recebido"], docs.paymentProof)}
+          </div>
+        </div>
+
+        <div class="vex-formalization-form-card">
+          <h3>Prévia para o Grupo Vendas</h3>
+          <pre class="vex-message-preview">${escapeHTML(preview)}</pre>
+        </div>
+
+        <div class="vex-formalization-form-card">
+          <h3>Observações internas</h3>
+          <label class="vex-formalization-field full">
+            <span>Observações</span>
+            <textarea id="formalDocsNotes" rows="3" placeholder="Ex.: RG enviado no lugar da CNH.">${escapeHTML(docs.notes || "")}</textarea>
+          </label>
+        </div>
+
+        <div id="formalDocsMessage" class="vex-formalization-inline-message"></div>
+
+        <div class="vex-drawer-actions vex-drawer-actions-safe">
+          ${canManageContent() ? `<button class="primary-button" type="submit">Salvar documentos</button>` : ""}
+          <button class="secondary-button" type="button" onclick="openVexFormalization('${sale.id}')">Voltar</button>
+          <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
+        </div>
+      </form>
+    </aside>
+  `;
+
+  drawer.classList.add("active");
+}
+
+async function saveVexFormalizationReceivedDocs(event, saleId) {
+  event.preventDefault();
+
+  if (!canManageContent()) {
+    alert("Apenas administradores podem atualizar a formalização.");
+    return;
+  }
+
+  if (!salesCollection || !saleId) {
+    return;
+  }
+
+  const docsPayload = {
+    idDocument: getVexFormalizationInputValue("formalDocsIdDocument") || "Pendente",
+    addressProof: getVexFormalizationInputValue("formalDocsAddressProof") || "Pendente",
+    paymentProof: getVexFormalizationInputValue("formalDocsPaymentProof") || "Pendente",
+    notes: getVexFormalizationInputValue("formalDocsNotes")
+  };
+
+  const message = document.getElementById("formalDocsMessage");
+  if (message) {
+    message.innerHTML = `<div class="empty-state">Salvando documentos recebidos...</div>`;
+  }
+
+  try {
+    await salesCollection.doc(saleId).update({
+      "formalization.receivedDocs": docsPayload,
+      "formalization.updatedAtLocal": new Date().toISOString(),
+      updatedAtLocal: new Date().toISOString()
+    });
+
+    sales = sales.map(function(sale) {
+      if (sale.id === saleId) {
+        return {
+          ...sale,
+          formalization: {
+            ...(sale.formalization || {}),
+            receivedDocs: docsPayload,
+            updatedAtLocal: new Date().toISOString()
+          }
+        };
+      }
+      return sale;
+    });
+
+    openVexFormalizationReceivedDocs(saleId);
+  } catch (error) {
+    console.error("Erro ao salvar documentos recebidos:", error);
+    if (message) {
+      message.innerHTML = `<div class="empty-state">Erro ao salvar. Verifique sua conexão ou as regras do Firestore.</div>`;
+    } else {
+      alert("Erro ao salvar documentos recebidos.");
+    }
+  }
+}
+
+
+
+function getVexCommunicationVehicleTitle(sale) {
+  const vehicle = getVexFormalizationVehicleData(sale);
+  return [vehicle.vehicleBrand, vehicle.vehicleModel, vehicle.vehicleVersion, vehicle.vehicleYear]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim() || "Veículo não informado";
+}
+
+function getVexCommunicationMoney(value) {
+  const number = parseSaleCurrencyValue(value);
+  if (number <= 0) return "";
+  return formatCurrencyToBrazil(number);
+}
+
+function getVexCommunicationIdDocumentLine(docs) {
+  if (docs.idDocument === "CNH") return "CNH: (Em anexo.) ✅";
+  if (docs.idDocument === "RG") return "RG: (Em anexo.) ✅";
+  if (docs.idDocument === "CNH + RG") return "CNH/RG: (Em anexo.) ✅";
+  return "Documento de identificação: Pendente ⚠️";
+}
+
+function getVexCommunicationAttachmentLine(label, status) {
+  return `${label}: ${status === "Recebido" ? "(Em anexo.) ✅" : "Pendente ⚠️"}`;
+}
+
+function getVexCommunicationSaleCondition(repasse) {
+  const condition = String(repasse.saleCondition || "").trim();
+  if (!condition) return "*SEM GARANTIA*";
+  return `*${condition.toUpperCase()}*`;
+}
+
+function getVexCommunicationGastosLines(repasse) {
+  const items = getVexRepasseItems(repasse);
+  if (!items.length) return ["Nenhum gasto/material informado."];
+  return items.map(function(item) {
+    return item.description;
+  });
+}
+
+function getVexCommunicationTransferAnswer(sale) {
+  const transfer = getVexFormalizationTransferData(sale);
+  return normalizeVexTransferResponsible(transfer.responsible) === "Loja" ? "SIM" : "NÃO";
+}
+
+function getVexCommunicationTransactionLines(payment) {
+  const lines = [];
+  const methods = (payment.methods || []).filter(function(method) {
+    return method.type && parseSaleCurrencyValue(method.value) > 0;
+  });
+
+  methods.forEach(function(method) {
+    lines.push(`${method.type}: ${formatCurrencyToBrazil(parseSaleCurrencyValue(method.value))}`);
+  });
+
+  if (payment.transferCharged === "Sim" && parseSaleCurrencyValue(payment.transferValue) > 0) {
+    lines.push(`Transferência: ${formatCurrencyToBrazil(parseSaleCurrencyValue(payment.transferValue))}`);
+  }
+
+  if (parseSaleCurrencyValue(payment.ipvaValue) > 0) {
+    lines.push(`IPVA: ${formatCurrencyToBrazil(parseSaleCurrencyValue(payment.ipvaValue))}`);
+  }
+
+  if (parseSaleCurrencyValue(payment.licensingValue) > 0) {
+    lines.push(`Licenciamento: ${formatCurrencyToBrazil(parseSaleCurrencyValue(payment.licensingValue))}`);
+  }
+
+  return lines;
+}
+
+function getVexCommunicationTotal(payment) {
+  const methodsTotal = getVexPaymentMethodsTotal(payment.methods || []);
+  return methodsTotal + getVexPaymentCustomerExtrasTotal(payment);
+}
+
+function getVexCommunicationResponsibilityText(payment) {
+  const ipvaValue = parseSaleCurrencyValue(payment.ipvaValue);
+  const licensingValue = parseSaleCurrencyValue(payment.licensingValue);
+  const ipvaBy = payment.ipvaPaidBy;
+  const licensingBy = payment.licensingPaidBy;
+
+  if (ipvaValue <= 0 && licensingValue <= 0) return "";
+
+  if (ipvaValue > 0 && licensingValue > 0 && ipvaBy === "Loja" && licensingBy === "Loja") {
+    return "IPVA E LICENCIAMENTO PAGO PELA LOJA.";
+  }
+
+  if (ipvaValue > 0 && licensingValue > 0 && ipvaBy === "Cliente" && licensingBy === "Cliente") {
+    return "IPVA E LICENCIAMENTO PAGO PELO CLIENTE.";
+  }
+
+  const parts = [];
+  if (ipvaValue > 0 && ipvaBy && ipvaBy !== "Não se aplica") {
+    parts.push(`IPVA pago ${ipvaBy === "Loja" ? "pela loja" : "pelo cliente"}.`);
+  }
+  if (licensingValue > 0 && licensingBy && licensingBy !== "Não se aplica") {
+    parts.push(`Licenciamento pago ${licensingBy === "Loja" ? "pela loja" : "pelo cliente"}.`);
+  }
+  return parts.join(" ").toUpperCase();
+}
+
+function buildVexPreparationMessage(sale) {
+  const vehicle = getVexFormalizationVehicleData(sale);
+  const vehicleTitle = getVexCommunicationVehicleTitle(sale);
+  const plate = vehicle.vehiclePlate || sale.vehiclePlate || "Placa não informada";
+
+  return [
+    "🚗 VEÍCULO VENDIDO",
+    "",
+    `Veículo: ${vehicleTitle}`,
+    `Placa: ${plate}`,
+    "",
+    "Solicitamos a retirada dos anúncios.",
+    "",
+    "Obrigado."
+  ].join("\n");
+}
+
+function buildVexSalesGroupMessage(sale) {
+  const client = getVexFormalizationClientData(sale);
+  const vehicle = getVexFormalizationVehicleData(sale);
+  const payment = getVexFormalizationPaymentData(sale);
+  const repasse = getVexFormalizationRepasseData(sale);
+  const docs = getVexFormalizationReceivedDocsData(sale);
+  const vehicleTitle = getVexCommunicationVehicleTitle(sale);
+  const saleValue = getVexCommunicationMoney(repasse.saleValue || sale.saleValue);
+  const transactionLines = getVexCommunicationTransactionLines(payment);
+  const total = getVexCommunicationTotal(payment);
+  const responsibilityText = getVexCommunicationResponsibilityText(payment);
+  const lines = [];
+
+  lines.push(`Veículo: ${vehicleTitle}`);
+  lines.push(`Placa: ${vehicle.vehiclePlate || sale.vehiclePlate || "Não informada"}`);
+  lines.push("");
+  lines.push(`Cliente: ${client.clientName || sale.clientName || "Não informado"}`);
+  lines.push("");
+  lines.push(getVexCommunicationAttachmentLine("Comprovante de endereço", docs.addressProof));
+  lines.push(getVexCommunicationIdDocumentLine(docs));
+  lines.push(getVexCommunicationAttachmentLine("Comprovantes de pagamento", docs.paymentProof));
+  lines.push("");
+  lines.push(`Número de telefone: ${client.clientPhone || sale.clientPhone || "Não informado"}`);
+  lines.push(`E-mail: ${client.clientEmail || "Não informado"}`);
+  lines.push("");
+  lines.push(`Km atual do veículo: ${vehicle.vehicleKm || sale.vehicleKm || "Não informado"}`);
+  lines.push("");
+  lines.push(`Valor de venda no carro: ${saleValue || "Não informado"}`);
+  lines.push("");
+  lines.push(getVexCommunicationSaleCondition(repasse));
+  lines.push("*GASTOS*");
+  getVexCommunicationGastosLines(repasse).forEach(function(item) {
+    lines.push(item);
+  });
+  lines.push("");
+  lines.push(`*A transferência vai ser feita com a gente:* ${getVexCommunicationTransferAnswer(sale)}`);
+  lines.push("");
+  lines.push("Detalhes da Transação.");
+  lines.push("");
+
+  if (transactionLines.length) {
+    transactionLines.forEach(function(line) {
+      lines.push(line);
+    });
+  } else {
+    lines.push("Forma de pagamento não informada.");
+  }
+
+  lines.push("");
+  lines.push(`Total: ${formatCurrencyToBrazil(total || 0)}`);
+
+  if (responsibilityText) {
+    lines.push("");
+    lines.push(responsibilityText);
+  }
+
+  if (payment.notes) {
+    lines.push("");
+    lines.push(payment.notes);
+  }
+
+  return lines.join("\n");
+}
+
+function getVexCommunicationPendencies(sale) {
+  const client = getVexFormalizationClientData(sale);
+  const docs = getVexFormalizationReceivedDocsData(sale);
+  const payment = getVexFormalizationPaymentData(sale);
+  const repasse = getVexFormalizationRepasseData(sale);
+  const pendencies = [];
+
+  if (!client.clientName) pendencies.push("Nome do cliente não informado");
+  if (!client.clientPhone) pendencies.push("Telefone do cliente não informado");
+  if (!client.clientEmail) pendencies.push("E-mail do cliente não informado");
+  if (docs.idDocument === "Pendente") pendencies.push("Documento de identificação pendente");
+  if (docs.addressProof !== "Recebido") pendencies.push("Comprovante de endereço pendente");
+  if (docs.paymentProof !== "Recebido") pendencies.push("Comprovantes de pagamento pendentes");
+  if (!getVexRepasseItems(repasse).length) pendencies.push("Gastos/material não informados");
+  if (!payment.methods || !payment.methods.some(function(method) { return parseSaleCurrencyValue(method.value) > 0; })) {
+    pendencies.push("Forma de pagamento não informada");
+  }
+
+  return pendencies;
+}
+
+function renderVexCommunicationPendencies(pendencies) {
+  if (!pendencies.length) {
+    return `<div class="vex-formalization-inline-message success">✅ Mensagens prontas para copiar.</div>`;
+  }
+
+  return `
+    <div class="vex-formalization-inline-message warning">
+      <strong>⚠️ Pendências encontradas</strong>
+      <ul>
+        ${pendencies.map(function(item) { return `<li>${escapeHTML(item)}</li>`; }).join("")}
+      </ul>
+      <small>O sistema não bloqueia a cópia, apenas alerta para conferência antes do envio.</small>
+    </div>
+  `;
+}
+
+function renderVexCommunicationBlock(title, subtitle, previewId, message, copyType) {
+  return `
+    <div class="vex-formalization-form-card vex-communication-card">
+      <h3>${escapeHTML(title)}</h3>
+      <p>${escapeHTML(subtitle)}</p>
+      <pre id="${escapeHTML(previewId)}" class="vex-message-preview">${escapeHTML(message)}</pre>
+      <div class="vex-drawer-actions vex-drawer-actions-safe vex-communication-actions">
+        <button class="secondary-button" type="button" onclick="toggleVexCommunicationPreview('${previewId}')">👁 Visualizar</button>
+        <button class="primary-button" type="button" onclick="copyVexCommunicationMessage('${copyType}')">📋 Copiar</button>
+      </div>
+    </div>
+  `;
+}
+
+function openVexFormalizationCommunication(saleId) {
+  const sale = sales.find(function(item) {
+    return item.id === saleId;
+  });
+
+  if (!sale) return;
+
+  const drawer = document.getElementById("vexVehicleDrawerRoot");
+  if (!drawer) return;
+
+  const preparationMessage = buildVexPreparationMessage(sale);
+  const salesMessage = buildVexSalesGroupMessage(sale);
+  const pendencies = getVexCommunicationPendencies(sale);
+
+  drawer.innerHTML = `
+    <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
+
+    <aside class="vex-drawer-panel vex-formalization-panel">
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+
+      <section class="vex-drawer-hero vex-formalization-hero">
+        <div class="vex-vehicle-icon">💬</div>
+        <span class="eyebrow">Formalização • Comunicação</span>
+        <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente não informado")}</p>
+
+        <div class="vex-formalization-status-pill">
+          ${pendencies.length ? "🟡 Conferir pendências" : "🟢 Comunicação pronta"}
+        </div>
+      </section>
+
+      ${renderVexCommunicationPendencies(pendencies)}
+
+      <section class="vex-formalization-form">
+        ${renderVexCommunicationBlock("📦 Grupo Preparação", "Mensagem curta para retirada dos anúncios.", "vexPreparationMessagePreview", preparationMessage, "preparation")}
+        ${renderVexCommunicationBlock("💬 Grupo Vendas", "Mensagem completa com dados da venda, anexos e negociação.", "vexSalesMessagePreview", salesMessage, "sales")}
+      </section>
+
+      <div id="formalCommunicationMessage" class="vex-formalization-inline-message"></div>
+
+      <div class="vex-drawer-actions vex-drawer-actions-safe">
+        <button class="secondary-button" type="button" onclick="openVexFormalization('${sale.id}')">Voltar</button>
+        <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
+      </div>
+    </aside>
+  `;
+
+  drawer.classList.add("active");
+}
+
+function toggleVexCommunicationPreview(previewId) {
+  const preview = document.getElementById(previewId);
+  if (!preview) return;
+  preview.classList.toggle("is-hidden-mobile-preview");
+}
+
+async function copyVexCommunicationMessage(type) {
+  const previewId = type === "preparation" ? "vexPreparationMessagePreview" : "vexSalesMessagePreview";
+  const preview = document.getElementById(previewId);
+  const message = document.getElementById("formalCommunicationMessage");
+  const text = preview ? preview.textContent : "";
+
+  if (!text) return;
+
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+
+    if (message) {
+      message.innerHTML = `<div class="empty-state">✅ Mensagem copiada com sucesso.</div>`;
+    } else {
+      alert("Mensagem copiada com sucesso.");
+    }
+  } catch (error) {
+    console.error("Erro ao copiar mensagem:", error);
+    if (message) {
+      message.innerHTML = `<div class="empty-state">Não foi possível copiar automaticamente. Selecione e copie a mensagem manualmente.</div>`;
+    } else {
+      alert("Não foi possível copiar automaticamente.");
+    }
+  }
+}
+
+
+/* =========================================================
+   RC3.0 — Document Engine | Contrato, Termo e Procuração
+   ========================================================= */
+
+const VEX_DOCUMENT_COMPANY = {
+  fantasyName: "VEX MULTIMARCAS",
+  legalName: "Vex Comercio de Veiculos LTDA",
+  cnpj: "65.844.036/0001-05",
+  email: "GILLUISOTAVIOMOTO@GMAIL.COM",
+  phone: "+55 (11) 98375 - 6962",
+  street: "Avenida Presidente Medici",
+  number: "212",
+  district: "Aliança",
+  city: "Osasco",
+  state: "São Paulo",
+  cep: "06268-000"
+};
+
+const VEX_DOCUMENT_REPRESENTATIVE = {
+  name: "GILVAN BATISTA DO NASCIMENTO",
+  cpf: "297.612.538-48",
+  address: "AVENIDA GETULIO VARGAS, 981 – PIRATININGA – OSASCO - SP"
+};
+
+function normalizeVexText(value) {
+  return String(value || "").trim();
+}
+
+function getVexCompanyAddress() {
+  return `${VEX_DOCUMENT_COMPANY.street}, ${VEX_DOCUMENT_COMPANY.number} – ${VEX_DOCUMENT_COMPANY.district}, ${VEX_DOCUMENT_COMPANY.city} – SP`;
+}
+
+function getVexClientAddress(client, format) {
+  const street = normalizeVexText(client.clientStreet);
+  const number = normalizeVexText(client.clientNumber);
+  const complement = normalizeVexText(client.clientComplement);
+  const district = normalizeVexText(client.clientDistrict);
+  const city = normalizeVexText(client.clientCity);
+  const state = normalizeVexText(client.clientState);
+  const cep = normalizeVexText(client.clientCep);
+
+  if (format === "contract") {
+    return {
+      line1: `${street}${number ? ", " + number : ""}${complement ? " Complemento: " + complement : ""}`.trim(),
+      district: district,
+      city: city,
+      state: state,
+      cep: cep
+    };
+  }
+
+  return [
+    `${street}${number ? ", " + number : ""}${complement ? " - " + complement : ""}`,
+    district,
+    city && state ? `${city}/${state}` : city || state,
+    cep ? `CEP: ${cep}` : ""
+  ].filter(Boolean).join(" – ");
+}
+
+function getVexDocumentPaymentText(payment) {
+  const methods = (payment.methods || []).filter(function(method) {
+    return method.type && parseSaleCurrencyValue(method.value) > 0;
+  });
+
+  if (!methods.length) return "Não informado";
+
+  return methods.map(function(method) {
+    return `${method.type}: ${formatCurrencyToBrazil(parseSaleCurrencyValue(method.value))}`;
+  }).join(" | ");
+}
+
+function getVexDocumentPrimaryPaymentText(payment) {
+  const methods = (payment.methods || []).filter(function(method) {
+    return method.type && parseSaleCurrencyValue(method.value) > 0;
+  });
+
+  return methods.length ? methods.map(function(method) { return method.type; }).join(" + ") : "Não informado";
+}
+
+function getVexVehicleFullName(vehicle) {
+  return [vehicle.vehicleBrand, vehicle.vehicleModel, vehicle.vehicleVersion].filter(Boolean).join(" ");
+}
+
+
+function getVexSaleDocumentNumber(sale) {
+  const baseNumber = 1057430;
+  const candidates = [sale.orderNumber, sale.saleNumber, sale.protocol];
+  for (const candidate of candidates) {
+    const clean = String(candidate || "").replace(/\D/g, "");
+    if (clean && Number(clean) >= baseNumber) return clean;
+  }
+
+  const index = (sales || []).findIndex(function(item) { return item.id === sale.id; });
+  if (index >= 0) return String(baseNumber + index);
+
+  return String(baseNumber);
+}
+
+function buildVexDocumentData(sale) {
+  const client = getVexFormalizationClientData(sale);
+  const vehicle = getVexFormalizationVehicleData(sale);
+  const payment = getVexFormalizationPaymentData(sale);
+  const repasse = getVexFormalizationRepasseData(sale);
+  const transfer = getVexFormalizationTransferData(sale);
+  const receivedDocs = getVexFormalizationReceivedDocsData(sale);
+  const saleNumber = getVexSaleDocumentNumber(sale);
+  const saleDate = sale.saleDate || sale.createdAtLocal || new Date().toISOString().slice(0, 10);
+
+  return {
+    sale: sale,
+    company: VEX_DOCUMENT_COMPANY,
+    representative: VEX_DOCUMENT_REPRESENTATIVE,
+    client: client,
+    vehicle: vehicle,
+    payment: payment,
+    repasse: repasse,
+    transfer: transfer,
+    receivedDocs: receivedDocs,
+    meta: {
+      saleNumber: saleNumber,
+      saleDate: saleDate,
+      saleDateBrazil: formatDateToBrazil(saleDate),
+      generatedAt: new Date().toISOString()
+    }
+  };
+}
+
+function getVexRequiredDocumentFields(documentType) {
+  const common = [
+    { key: "client.clientName", label: "Nome do cliente", action: "openVexFormalizationClient" },
+    { key: "client.clientCpf", label: "CPF/CNPJ do cliente", action: "openVexFormalizationClient" },
+    { key: "client.clientStreet", label: "Endereço do cliente", action: "openVexFormalizationClient" },
+    { key: "client.clientNumber", label: "Número do endereço", action: "openVexFormalizationClient" },
+    { key: "client.clientDistrict", label: "Bairro do cliente", action: "openVexFormalizationClient" },
+    { key: "client.clientCity", label: "Cidade do cliente", action: "openVexFormalizationClient" },
+    { key: "client.clientState", label: "Estado do cliente", action: "openVexFormalizationClient" },
+    { key: "client.clientPhone", label: "Celular do cliente", action: "openVexFormalizationClient" },
+    { key: "vehicle.vehicleBrand", label: "Marca do veículo", action: "openVexFormalizationVehicle" },
+    { key: "vehicle.vehicleModel", label: "Modelo do veículo", action: "openVexFormalizationVehicle" },
+    { key: "vehicle.vehicleVersion", label: "Versão do veículo", action: "openVexFormalizationVehicle" },
+    { key: "vehicle.vehicleYear", label: "Ano/modelo", action: "openVexFormalizationVehicle" },
+    { key: "vehicle.vehiclePlate", label: "Placa", action: "openVexFormalizationVehicle" },
+    { key: "vehicle.vehicleChassis", label: "Chassi", action: "openVexFormalizationVehicle" },
+    { key: "vehicle.vehicleRenavam", label: "Renavam", action: "openVexFormalizationVehicle" },
+    { key: "payment.vehicleTotal", label: "Valor da venda", action: "openVexFormalizationPayment" }
+  ];
+
+  const byDocument = {
+    contract: [
+      { key: "client.clientEmail", label: "E-mail do cliente", action: "openVexFormalizationClient" },
+      { key: "client.clientBirthDate", label: "Data de nascimento", action: "openVexFormalizationClient" },
+      { key: "vehicle.vehicleColor", label: "Cor", action: "openVexFormalizationVehicle" },
+      { key: "vehicle.vehicleKm", label: "Quilometragem", action: "openVexFormalizationVehicle" },
+      { key: "vehicle.vehicleFuel", label: "Combustível", action: "openVexFormalizationVehicle" }
+    ],
+    repasse: [
+      { key: "meta.saleNumber", label: "Número do pedido", action: "openVexFormalization" },
+      { key: "client.clientRg", label: "RG/IE", action: "openVexFormalizationClient" },
+      { key: "vehicle.vehicleType", label: "Tipo do veículo", action: "openVexFormalizationVehicle" },
+      { key: "vehicle.vehicleDoors", label: "Portas", action: "openVexFormalizationVehicle" },
+      { key: "vehicle.vehicleTransmission", label: "Câmbio", action: "openVexFormalizationVehicle" },
+      { key: "vehicle.vehicleFuel", label: "Combustível", action: "openVexFormalizationVehicle" },
+      { key: "vehicle.vehicleCategory", label: "Categoria", action: "openVexFormalizationVehicle" }
+    ],
+    procuracao: [
+      { key: "client.clientRg", label: "RG", action: "openVexFormalizationClient" },
+      { key: "client.clientRgIssuer", label: "Órgão emissor", action: "openVexFormalizationClient" },
+      { key: "client.clientRgIssuerUf", label: "UF emissor", action: "openVexFormalizationClient" },
+      { key: "client.clientEmail", label: "E-mail do cliente", action: "openVexFormalizationClient" }
+    ]
+  };
+
+  return common.concat(byDocument[documentType] || []);
+}
+
+function getValueByPath(object, path) {
+  return path.split(".").reduce(function(current, key) {
+    return current && current[key] !== undefined ? current[key] : "";
+  }, object);
+}
+
+function getVexDocumentPendencies(documentType, data) {
+  return getVexRequiredDocumentFields(documentType).filter(function(field) {
+    return !normalizeVexText(getValueByPath(data, field.key));
+  });
+}
+
+function getVexDocumentDefinitions(sale) {
+  const isClientTransfer = sale.transferType === "Pelo cliente";
+  return [
+    { type: "contract", icon: "📄", title: "Contrato Particular", description: "Compra e venda com dados do cliente, veículo, financeiro e garantia." },
+    { type: "repasse", icon: "🧾", title: "Termo de Repasse", description: "Termo de repasse e ciência de venda sem garantia." },
+    { type: "procuracao", icon: "🖊️", title: "Procuração", description: isClientTransfer ? "Opcional quando a transferência fica com o cliente." : "Procuração para regularização e transferência." }
+  ];
+}
+
+function renderVexDocumentPendencies(pendencies) {
+  if (!pendencies.length) {
+    return `<p class="vex-document-ready">🟢 Pronto para gerar</p>`;
+  }
+
+  return `
+    <div class="vex-document-pendencies">
+      <strong>Faltam ${pendencies.length} informação(ões):</strong>
+      <ul>
+        ${pendencies.slice(0, 5).map(function(item) { return `<li>${escapeHTML(item.label)}</li>`; }).join("")}
+      </ul>
+    </div>
+  `;
+}
+
+function renderVexDocumentCard(definition, sale, data) {
+  const pendencies = getVexDocumentPendencies(definition.type, data);
+  const ready = pendencies.length === 0;
+  const action = pendencies[0] && pendencies[0].action ? pendencies[0].action : "openVexFormalization";
+
+  return `
+    <article class="vex-document-card ${ready ? "ready" : "pending"}">
+      <div class="vex-document-card-header">
+        <span>${definition.icon}</span>
+        <div>
+          <h3>${escapeHTML(definition.title)}</h3>
+          <p>${escapeHTML(definition.description)}</p>
+        </div>
+      </div>
+      ${renderVexDocumentPendencies(pendencies)}
+      <div class="vex-document-actions">
+        ${ready ? `
+          <button class="secondary-button" type="button" onclick="previewVexDocument('${sale.id}', '${definition.type}')">Visualizar</button>
+          <button class="primary-button" type="button" onclick="downloadVexDocumentDocx('${sale.id}', '${definition.type}')">DOCX</button>
+          <button class="secondary-button" type="button" onclick="printVexDocument('${sale.id}', '${definition.type}')">PDF / Imprimir</button>
+          <button class="secondary-button" type="button" onclick="shareVexDocumentWhatsapp('${sale.id}', '${definition.type}')">WhatsApp</button>
+        ` : `<button class="secondary-button" type="button" onclick="${action}('${sale.id}')">Ir para Formalização</button>`}
+      </div>
+    </article>
+  `;
+}
+
+function openVexFormalizationDocuments(saleId) {
+  const sale = sales.find(function(item) { return item.id === saleId; });
+  if (!sale) return;
+
+  const drawer = document.getElementById("vexVehicleDrawerRoot");
+  if (!drawer) return;
+
+  const data = buildVexDocumentData(sale);
+  const definitions = getVexDocumentDefinitions(sale);
+  const readyCount = definitions.filter(function(definition) {
+    return getVexDocumentPendencies(definition.type, data).length === 0;
+  }).length;
+  const progress = Math.round((readyCount / definitions.length) * 100);
+
+  drawer.innerHTML = `
+    <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
+
+    <aside class="vex-drawer-panel vex-formalization-panel">
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+
+      <section class="vex-drawer-hero vex-formalization-hero">
+        <div class="vex-vehicle-icon">📑</div>
+        <span class="eyebrow">Formalização • Documentos</span>
+        <h2>Pedido #${escapeHTML(data.meta.saleNumber)}</h2>
+        <p>${escapeHTML(data.client.clientName || "Cliente não informado")} • ${escapeHTML(getVexVehicleFullName(data.vehicle) || "Veículo não informado")}</p>
+
+        <div class="vex-formalization-status-pill">
+          ${progress === 100 ? "🟢 Venda pronta" : "🟡 Conferir documentos"}
+        </div>
+
+        <div class="vex-formalization-progress">
+          <div class="vex-formalization-progress-bar" style="width:${progress}%"></div>
+        </div>
+        <strong>${readyCount} de ${definitions.length} documentos prontos • ${progress}%</strong>
+      </section>
+
+      <section class="vex-formalization-summary">
+        ${renderVexFormalizationSummaryItem("Cliente", data.client.clientName)}
+        ${renderVexFormalizationSummaryItem("Veículo", getVexVehicleFullName(data.vehicle))}
+        ${renderVexFormalizationSummaryItem("Placa", data.vehicle.vehiclePlate)}
+        ${renderVexFormalizationSummaryItem("Valor", data.payment.vehicleTotal)}
+      </section>
+
+      <section class="vex-document-grid">
+        ${definitions.map(function(definition) { return renderVexDocumentCard(definition, sale, data); }).join("")}
+      </section>
+
+      ${progress === 100 ? `
+        <div class="vex-document-generate-all">
+          <strong>🟢 Todos os documentos estão prontos.</strong>
+          <button class="primary-button" type="button" onclick="downloadAllVexDocuments('${sale.id}')">Baixar todos em DOCX</button>
+          <button class="secondary-button" type="button" onclick="printAllVexDocuments('${sale.id}')">Imprimir todos / Salvar PDF</button>
+        </div>
+      ` : ""}
+
+      <div class="vex-drawer-actions vex-drawer-actions-safe">
+        <button class="secondary-button" type="button" onclick="openVexFormalization('${sale.id}')">Voltar</button>
+        <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
+      </div>
+    </aside>
+  `;
+
+  drawer.classList.add("active");
+}
+
+function getVexDocumentTitle(type) {
+  const titles = {
+    contract: "Contrato Particular de Compra e Venda",
+    repasse: "Termo de Repasse",
+    procuracao: "Procuração para Transferência"
+  };
+  return titles[type] || "Documento";
+}
+
+function buildVexDocumentHtml(type, data) {
+  if (type === "contract") return buildVexContractHtml(data);
+  if (type === "repasse") return buildVexRepasseHtml(data);
+  if (type === "procuracao") return buildVexProcuracaoHtml(data);
+  return "";
+}
+
+function buildVexContractHtml(data) {
+  const clientAddress = getVexClientAddress(data.client, "contract");
+  const discount = getVexRepasseDiscountValue(data.repasse);
+  const repairItems = getVexRepasseItems(data.repasse).map(function(item) { return item.description; }).filter(Boolean).join("; ");
+  const primaryPayment = getVexDocumentPrimaryPaymentText(data.payment);
+  const totalValue = data.payment.vehicleTotal || formatCurrencyToBrazil(parseSaleCurrencyValue(data.payment.vehicleTotal));
+  const paymentMethods = (data.payment.methods || []).filter(function(method) {
+    return method.type && parseSaleCurrencyValue(method.value) > 0;
+  });
+
+  function paymentValueFor(labels) {
+    const method = paymentMethods.find(function(item) {
+      const normalized = normalizeVexText(item.type).toUpperCase();
+      return labels.some(function(label) { return normalized.includes(label); });
+    });
+    return method ? formatCurrencyToBrazil(parseSaleCurrencyValue(method.value)).replace(/^R\$\s?/, "") : "";
+  }
+
+  const companySeller = data.company.fantasyName || "VEX MULTIMARCAS";
+  const companyAddress = getVexCompanyAddress();
+  const birthDate = data.client.clientBirthDate ? formatDateToBrazil(data.client.clientBirthDate) : "";
+  const expensesText = repairItems || data.repasse.notes || "";
+
+  return `
+    <article class="vex-contract-doc">
+      <section class="vex-contract-page">
+        <h1>CONTRATO PARTICULAR DE COMPRA E VENDA DE VEÍCULO</h1>
+        <h2>(COM ABATIMENTO NO PREÇO, SEM GARANTIA- DECLARAÇÃO CIÊNCIA)</h2>
+        <p class="doc-section-title">I- DAS PARTES</p>
+        <p>Contrato particular de compra e venda de veículo usado, que entre si fazem:</p>
+        <p><strong>VENDEDOR:</strong> ${escapeHTML(companySeller)}</p>
+        <p><strong>ENDEREÇO:</strong> ${escapeHTML(companyAddress)}</p>
+        <p><strong>EMAIL:</strong> ${escapeHTML(data.company.email)}</p>
+        <p><strong>TELEFONE:</strong> ${escapeHTML(data.company.phone)}</p>
+
+        <p class="doc-section-title doc-block-gap">DADOS COMPRADOR:</p>
+        <p>Nome Completo: ${escapeHTML(data.client.clientName)}</p>
+        <p>Endereço: ${escapeHTML(clientAddress.line1)}</p>
+        <p>Bairro: ${escapeHTML(clientAddress.district)} Cidade: ${escapeHTML(clientAddress.city)}</p>
+        <p>Estado: ${escapeHTML(clientAddress.state)} CEP: ${escapeHTML(clientAddress.cep)}</p>
+        <p>E-mail: ${escapeHTML(data.client.clientEmail)} Data de Nascimento: ${escapeHTML(birthDate)}</p>
+        <p>Telefone Fixo: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Telefone Celular: ${escapeHTML(data.client.clientPhone)}</p>
+        <p>Observações: ${escapeHTML(data.repasse.notes || "")}</p>
+
+        <p class="doc-section-title doc-block-gap">II- DO OBJETO</p>
+        <p class="doc-section-title">DADOS DO VEÍCULO:</p>
+        <p>Veículo: ${escapeHTML(getVexVehicleFullName(data.vehicle))} Chassi: ${escapeHTML(data.vehicle.vehicleChassis)}</p>
+        <p>Ano/Modelo: ${escapeHTML(data.vehicle.vehicleYear)} Cor: ${escapeHTML(data.vehicle.vehicleColor)}</p>
+        <p>Placa: ${escapeHTML(data.vehicle.vehiclePlate)} Quilometragem: ${escapeHTML(data.vehicle.vehicleKm)}</p>
+        <p>Renavam: ${escapeHTML(data.vehicle.vehicleRenavam)} Combustível: ${escapeHTML(data.vehicle.vehicleFuel)}</p>
+        <p>Valor total ajustado: ${escapeHTML(totalValue)}, pago da seguinte forma: [${escapeHTML(primaryPayment)}].</p>
+
+        <p class="doc-section-title doc-block-gap">FORMA DE PAGAMENTO</p>
+        <table class="doc-payment-list">
+          <tr><td>FINANCIAMENTO</td><td>${escapeHTML(paymentValueFor(["FINANCIAMENTO"]))}</td></tr>
+          <tr><td>VEÍCULO TROCA</td><td>${escapeHTML(paymentValueFor(["TROCA", "VEICULO TROCA", "VEÍCULO TROCA"]))}</td></tr>
+          <tr><td>CARTÃO DE CRÉDITO</td><td>${escapeHTML(paymentValueFor(["CARTAO", "CARTÃO"]))}</td></tr>
+          <tr><td>CRÉDITO EM CONTA</td><td>${escapeHTML(paymentValueFor(["CRÉDITO", "CREDITO", "CONTA"]))}</td></tr>
+        </table>
+      </section>
+
+      <section class="vex-contract-page">
+        <table class="doc-payment-list doc-payment-list-top">
+          <tr><td>PARCELAMENTO LOJA</td><td>${escapeHTML(paymentValueFor(["PARCELAMENTO", "LOJA"]))}</td></tr>
+          <tr><td>PIX</td><td>${escapeHTML(paymentValueFor(["PIX"]))}</td></tr>
+          <tr><td>DINHEIRO</td><td>${escapeHTML(paymentValueFor(["DINHEIRO"]))}</td></tr>
+          <tr><td>Observação</td><td>${escapeHTML(data.payment.notes || "")}</td></tr>
+          <tr class="doc-payment-total"><td>TOTAL</td><td>${escapeHTML(totalValue)}</td></tr>
+        </table>
+
+        <p>Veículo vendido a preço promocional <strong>NÃO POSSUINDO</strong> qualquer garantia mecânica.</p>
+        <p>Foi dado o abatimento no importe de ${escapeHTML(formatCurrencyToBrazil(discount))} para que o comprador efetue todas as manutenções necessárias no veículo como preditivas, corretivas e preventivas, que se fizerem necessárias, bem como com eventuais vícios ocultos, em decorrência do abatimento fornecido; Carro consignado.</p>
+        <p><strong>GASTOS:</strong>${escapeHTML(expensesText)}</p>
+        <p>Parágrafo único – Caso o valor não seja integralmente quitado, o COMPRADOR assume o bem como fiel depositário, não podendo vendê-lo, cedê-lo ou transferi-lo até a quitação total, sob pena de responsabilidade civil e penal.</p>
+
+        <p class="doc-section-title doc-block-gap">IV – DO ABATIMENTO DO PREÇO E RESPONSABILIDADE PELOS REPAROS</p>
+        <p>Cláusula 1ª – O COMPRADOR declara que teve ampla liberdade e realizou análise minuciosa do veículo, inclusive tendo sido orientado a submetê-lo à avaliação técnica por mecânico de sua confiança antes da compra. Declara ainda que fez minuciosa análise das condições em que o veículo se encontra, declarando que está ciente e de acordo com os reparos necessários.</p>
+        <p>Cláusula 2ª – Foi informado expressamente que o veículo não passou por qualquer revisão, preparação ou correção prévia para venda, sendo entregue no estado de conservação e uso em que se encontra, com necessidade de diversos reparos mecânicos, elétricos, estruturais, de suspensão, freios, motor e demais itens, decorrentes de desgaste natural ou falhas já existentes.</p>
+        <p>Cláusula 3ª – As partes reconhecem que o veículo é oriundo de repasse, motivo pelo qual foi concedido abatimento sobre o valor de mercado, ajustando-se que o COMPRADOR assume integralmente a responsabilidade de realizar, por sua conta e risco, todas as manutenções necessárias para sua utilização regular e segura.</p>
+        <p>Cláusula 4ª – O COMPRADOR afirma, com plena ciência, que está adquirindo o bem no estado em que se encontra e sem garantia mecânica ou geral, tendo sido claramente informado da necessidade de revisão completa e reparos em toda a parte mecânica, elétrica e estrutural do veículo — não se restringindo aos itens exemplificados, mas abrangendo eventuais defeitos ocultos ou futuros.</p>
+        <p>Cláusula 5ª – Reconhece também que o valor do abatimento foi livremente acordado e que não poderá alegar posteriormente insuficiência, visto que teve a oportunidade de examinar o veículo com profissional de sua confiança antes da</p>
+      </section>
+
+      <section class="vex-contract-page">
+        <p>assinatura deste instrumento, tendo sido orientado a avaliar previamente por um mecânico de sua confiança, quanto a compatibilidade dos reparos a serem feitos e do abatimento ofertado, visto que não poderá posteriormente em hipótese alguma, alegar que o abatimento não tenha sido suficiente para realizar as manutenções necessárias.</p>
+
+        <p class="doc-section-title doc-block-gap">V – DA TRANSFERÊNCIA DE PROPRIEDADE</p>
+        <p>Cláusula 1ª: A transferência é de responsabilidade exclusiva do COMPRADOR, inclusive seus custos.</p>
+        <p>Cláusula 2ª: Caso o pagamento se dê via cheque ou forma a prazo, os documentos do veículo serão liberados somente após a quitação ou compensação bancária.</p>
+        <p>Cláusula 3ª: O Certificado de Registro do Veículo/ Autorização de Transferência Propriedade será entregue apenas após regularização de eventuais pendências administrativas ou financeiras entre COMPRADOR e VENDEDOR.</p>
+
+        <p class="doc-section-title doc-block-gap">VI – DAS NOTIFICAÇÕES</p>
+        <p>O COMPRADOR nesta oportunidade declara e aceita que todas as comunicações serão consideradas válidas se enviadas:</p>
+        <p>• Pelo WhatsApp do COMPRADOR;</p>
+        <p>• Por e-mail informado neste contrato;</p>
+        <p>• Para o endereço físico cadastrado.</p>
+
+        <p class="doc-section-title doc-block-gap">VII – DA PROCEDÊNCIA</p>
+        <p>O VENDEDOR declara que, até a presente data, o veículo objeto deste contrato encontra-se livre e desembaraçado de ônus, gravames ou restrições de conhecimento da empresa, conforme verificação realizada nos sistemas oficiais disponíveis.</p>
+        <p>Contudo, em atenção ao disposto no art. 447 do Código Civil, as partes reconhecem que a responsabilidade do VENDEDOR se limita à sua esfera de conhecimento e atuação, não se estendendo a eventuais registros, apontamentos ou restrições lançadas após a celebração do presente instrumento, ainda que decorrentes de fatos pretéritos a negociação.</p>
+        <p>Fica pactuado, portanto, que eventual evicção ou reivindicação de terceiros somente ensejará responsabilidade do VENDEDOR nos casos em que comprovadamente tenha agido com dolo ou ciência prévia do vício ou ônus incidente sobre o bem.</p>
+      </section>
+
+      <section class="vex-contract-page">
+        <p class="doc-section-title">VIII- DA RESCISÃO</p>
+        <p>Cláusula Primeira: A presente negociação é feita em caráter irrevogável, irretratável não se admitindo arrependimento. Oportunamente foi esclarecido ao COMPRADOR que o VENDEDOR não tem qualquer responsabilidade quanto aos termos acordados em contratos de financiamento firmados entre COMPRADOR e terceiros.</p>
+        <p>Cláusula Segunda: Em caso de inadimplemento de qualquer das obrigações assumidas neste contrato, a parte inocente poderá, a seu exclusivo critério, considerar rescindido o presente instrumento e exigir, da parte inadimplente, o pagamento de multa compensatória equivalente a 10% (dez por cento) sobre o valor total do contrato, independentemente de outras penalidades cabíveis, sem prejuízo da indenização por perdas e danos, se houver.</p>
+
+        <p class="doc-section-title doc-block-gap">IX – DA CONFIDENCIALIDADE</p>
+        <p>Este contrato e sua redação são protegidos por direitos autorais. É vedada sua reprodução, modificação ou reutilização sem autorização do VENDEDOR e/ou da profissional responsável. Violação sujeita às penalidades da Lei nº 9.610/98.</p>
+        <p>O COMPRADOR se compromete a não realizar postagens, publicações ou comentários públicos que impliquem exposição negativa, constrangimento ou ataque à reputação da empresa VENDEDORA, em redes sociais, sites ou quaisquer meios públicos, sob pena de responder civil e criminalmente por danos morais e à imagem.</p>
+
+        <p class="doc-section-title doc-block-gap">X – DO FORO</p>
+        <p>As partes elegem o foro da Comarca de OSASCO para solucionar qualquer disputa referente a este contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja.</p>
+        <p>E, por estarem justas e contratadas, assinam o presente instrumento em duas vias de igual teor e forma, juntamente com duas testemunhas.</p>
+        <p class="doc-contract-date">OSASCO, _____ de ___________________ de _______.</p>
+        <div class="doc-contract-signatures">
+          <p>VENDEDOR: ______________________________________</p>
+          <p>COMPRADOR: ______________________________________</p>
+        </div>
+      </section>
+    </article>
+  `;
+}
+
+
+function buildVexRepasseHtml(data) {
+  const rgIe = [data.client.clientRg, data.client.clientRgIssuer, data.client.clientRgIssuerUf].filter(Boolean).join(" ");
+  const valorVenda = String(data.payment.vehicleTotal || "").replace(/^R\$\s*/i, "");
+  const formaPagamento = getVexDocumentPrimaryPaymentText(data.payment).toUpperCase();
+  const enderecoCliente = [
+    `${normalizeVexText(data.client.clientStreet)}${normalizeVexText(data.client.clientNumber) ? "," + normalizeVexText(data.client.clientNumber) : ""}${normalizeVexText(data.client.clientComplement) ? " - " + normalizeVexText(data.client.clientComplement) : ""}`,
+    normalizeVexText(data.client.clientDistrict),
+    `${normalizeVexText(data.client.clientCity)} - ${normalizeVexText(data.client.clientState || "SP")}`
+  ].filter(function(item) { return normalizeVexText(item).replace(/[-\s]/g, ""); }).join(" – ");
+
+  function field(label, value) {
+    return `<div class="vex-repasse-field"><strong>${escapeHTML(label)}:</strong><span>${escapeHTML(value || "")}</span></div>`;
+  }
+
+  return `
+    <article class="vex-repasse-doc">
+      <header class="vex-repasse-header">
+        <div class="vex-repasse-brand"><span>VEX</span> MULTIMARCAS</div>
+        <div class="vex-repasse-company-line"><strong>Telefone:</strong> ${escapeHTML(data.company.phone)}</div>
+        <div class="vex-repasse-company-line"><strong>CNPJ:</strong> ${escapeHTML(data.company.cnpj)}</div>
+        <div class="vex-repasse-company-line"><strong>Endereço:</strong> ${escapeHTML(getVexCompanyAddress())}</div>
+      </header>
+
+      <h1 class="vex-repasse-title">TERMO DE REPASSE - Pedido: #${escapeHTML(data.meta.saleNumber)}</h1>
+
+      <section class="vex-repasse-section">
+        <h2><span class="vex-repasse-icon">▣</span> Dados do Veículo</h2>
+        <div class="vex-repasse-box">
+          <div class="vex-repasse-grid">
+            <div>
+              ${field("Marca", data.vehicle.vehicleBrand)}
+              ${field("Versão", data.vehicle.vehicleVersion)}
+              ${field("KM", data.vehicle.vehicleKm)}
+              ${field("Câmbio", data.vehicle.vehicleTransmission)}
+              ${field("Placa", data.vehicle.vehiclePlate)}
+              ${field("Renavam", data.vehicle.vehicleRenavam)}
+              ${field("Categoria", data.vehicle.vehicleCategory)}
+            </div>
+            <div>
+              ${field("Modelo", data.vehicle.vehicleModel)}
+              ${field("Tipo", data.vehicle.vehicleType)}
+              ${field("Portas", data.vehicle.vehicleDoors)}
+              ${field("Combust.", data.vehicle.vehicleFuel)}
+              ${field("Chassi", data.vehicle.vehicleChassis)}
+              ${field("Ano", data.vehicle.vehicleYear)}
+              ${field("Cor", data.vehicle.vehicleColor)}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="vex-repasse-section vex-repasse-proponente">
+        <h2><span class="vex-repasse-icon">●</span> Proponente</h2>
+        <div class="vex-repasse-box">
+          <div class="vex-repasse-grid">
+            <div>
+              ${field("Cliente", data.client.clientName)}
+              ${field("RG/IE", rgIe)}
+              ${field("Endereço", enderecoCliente)}
+            </div>
+            <div>
+              ${field("CPF/CNPJ", data.client.clientCpf)}
+              ${field("Celular", data.client.clientPhone)}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <p class="vex-repasse-date"><strong>Data Venda:</strong><span>${escapeHTML(data.meta.saleDateBrazil)}</span></p>
+
+      <p class="vex-repasse-legal vex-repasse-legal-strong">O veículo acima descrito NÃO TERÁ GARANTIA de 3 (três) meses ou 3.000 (três mil) quilômetros, por se tratar de um REPASSE DO VEÍCULO no estado em que se encontra.</p>
+      <p class="vex-repasse-legal vex-repasse-sale-text">O VEÍCULO FOI VENDIDO NO VALOR DE ${escapeHTML(valorVenda)} SENDO O PAGAMENTO FEITO ATRAVÉZ DE ${escapeHTML(formaPagamento)}. O VEÍCULO NÃO POSSUI GARANTIA, SENDO VENDIDO NA MODALIDADE REPASSE, NO ESTADO QUE SE ENCONTRA.</p>
+
+      <div class="vex-repasse-signatures">
+        <div class="vex-repasse-signature"><div></div><strong>${escapeHTML(data.company.fantasyName)}</strong></div>
+        <div class="vex-repasse-signature"><div></div><strong>${escapeHTML(data.client.clientName)}</strong></div>
+      </div>
+    </article>
+  `;
+}
+function buildVexProcuracaoHtml(data) {
+  return `
+    <h1>PROCURAÇÃO PARA TRANSFERÊNCIA DE PROPRIETÁRIO</h1>
+    <p><strong>OUTORGANTE:</strong> ${escapeHTML(data.client.clientName)}</p>
+    <p><strong>CPF/CNPJ:</strong> ${escapeHTML(data.client.clientCpf)} <strong>RG:</strong> ${escapeHTML([data.client.clientRg, data.client.clientRgIssuer, data.client.clientRgIssuerUf].filter(Boolean).join(" "))}</p>
+    <p><strong>ENDEREÇO:</strong> ${escapeHTML(getVexClientAddress(data.client))}</p>
+    <p><strong>CELULAR:</strong> ${escapeHTML(data.client.clientPhone)} <strong>E-MAIL:</strong> ${escapeHTML(data.client.clientEmail)}</p>
+    <p><strong>OUTORGADO:</strong> ${escapeHTML(data.representative.name)}</p>
+    <p><strong>CPF/CNPJ:</strong> ${escapeHTML(data.representative.cpf)}</p>
+    <p><strong>ENDEREÇO:</strong> ${escapeHTML(data.representative.address)}</p>
+    <p><strong>PODERES:</strong> Por esse instrumento de Procuração, o Outorgante nomeia e constitui seu bastante procurador o Outorgado, para o fim especial de comprar e vender como proprietário/vendedor/comprador o CRV (Certificado de Registro de Veículos) do veículo com as seguintes características; para o fim especial de regularizar a documentação.</p>
+    <p><strong>DADOS DO VEÍCULO:</strong></p>
+    <ul>
+      <li>PLACA: ${escapeHTML(data.vehicle.vehiclePlate)} ANO/MODELO: ${escapeHTML(data.vehicle.vehicleYear)} RENAVAM: ${escapeHTML(data.vehicle.vehicleRenavam)}</li>
+      <li>CHASSI: ${escapeHTML(data.vehicle.vehicleChassis)} MARCA: ${escapeHTML(data.vehicle.vehicleBrand)} MODELO: ${escapeHTML(data.vehicle.vehicleModel)}</li>
+      <li>VERSÃO: ${escapeHTML(data.vehicle.vehicleVersion)}</li>
+    </ul>
+    <p>Adquirido pelo Outorgante; representar perante as repartições públicas federais, estaduais, municipais, DETRAN e onde mais necessário for; neles assim e requerer, juntar e desentranhar quaisquer guias, papéis, requerimentos, documentos e o que mais se torne necessário, pagar quaisquer impostos, tributos e taxas para efetivar a transferência e efetuar o emplacamento do mesmo, em suma, tudo o mais praticar ao bom e fiel desempenho do presente mandato.</p>
+    <p>Todos os dados desta procuração foram fornecidos e conferidos pelo (a) Outorgante, que por eles se responsabiliza nos termos da Lei. Esta procuração é válida até o dia que o CRV for transferido para o proprietário.</p>
+    <br><br><p>Assinatura do proprietário (Outorgante)</p>
+    <p>Obs: reconhecer firma por autenticidade.</p>
+  `;
+}
+
+function getVexPrintableDocumentHtml(title, bodyHtml, type) {
+  const documentType = type || "documents";
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHTML(title)}</title><style>
+    @page{size:A4;margin:10mm 11mm;}
+    *{box-sizing:border-box;}
+    body{font-family:Arial,Helvetica,sans-serif;color:#111;background:#f3f4f6;margin:0;padding:18px;}
+    .vex-print-sheet{width:190mm;min-height:277mm;margin:0 auto 18px;background:#fff;padding:0;box-shadow:0 10px 28px rgba(15,23,42,.12);}
+    .vex-print-content{font-size:10pt;line-height:1.22;padding:10mm 11mm;}
+    h1{font-size:13pt;text-align:center;margin:0 0 4px;font-weight:800;text-transform:uppercase;}
+    h2{font-size:10.5pt;text-align:center;margin:0 0 8px;font-weight:700;}
+    h3{font-size:10pt;margin:7px 0 4px;font-weight:800;}
+    p{margin:3px 0;}
+    table{width:100%;border-collapse:collapse;margin:4px 0;}
+    td{padding:2px 5px;vertical-align:top;}
+    .doc-section-title{font-weight:800;margin-top:7px;text-transform:uppercase;}
+    .doc-two-col td{width:50%;}
+    .doc-signatures{margin-top:16px;text-align:center;}
+    .doc-signatures td{padding-top:12px;}
+    .doc-payment-table td{border-bottom:1px solid #e5e7eb;}
+    .doc-muted{color:#111;}
+    .vex-print-contract .vex-print-sheet{width:210mm;min-height:297mm;box-shadow:none;background:#fff;}
+    .vex-print-contract .vex-print-content{font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.12;padding:0;color:#111;}
+    .vex-contract-doc{width:100%;color:#111;font-family:Arial,Helvetica,sans-serif;}
+    .vex-contract-page{width:100%;min-height:277mm;padding:12mm 17mm 12mm 18mm;page-break-after:always;break-after:page;background:#fff;}
+    .vex-contract-page:last-child{page-break-after:auto;break-after:auto;}
+    .vex-print-contract h1{font-size:12pt;line-height:1.05;text-align:center;margin:0 0 2px;font-weight:800;text-transform:uppercase;}
+    .vex-print-contract h2{font-size:10.5pt;line-height:1.05;text-align:center;margin:0 0 7px;font-weight:700;text-transform:uppercase;}
+    .vex-print-contract p{font-size:11pt;line-height:1.12;margin:2.8px 0;text-align:left;}
+    .vex-print-contract .doc-section-title{font-weight:800;text-transform:uppercase;margin:5px 0 3px;}
+    .vex-print-contract .doc-block-gap{margin-top:8px;}
+    .vex-print-contract .doc-payment-list{width:62%;border-collapse:collapse;margin:2px 0;font-size:11pt;}
+    .vex-print-contract .doc-payment-list td{padding:1px 4px 1px 0;border:none;vertical-align:top;font-size:11pt;line-height:1.1;}
+    .vex-print-contract .doc-payment-list td:first-child{width:170px;}
+    .vex-print-contract .doc-payment-list-top{margin-top:0;}
+    .vex-print-contract .doc-payment-total td{font-weight:800;padding-top:4px;}
+    .doc-contract-date{margin-top:14px!important;}
+    .doc-contract-signatures{margin-top:18px;}
+    .doc-contract-signatures p{margin:8px 0!important;}
+    .vex-print-repasse .vex-print-content,.vex-print-procuracao .vex-print-content{font-size:10pt;line-height:1.2;padding:9mm 10mm;}
+    .vex-print-repasse h1,.vex-print-procuracao h1{font-size:13pt;}
+    .vex-print-repasse h2,.vex-print-procuracao h2{font-size:10.5pt;margin-bottom:8px;}
+    .vex-print-repasse .vex-print-sheet{width:210mm;min-height:297mm;box-shadow:none;}
+    .vex-print-repasse .vex-print-content{padding:12mm 8mm 10mm;font-size:9pt;line-height:1.12;}
+    .vex-repasse-doc{width:100%;min-height:268mm;position:relative;color:#000;font-family:Arial,Helvetica,sans-serif;}
+    .vex-repasse-header{margin-left:1mm;margin-bottom:13mm;color:#6b7280;font-size:9pt;line-height:1.15;}
+    .vex-repasse-brand{font-size:14pt;line-height:1;font-weight:800;letter-spacing:.2px;color:#737373;margin-bottom:1px;}
+    .vex-repasse-brand span{color:#f05b55;}
+    .vex-repasse-company-line{margin:0;}
+    .vex-repasse-title{font-size:14pt!important;line-height:1!important;margin:0 0 14mm!important;text-align:center!important;text-transform:none!important;font-weight:800!important;}
+    .vex-repasse-section{margin:0 0 8mm;}
+    .vex-repasse-section h2{font-size:10.5pt!important;line-height:1!important;margin:0 0 4mm!important;text-align:left!important;text-transform:none!important;font-weight:800!important;}
+    .vex-repasse-icon{display:inline-block;width:15px;font-size:9pt;margin-right:7px;vertical-align:1px;}
+    .vex-repasse-box{border:1.6px solid #000;padding:3px;}
+    .vex-repasse-box:before{content:"";display:block;border:1.6px solid #000;position:absolute;inset:0;pointer-events:none;}
+    .vex-repasse-box{position:relative;}
+    .vex-repasse-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:26mm;padding:8px 12px 9px;min-height:27mm;}
+    .vex-repasse-proponente .vex-repasse-grid{min-height:16mm;padding-top:8px;padding-bottom:8px;}
+    .vex-repasse-field{display:grid;grid-template-columns:72px 1fr;align-items:start;font-size:8.7pt;line-height:1.13;margin:0;white-space:nowrap;}
+    .vex-repasse-field strong{font-weight:800;}
+    .vex-repasse-field span{display:block;overflow:hidden;text-overflow:clip;}
+    .vex-repasse-date{font-size:9pt;margin:8mm 0 6mm!important;display:flex;gap:24px;}
+    .vex-repasse-date strong{font-weight:400;}
+    .vex-repasse-legal{font-size:9pt;line-height:1.12;margin:0 0 1.5mm!important;}
+    .vex-repasse-legal-strong{font-weight:800;}
+    .vex-repasse-sale-text{font-size:10.5pt;line-height:1.13;text-transform:uppercase;}
+    .vex-repasse-signatures{display:grid;grid-template-columns:1fr 1fr;column-gap:28px;position:absolute;left:0;right:0;bottom:22mm;text-align:center;}
+    .vex-repasse-signature div{border-top:1px solid #000;height:1px;margin:0 0 2px;}
+    .vex-repasse-signature strong{font-size:10pt;line-height:1;font-weight:800;text-transform:uppercase;}
+    .vex-print-procuracao ul{margin:5px 0 7px 18px;padding:0;}
+    .vex-print-procuracao li{margin:2px 0;}
+    @media print{body{background:#fff;padding:0;}.vex-print-sheet{width:auto;min-height:auto;margin:0;box-shadow:none;page-break-after:always;}.vex-print-sheet:last-child{page-break-after:auto;}.vex-print-content{padding:0;}button{display:none;}}
+  </style></head><body class="vex-print-${escapeHTML(documentType)}"><section class="vex-print-sheet"><main class="vex-print-content">${bodyHtml}</main></section></body></html>`;
+}
+
+function getVexDocumentForSale(saleId, type) {
+  const sale = sales.find(function(item) { return item.id === saleId; });
+  if (!sale) return null;
+  const data = buildVexDocumentData(sale);
+  const pendencies = getVexDocumentPendencies(type, data);
+  if (pendencies.length) {
+    alert("Documento incompleto. Faltam: " + pendencies.map(function(item) { return item.label; }).join(", "));
+    return null;
+  }
+  const title = getVexDocumentTitle(type);
+  const body = buildVexDocumentHtml(type, data);
+  return { sale: sale, data: data, title: title, body: body, html: getVexPrintableDocumentHtml(title, body, type) };
+}
+
+function previewVexDocument(saleId, type) {
+  const documentData = getVexDocumentForSale(saleId, type);
+  if (!documentData) return;
+  const win = window.open("", "_blank");
+  if (!win) return alert("Permita pop-ups para visualizar o documento.");
+  win.document.open();
+  win.document.write(documentData.html);
+  win.document.close();
+}
+
+function printVexDocument(saleId, type) {
+  const documentData = getVexDocumentForSale(saleId, type);
+  if (!documentData) return;
+  const win = window.open("", "_blank");
+  if (!win) return alert("Permita pop-ups para imprimir/salvar PDF.");
+  win.document.open();
+  win.document.write(documentData.html + '<script>window.onload=function(){window.print();}<\/script>');
+  win.document.close();
+}
+
+function printAllVexDocuments(saleId) {
+  const sale = sales.find(function(item) { return item.id === saleId; });
+  if (!sale) return;
+  const data = buildVexDocumentData(sale);
+  const definitions = getVexDocumentDefinitions(sale);
+  const bodies = [];
+  for (const definition of definitions) {
+    const pendencies = getVexDocumentPendencies(definition.type, data);
+    if (pendencies.length) {
+      alert("Ainda existem pendências em " + definition.title + ".");
+      return;
+    }
+    bodies.push(`<section style="page-break-after:always">${buildVexDocumentHtml(definition.type, data)}</section>`);
+  }
+  const win = window.open("", "_blank");
+  if (!win) return alert("Permita pop-ups para imprimir/salvar PDF.");
+  win.document.open();
+  win.document.write(getVexPrintableDocumentHtml("Documentos da venda", bodies.join(""), "documents") + '<script>window.onload=function(){window.print();}<\/script>');
+  win.document.close();
+}
+
+function vexCrc32FromBytes(bytes) {
+  let crc = -1;
+  for (let i = 0; i < bytes.length; i++) {
+    crc ^= bytes[i];
+    for (let j = 0; j < 8; j++) crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
+  }
+  return (crc ^ -1) >>> 0;
+}
+
+function vexStringToUint8Array(str) {
+  return new TextEncoder().encode(str);
+}
+
+function vexCreateZip(files) {
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+  const enc = new TextEncoder();
+  function u16(n){ return new Uint8Array([n & 255, (n >>> 8) & 255]); }
+  function u32(n){ return new Uint8Array([n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255]); }
+  files.forEach(function(file) {
+    const name = enc.encode(file.name);
+    const data = vexStringToUint8Array(file.content);
+    const crc = vexCrc32FromBytes(data);
+    const local = new Blob([u32(0x04034b50),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),name,data]);
+    localParts.push(local);
+    centralParts.push(new Blob([u32(0x02014b50),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),name]));
+    offset += 30 + name.length + data.length;
+  });
+  const centralSize = centralParts.reduce(function(total, blob) { return total + blob.size; }, 0);
+  const end = new Blob([u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(centralSize),u32(offset),u16(0)]);
+  return new Blob(localParts.concat(centralParts).concat([end]), { type: "application/zip" });
+}
+
+function buildVexMinimalDocx(title, bodyHtml) {
+  const text = bodyHtml
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<\/h[1-6]>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .split("\n")
+    .map(function(line) { return line.trim(); })
+    .filter(Boolean);
+  const paragraphs = text.map(function(line) { return `<w:p><w:r><w:t xml:space="preserve">${escapeHTML(line)}</w:t></w:r></w:p>`; }).join("");
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${paragraphs}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"/></w:sectPr></w:body></w:document>`;
+  return vexCreateZip([
+    { name: "[Content_Types].xml", content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>` },
+    { name: "_rels/.rels", content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>` },
+    { name: "word/document.xml", content: documentXml }
+  ]);
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+}
+
+function getVexSafeFilename(text) {
+  return String(text || "documento").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function downloadVexDocumentDocx(saleId, type) {
+  const documentData = getVexDocumentForSale(saleId, type);
+  if (!documentData) return;
+  const blob = buildVexMinimalDocx(documentData.title, documentData.body);
+  downloadBlob(blob, `${getVexSafeFilename(documentData.title)}-${getVexSafeFilename(documentData.data.client.clientName)}.docx`);
+}
+
+function downloadAllVexDocuments(saleId) {
+  const sale = sales.find(function(item) { return item.id === saleId; });
+  if (!sale) return;
+  getVexDocumentDefinitions(sale).forEach(function(definition) {
+    downloadVexDocumentDocx(saleId, definition.type);
+  });
+}
+
+function shareVexDocumentWhatsapp(saleId, type) {
+  const documentData = getVexDocumentForSale(saleId, type);
+  if (!documentData) return;
+  const phone = String(documentData.data.client.clientPhone || "").replace(/\D/g, "");
+  const message = encodeURIComponent(`Olá, ${documentData.data.client.clientName}. Segue o documento: ${documentData.title}.`);
+  window.open(`https://wa.me/${phone ? "55" + phone.replace(/^55/, "") : ""}?text=${message}`, "_blank");
+}
+
+function injectVexDocumentEngineStyles() {
+  if (document.getElementById("vexDocumentEngineStyles")) return;
+  const style = document.createElement("style");
+  style.id = "vexDocumentEngineStyles";
+  style.textContent = `
+    .vex-document-grid{display:grid;gap:16px;margin:18px 0;}
+    .vex-document-card{border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:18px;background:linear-gradient(145deg,rgba(13,18,31,.94),rgba(9,12,21,.94));}
+    .vex-document-card.ready{border-color:rgba(34,197,94,.34);} .vex-document-card.pending{border-color:rgba(245,158,11,.34);}
+    .vex-document-card-header{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;}
+    .vex-document-card-header>span{font-size:28px}.vex-document-card h3{margin:0 0 4px}.vex-document-card p{margin:0;color:var(--vex-muted,#9ca3af);}
+    .vex-document-ready{color:#86efac;font-weight:700;margin:10px 0!important;}
+    .vex-document-pendencies{background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.25);border-radius:16px;padding:12px;margin:12px 0;}
+    .vex-document-pendencies ul{margin:8px 0 0 18px;padding:0}.vex-document-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+    .vex-document-generate-all{margin:18px 0;padding:16px;border:1px solid rgba(34,197,94,.28);border-radius:18px;background:rgba(34,197,94,.08);display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
+  `;
+  document.head.appendChild(style);
+}
+
+injectVexDocumentEngineStyles();
+
+function openVexFormalization(saleId) {
+  const sale = sales.find(function(item) {
+    return item.id === saleId;
+  });
+
+  if (!sale) {
+    return;
+  }
+
+  const drawer = document.getElementById("vexVehicleDrawerRoot");
+  if (!drawer) {
+    return;
+  }
+
+  const isClientTransfer = sale.transferType === "Pelo cliente";
+  const steps = [
+    {
+      icon: "👤",
+      label: "Cliente",
+      description: "Completar comprador e endereço.",
+      done: getVexClientCompletion(getVexFormalizationClientData(sale)).complete,
+      action: "openVexFormalizationClient"
+    },
+    {
+      icon: "🚗",
+      label: "Veículo",
+      description: "Conferir dados e completar chassi, renavam, combustível e câmbio.",
+      done: getVexVehicleCompletion(getVexFormalizationVehicleData(sale)).complete,
+      action: "openVexFormalizationVehicle"
+    },
+    {
+      icon: "💰",
+      label: "Pagamento",
+      description: "Registrar formas de pagamento, transferência cobrada, IPVA e licenciamento.",
+      done: getVexPaymentCompletion(getVexFormalizationPaymentData(sale), sale).complete,
+      action: "openVexFormalizationPayment"
+    },
+    {
+      icon: "🛡️",
+      label: "Repasse/Garantia",
+      description: "Definir garantia, repasse, abatimento FIPE e condição da venda.",
+      done: getVexRepasseCompletion(getVexFormalizationRepasseData(sale)).complete,
+      action: "openVexFormalizationRepasse"
+    },
+    {
+      icon: "🔧",
+      label: "Gastos / Material",
+      description: "Registrar gastos e material em lista reutilizável.",
+      done: getVexRepasseItems(getVexFormalizationRepasseData(sale)).length > 0,
+      action: "openVexFormalizationRepasse"
+    },
+    {
+      icon: "🚛",
+      label: "Transferência",
+      description: "Definir responsabilidade, procuração e acompanhar prazo de 30 dias.",
+      done: getVexTransferCompletion(getVexFormalizationTransferData(sale)).complete,
+      action: "openVexFormalizationTransfer"
+    },
+    {
+      icon: "📄",
+      label: "Documentos Recebidos",
+      description: "Conferir CNH ou RG, comprovante de endereço e comprovantes de pagamento.",
+      done: getVexReceivedDocsCompletion(getVexFormalizationReceivedDocsData(sale)).complete,
+      action: "openVexFormalizationReceivedDocs"
+    },
+    {
+      icon: "💬",
+      label: "Comunicação",
+      description: "Gerar textos dos grupos Preparação e Vendas.",
+      done: true,
+      action: "openVexFormalizationCommunication"
+    },
+    {
+      icon: "📑",
+      label: "Documentos",
+      description: isClientTransfer ? "Contrato e termo." : "Contrato, termo e procuração.",
+      done: getVexDocumentDefinitions(sale).every(function(definition) { return getVexDocumentPendencies(definition.type, buildVexDocumentData(sale)).length === 0; }),
+      action: "openVexFormalizationDocuments"
+    }
+  ];
+
+  const doneCount = steps.filter(function(step) { return step.done; }).length;
+  const progress = Math.round((doneCount / steps.length) * 100);
+  const formalizationStatus = progress >= 100 ? "Formalização concluída" : "Formalização em andamento";
+  const statusIcon = progress >= 100 ? "🟢" : "🟡";
+
+  drawer.innerHTML = `
+    <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
+
+    <aside class="vex-drawer-panel vex-formalization-panel">
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+
+      <section class="vex-drawer-hero vex-formalization-hero">
+        <div class="vex-vehicle-icon">📋</div>
+        <span class="eyebrow">Formalização</span>
+        <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente não informado")} • ${formatDateToBrazil(sale.saleDate)}</p>
+
+        <div class="vex-formalization-status-pill">
+          ${statusIcon} ${escapeHTML(formalizationStatus)}
+        </div>
+
+        <div class="vex-formalization-progress">
+          <div class="vex-formalization-progress-bar" style="width:${progress}%"></div>
+        </div>
+        <strong>${doneCount} de ${steps.length} etapas concluídas • ${progress}%</strong>
+      </section>
+
+      <section class="vex-formalization-summary">
+        ${renderVexFormalizationSummaryItem("Cliente", sale.clientName)}
+        ${renderVexFormalizationSummaryItem("Telefone", sale.clientPhone)}
+        ${renderVexFormalizationSummaryItem("Veículo", `${sale.vehicleModel || ""} ${sale.vehicleYear || ""}`.trim())}
+        ${renderVexFormalizationSummaryItem("Placa", sale.vehiclePlate)}
+        ${renderVexFormalizationSummaryItem("Valor", sale.saleValue ? formatCurrencyToBrazil(sale.saleValue) : "Não informado")}
+        ${renderVexFormalizationSummaryItem("Transferência", getVexFormalizationTransferData(sale).responsible)}
+      </section>
+
+      <div class="vex-formalization-grid vex-formalization-card-grid">
+        ${steps.map(function(step) {
+          return `
+            <button class="vex-formalization-step ${step.done ? "done" : "pending"}" type="button" onclick="${step.action ? step.action + "('" + sale.id + "')" : "alert('Etapa " + escapeHTML(step.label) + " será liberada nas próximas versões.')"}">
+              <span>${step.icon}</span>
+              <strong>${escapeHTML(step.label)}</strong>
+              <small>${escapeHTML(step.description)}</small>
+              <em>${escapeHTML(getVexFormalizationStatus(step))}</em>
+            </button>
+          `;
+        }).join("")}
+      </div>
+
+      <div class="vex-detail-item full vex-formalization-note">
+        <span>RC2.11</span>
+        <strong>Comunicação Inteligente liberada com mensagens para Grupo Preparação e Grupo Vendas, visualização e cópia automática.</strong>
+      </div>
+
+      <div class="vex-drawer-actions vex-drawer-actions-safe">
+        <button class="secondary-button" type="button" onclick="openVexVehicleDrawer('${sale.id}')">Voltar aos detalhes</button>
+        <button class="primary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
       </div>
     </aside>
   `;
@@ -2996,6 +6050,36 @@ function closeVexVehicleDrawer() {
 }
 
 window.openVexVehicleDrawer = openVexVehicleDrawer;
+window.openVexFormalization = openVexFormalization;
+window.openVexFormalizationClient = openVexFormalizationClient;
+window.saveVexFormalizationClient = saveVexFormalizationClient;
+window.openVexFormalizationVehicle = openVexFormalizationVehicle;
+window.saveVexFormalizationVehicle = saveVexFormalizationVehicle;
+window.openVexFormalizationPayment = openVexFormalizationPayment;
+window.saveVexFormalizationPayment = saveVexFormalizationPayment;
+window.addVexPaymentMethodRow = addVexPaymentMethodRow;
+window.removeVexPaymentMethodRow = removeVexPaymentMethodRow;
+window.openVexFormalizationRepasse = openVexFormalizationRepasse;
+window.saveVexFormalizationRepasse = saveVexFormalizationRepasse;
+window.addVexOperationalItemRow = addVexOperationalItemRow;
+window.removeVexOperationalItemRow = removeVexOperationalItemRow;
+window.openVexFormalizationTransfer = openVexFormalizationTransfer;
+window.saveVexFormalizationTransfer = saveVexFormalizationTransfer;
+window.openVexFormalizationTransferPreview = openVexFormalizationTransferPreview;
+window.openVexFormalizationReceivedDocs = openVexFormalizationReceivedDocs;
+window.openVexFormalizationCommunication = openVexFormalizationCommunication;
+window.openVexFormalizationDocuments = openVexFormalizationDocuments;
+window.previewVexDocument = previewVexDocument;
+window.printVexDocument = printVexDocument;
+window.printAllVexDocuments = printAllVexDocuments;
+window.downloadVexDocumentDocx = downloadVexDocumentDocx;
+window.downloadAllVexDocuments = downloadAllVexDocuments;
+window.shareVexDocumentWhatsapp = shareVexDocumentWhatsapp;
+window.toggleVexCommunicationPreview = toggleVexCommunicationPreview;
+window.copyVexCommunicationMessage = copyVexCommunicationMessage;
+window.saveVexFormalizationReceivedDocs = saveVexFormalizationReceivedDocs;
+window.startEditSale = startEditSale;
+window.cancelSaleEditMode = cancelSaleEditMode;
 window.closeVexVehicleDrawer = closeVexVehicleDrawer;
 
 
@@ -3677,6 +6761,34 @@ function injectVexPremiumUISprint6Styles() {
       .vex-s6-row-status {
         display: none;
       }
+    }
+
+
+
+    .vex-communication-card .vex-message-preview {
+      max-height: 360px;
+      overflow: auto;
+      white-space: pre-wrap;
+      user-select: text;
+    }
+
+    .vex-formalization-inline-message.warning,
+    .vex-formalization-inline-message.success {
+      padding: 14px;
+      border-radius: 16px;
+      margin: 12px 0;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .vex-formalization-inline-message.warning ul {
+      margin: 8px 0 6px 18px;
+      padding: 0;
+    }
+
+    .vex-communication-actions {
+      margin-top: 12px;
     }
 
     @media (max-width: 640px) {
@@ -5678,3 +8790,403 @@ if (document.readyState === "loading") {
 }
 setTimeout(initializeVexRC201MobileSafe, 350);
 setTimeout(initializeVexRC201MobileSafe, 1200);
+
+
+/* RC2.02 - Relatórios com filtro por mês e comissão detalhada */
+function getHistoryMonthFilterValue() {
+  const field = document.getElementById("historyMonthFilter");
+  return field ? field.value || "current" : "current";
+}
+
+function getPeriodLabelByValue(value) {
+  if (value === "previous") return "mês passado";
+  if (value === "all") return "todos os períodos";
+  return "mês atual";
+}
+
+function saleMatchesPeriod(sale, period) {
+  if (period === "all") return true;
+
+  const date = createDateFromSaleDate(sale.saleDate);
+  if (!date) return false;
+
+  const now = new Date();
+  let target = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  if (period === "previous") {
+    target = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  }
+
+  return date.getMonth() === target.getMonth() && date.getFullYear() === target.getFullYear();
+}
+
+function getSalesBySelectedPeriod() {
+  const period = getHistoryMonthFilterValue();
+  return sales.filter(function (sale) {
+    return saleMatchesPeriod(sale, period);
+  });
+}
+
+function getFilteredSales() {
+  const searchValue = historySearch ? historySearch.value.trim().toLowerCase() : "";
+  const statusValue = historyStatusFilter ? historyStatusFilter.value : "";
+  const transferValue = historyTransferFilter ? historyTransferFilter.value : "";
+  const periodValue = getHistoryMonthFilterValue();
+
+  return sales.filter(function (sale) {
+    const text = `
+      ${sale.clientName || ""}
+      ${sale.clientPhone || ""}
+      ${sale.vehicleModel || ""}
+      ${sale.vehicleYear || ""}
+      ${sale.vehicleFipeValue || ""}
+      ${sale.vehicleVersion || ""}
+      ${sale.vehicleTransmission || ""}
+      ${sale.vehicleColor || ""}
+      ${sale.vehiclePlate || ""}
+      ${sale.vehicleKm || ""}
+      ${sale.saleValue || ""}
+      ${sale.saleDate || ""}
+      ${sale.transferType || ""}
+      ${sale.afterSaleStatus || ""}
+      ${sale.saleNotes || ""}
+    `.toLowerCase();
+
+    const matchesSearch = searchValue === "" || text.includes(searchValue);
+    const matchesStatus = statusValue === "" || sale.afterSaleStatus === statusValue;
+    const matchesTransfer = transferValue === "" || sale.transferType === transferValue;
+    const matchesPeriod = saleMatchesPeriod(sale, periodValue);
+
+    return matchesSearch && matchesStatus && matchesTransfer && matchesPeriod;
+  });
+}
+
+function updateReports() {
+  if (!reportTotalSales) return;
+
+  const periodSales = getSalesBySelectedPeriod();
+  const totalSales = periodSales.length;
+  const totalCommission = getTotalCommissionValue(periodSales);
+  const frankCommission = getNamedCommissionValue(periodSales, "frankCommission", 125);
+  const lucasCommission = getNamedCommissionValue(periodSales, "lucasCommission", 125);
+  const storeTransfer = periodSales.filter(function (sale) { return sale.transferType === "Pela loja"; }).length;
+  const clientTransfer = periodSales.filter(function (sale) { return sale.transferType === "Pelo cliente"; }).length;
+  const pendingAfterSales = periodSales.filter(function (sale) { return sale.afterSaleStatus !== "Finalizado"; }).length;
+  const finishedAfterSales = periodSales.filter(function (sale) { return sale.afterSaleStatus === "Finalizado"; }).length;
+
+  reportTotalSales.textContent = totalSales;
+  reportTotalCommission.textContent = formatCurrencyToBrazil(totalCommission);
+  reportFrankCommission.textContent = formatCurrencyToBrazil(frankCommission);
+  reportLucasCommission.textContent = formatCurrencyToBrazil(lucasCommission);
+  reportStoreTransfer.textContent = storeTransfer;
+  reportClientTransfer.textContent = clientTransfer;
+  reportPendingAfterSales.textContent = pendingAfterSales;
+  reportFinishedAfterSales.textContent = finishedAfterSales;
+
+  const reportsSection = document.getElementById("reportsSection");
+  if (reportsSection) {
+    const header = reportsSection.querySelector(".section-header p");
+    if (header) {
+      header.textContent = `Indicadores executivos filtrados por ${getPeriodLabelByValue(getHistoryMonthFilterValue())}.`;
+    }
+  }
+}
+
+function getNamedCommissionValue(list, field, legacyDefault) {
+  return list.reduce(function (total, sale) {
+    const value = sale[field];
+    if (value === undefined || value === null || value === "") {
+      return total + legacyDefault;
+    }
+    return total + Number(value || 0);
+  }, 0);
+}
+
+function getTotalCommissionValue(list) {
+  return list.reduce(function (total, sale) {
+    const value = sale.totalCommission;
+    if (value === undefined || value === null || value === "") {
+      return total + 250;
+    }
+    return total + Number(value || 0);
+  }, 0);
+}
+
+function updateVexDashboardExecutive() {
+  prepareVexDashboardLayout();
+
+  const currentMonthSales = getCurrentMonthSales();
+  const previousMonthSales = getPreviousMonthSales();
+
+  const totalSales = sales.length;
+  const monthlyCommission = getTotalCommissionValue(currentMonthSales);
+  const monthlyFrankCommission = getNamedCommissionValue(currentMonthSales, "frankCommission", 125);
+  const monthlyLucasCommission = getNamedCommissionValue(currentMonthSales, "lucasCommission", 125);
+  const monthlySoldValue = getTotalSoldValue(currentMonthSales);
+  const previousMonthSoldValue = getTotalSoldValue(previousMonthSales);
+  const averageTicket = currentMonthSales.length > 0 ? monthlySoldValue / currentMonthSales.length : 0;
+  const pendingAfterSales = sales.filter(function (sale) { return sale.afterSaleStatus !== "Finalizado"; }).length;
+  const pendingTransfers = sales.filter(function (sale) {
+    return sale.afterSaleStatus === "Transferência em andamento" || sale.afterSaleStatus === "Aguardando Cliente" || sale.transferType === "Pela loja";
+  }).length;
+
+  const commissionGoal = 6000;
+  const goalPercent = commissionGoal > 0 ? Math.min((monthlyCommission / commissionGoal) * 100, 100) : 0;
+  const growth = calculateVexGrowth(monthlySoldValue, previousMonthSoldValue);
+
+  setTextById("vexGreetingTitle", getGreetingText());
+  setTextById("vexCurrentDate", getCurrentDateLabel());
+  setTextById("vexMonthlySalesCount", `${currentMonthSales.length} veículo(s) no mês`);
+  setTextById("vexMonthlyCommission", formatCurrencyToBrazil(monthlyCommission));
+  setTextById("vexGoalLabel", `Meta: ${formatCurrencyToBrazil(commissionGoal)}`);
+  setTextById("vexGoalPercent", `${goalPercent.toFixed(0)}%`);
+  setTextById("totalSalesCard", totalSales);
+  setTextById("vexMonthlySoldValue", formatCurrencyToBrazil(monthlySoldValue));
+  setTextById("vexAverageTicket", formatCurrencyToBrazil(averageTicket));
+  setTextById("pendingAfterSalesCard", pendingAfterSales);
+
+  const breakdown = document.getElementById("vexCommissionBreakdown");
+  if (breakdown) {
+    breakdown.innerHTML = `
+      <span>Lucas: <strong>${formatCurrencyToBrazil(monthlyLucasCommission)}</strong></span>
+      <span>Frank: <strong>${formatCurrencyToBrazil(monthlyFrankCommission)}</strong></span>
+    `;
+  }
+
+  const goalBar = document.getElementById("vexGoalBar");
+  if (goalBar) {
+    goalBar.style.width = `${goalPercent}%`;
+  }
+
+  renderVexSmartAlerts(pendingAfterSales, pendingTransfers, goalPercent, growth);
+  renderVexLatestVehicles();
+  renderVexActivityTimeline();
+}
+
+(function injectVexRc202Styles() {
+  if (document.getElementById("vexRc202Styles")) return;
+  const style = document.createElement("style");
+  style.id = "vexRc202Styles";
+  style.textContent = `
+    .vex-commission-breakdown {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: -6px 0 16px;
+      color: rgba(255,255,255,0.88);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .vex-commission-breakdown span {
+      padding: 8px 10px;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .vex-commission-breakdown strong {
+      color: #ffffff;
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
+/* =========================================================
+   VEX HUB PRO — RC2.03
+   Detalhes do veículo: Editar ADM + Formalização inicial
+   ========================================================= */
+function injectVexRC203DetailsStyles() {
+  if (document.getElementById("vex-rc203-details-styles")) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = "vex-rc203-details-styles";
+  style.textContent = `
+    .vex-drawer-actions-safe {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      align-items: center;
+    }
+
+    .vex-drawer-actions-safe .primary-button,
+    .vex-drawer-actions-safe .secondary-button,
+    .vex-drawer-actions-safe .danger-button {
+      width: 100%;
+      min-height: 44px;
+    }
+
+    .danger-button {
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: 14px;
+      background: rgba(239, 68, 68, 0.08);
+      color: #fecaca;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .danger-button:hover {
+      background: rgba(239, 68, 68, 0.16);
+    }
+
+    .vex-edit-mode-message {
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .vex-edit-mode-message .secondary-button {
+      margin-top: 10px;
+      width: auto;
+      padding-inline: 18px;
+    }
+
+    .vex-formalization-panel .vex-drawer-hero strong {
+      display: inline-flex;
+      margin-top: 8px;
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .vex-formalization-progress {
+      width: 100%;
+      max-width: 360px;
+      height: 10px;
+      margin: 18px auto 0;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+    }
+
+    .vex-formalization-progress-bar {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba(255,255,255,0.45), rgba(255,255,255,0.9));
+    }
+
+    .vex-formalization-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .vex-formalization-step {
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      border-radius: 16px;
+      padding: 14px;
+      text-align: left;
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      display: grid;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .vex-formalization-step span {
+      font-size: 18px;
+    }
+
+    .vex-formalization-step strong {
+      font-size: 14px;
+    }
+
+    .vex-formalization-step small {
+      color: rgba(255, 255, 255, 0.58);
+      font-size: 12px;
+    }
+
+    .vex-formalization-step.done {
+      border-color: rgba(34, 197, 94, 0.35);
+      background: rgba(34, 197, 94, 0.08);
+    }
+
+    .vex-formalization-step.pending {
+      border-color: rgba(245, 158, 11, 0.30);
+      background: rgba(245, 158, 11, 0.06);
+    }
+
+    .vex-formalization-note {
+      margin-top: 12px;
+    }
+
+    .vex-formalization-status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .vex-formalization-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .vex-formalization-summary-item {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: grid;
+      gap: 4px;
+    }
+
+    .vex-formalization-summary-item span {
+      color: rgba(255, 255, 255, 0.52);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 800;
+    }
+
+    .vex-formalization-summary-item strong {
+      color: #fff;
+      font-size: 13px;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .vex-formalization-step em {
+      width: fit-content;
+      margin-top: 4px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 11px;
+      font-style: normal;
+      font-weight: 800;
+    }
+
+    @media (max-width: 640px) {
+      .vex-formalization-grid,
+      .vex-formalization-summary,
+      .vex-drawer-actions-safe {
+        grid-template-columns: 1fr;
+      }
+
+      .vex-drawer-actions-safe .danger-button {
+        order: 10;
+      }
+
+      .vex-message-preview.is-hidden-mobile-preview {
+        display: none;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexRC203DetailsStyles();

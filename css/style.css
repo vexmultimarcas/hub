@@ -2173,3 +2173,194 @@ button,
     transform: none !important;
   }
 }
+
+/* =========================================================
+   RC2.05 — Formalização: Dados do Cliente
+   ========================================================= */
+.vex-formalization-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.vex-formalization-form-card {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+}
+
+.vex-formalization-form-card h3 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  color: #f8fafc;
+}
+
+.vex-formalization-form-card p {
+  margin: -4px 0 14px;
+  color: rgba(226, 232, 240, 0.72);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.vex-formalization-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.vex-formalization-field {
+  display: grid;
+  gap: 6px;
+}
+
+.vex-formalization-field span {
+  color: rgba(226, 232, 240, 0.72);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vex-formalization-field input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 14px;
+  padding: 0 12px;
+  background: rgba(2, 6, 23, 0.52);
+  color: #f8fafc;
+  outline: none;
+}
+
+.vex-formalization-field input:focus {
+  border-color: rgba(245, 158, 11, 0.7);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.14);
+}
+
+.vex-formalization-inline-message .empty-state {
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .vex-formalization-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vex-formalization-form-card {
+    padding: 16px;
+    border-radius: 18px;
+  }
+}
+
+/* =========================================================
+   RC2.07 — Formalização: Pagamento
+   ========================================================= */
+.vex-formalization-field select,
+.vex-formalization-field textarea {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 14px;
+  padding: 0 12px;
+  background: rgba(2, 6, 23, 0.52);
+  color: #f8fafc;
+  outline: none;
+}
+
+.vex-formalization-field select {
+  min-height: 44px;
+}
+
+.vex-formalization-field textarea {
+  min-height: 92px;
+  padding-top: 12px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.vex-formalization-field select:focus,
+.vex-formalization-field textarea:focus {
+  border-color: rgba(245, 158, 11, 0.7);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.14);
+}
+
+.vex-payment-method-list {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.vex-payment-method-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.vex-payment-remove {
+  min-height: 44px;
+  padding-inline: 14px;
+}
+
+.vex-formalization-field.full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 720px) {
+  .vex-payment-method-row {
+    grid-template-columns: 1fr;
+  }
+
+  .vex-payment-remove {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   RC2.08 — Formalização: Repasse/Garantia e Gastos
+   ========================================================= */
+.vex-operational-item-list {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.vex-operational-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.42fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+@media (max-width: 720px) {
+  .vex-operational-item-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   RC2.09 — Formalização: Transferência
+   ========================================================= */
+.vex-transfer-status-text {
+  margin-top: 12px;
+  color: rgba(226, 232, 240, 0.74);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   RC2.10 — Formalização: Documentos Recebidos
+   ========================================================= */
+.vex-message-preview {
+  white-space: pre-wrap;
+  margin: 0;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.56);
+  color: #f8fafc;
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
