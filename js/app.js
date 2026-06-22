@@ -5324,3 +5324,357 @@ if (document.readyState === "loading") {
 }
 setTimeout(injectVexRC13LegibilityPatch, 250);
 setTimeout(injectVexRC13LegibilityPatch, 1000);
+
+/* =========================================================
+   VEX HUB PRO — RC2.01
+   Mobile seguro: centralização + menu Mais + Sair no celular
+   Escopo: CSS/UX mobile. Não altera Firebase, Auth, Firestore ou cadastro de venda.
+========================================================= */
+function initializeVexRC201MobileSafe() {
+  injectVexRC201MobileStyles();
+  createVexRC201MobileMoreMenu();
+  syncVexRC201MobileMoreVisibility();
+}
+
+function injectVexRC201MobileStyles() {
+  if (document.getElementById("vex-rc2-01-mobile-safe-style")) return;
+
+  const style = document.createElement("style");
+  style.id = "vex-rc2-01-mobile-safe-style";
+  style.textContent = `
+    @media (max-width: 760px) {
+      .login-layout {
+        width: min(100% - 24px, 430px) !important;
+        margin: 0 auto !important;
+        display: grid !important;
+        justify-items: center !important;
+        gap: 18px !important;
+      }
+
+      .brand-panel,
+      .login-card {
+        width: 100% !important;
+        max-width: 430px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+      }
+
+      .brand-panel .vex-s7-logo-signature,
+      .authenticity-seal {
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+
+      .vex-dashboard-shell {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+      }
+
+      .vex-dashboard-hero {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        justify-items: stretch !important;
+        align-items: stretch !important;
+        gap: 16px !important;
+        width: 100% !important;
+        text-align: center !important;
+      }
+
+      .vex-dashboard-hero > div:first-child {
+        width: 100% !important;
+        max-width: 100% !important;
+        justify-self: stretch !important;
+        transform: none !important;
+        text-align: center !important;
+      }
+
+      .vex-dashboard-hero .vex-kicker,
+      #vexGreetingTitle,
+      #vexCurrentDate {
+        text-align: center !important;
+      }
+
+      .vex-brand-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        min-height: 112px !important;
+        justify-self: stretch !important;
+        box-sizing: border-box !important;
+      }
+
+      .workspace {
+        padding-bottom: calc(122px + env(safe-area-inset-bottom)) !important;
+      }
+
+      .sidebar {
+        height: 76px !important;
+        overflow: visible !important;
+      }
+
+      .sidebar-nav {
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+        overflow: visible !important;
+      }
+
+      .sidebar-nav .nav-item[data-section="profileSection"],
+      .sidebar-nav .nav-item[data-section="usersSection"] {
+        display: none !important;
+      }
+
+      .vex-rc2-mobile-more-button {
+        display: grid !important;
+      }
+
+      .vex-rc2-mobile-more-button::before {
+        content: "☰" !important;
+        display: block !important;
+        font-size: 20px !important;
+        line-height: 1 !important;
+      }
+
+      .vex-rc2-mobile-more-button::after {
+        left: 22% !important;
+        right: 22% !important;
+      }
+
+      .vex-s8-quick-sale {
+        display: none !important;
+      }
+
+      .vex-rc2-mobile-more-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 9980;
+        display: none;
+        background: rgba(0, 0, 0, 0.42);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+
+      .vex-rc2-mobile-more-backdrop.active {
+        display: block;
+      }
+
+      .vex-rc2-mobile-more-panel {
+        position: fixed;
+        left: 12px;
+        right: 12px;
+        bottom: calc(102px + env(safe-area-inset-bottom));
+        z-index: 9981;
+        display: none;
+        padding: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 26px;
+        background: rgba(8, 8, 8, 0.94);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.54);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+      }
+
+      .vex-rc2-mobile-more-panel.active {
+        display: grid;
+        gap: 10px;
+        animation: vexRC201PanelIn 160ms ease both;
+      }
+
+      .vex-rc2-more-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 4px 2px 8px;
+      }
+
+      .vex-rc2-more-header strong {
+        color: #fff;
+        font-size: 14px;
+        letter-spacing: -0.02em;
+      }
+
+      .vex-rc2-more-header span {
+        color: rgba(255, 255, 255, 0.52);
+        font-size: 12px;
+      }
+
+      .vex-rc2-more-close {
+        width: 36px;
+        height: 36px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+      }
+
+      .vex-rc2-more-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .vex-rc2-more-item {
+        width: 100%;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        background: rgba(255, 255, 255, 0.045);
+        color: rgba(255, 255, 255, 0.92);
+        font-size: 14px;
+        font-weight: 650;
+        text-align: left;
+      }
+
+      .vex-rc2-more-item.danger {
+        border-color: rgba(225, 6, 0, 0.28);
+        background: rgba(225, 6, 0, 0.12);
+        color: #fff;
+      }
+
+      .vex-rc2-more-item small {
+        color: rgba(255,255,255,0.48);
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      @keyframes vexRC201PanelIn {
+        from { opacity: 0; transform: translateY(10px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+    }
+
+    @media (min-width: 761px) {
+      .vex-rc2-mobile-more-button,
+      .vex-rc2-mobile-more-backdrop,
+      .vex-rc2-mobile-more-panel {
+        display: none !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function createVexRC201MobileMoreMenu() {
+  const sidebarNav = document.querySelector(".sidebar-nav");
+  if (!sidebarNav) return;
+
+  let moreButton = document.getElementById("vexRC201MobileMoreButton");
+  if (!moreButton) {
+    moreButton = document.createElement("button");
+    moreButton.id = "vexRC201MobileMoreButton";
+    moreButton.type = "button";
+    moreButton.className = "nav-item vex-rc2-mobile-more-button";
+    moreButton.dataset.vexS8Label = "Mais";
+    moreButton.setAttribute("aria-label", "Abrir menu mais");
+    moreButton.innerHTML = "<span class='sr-only'>Mais</span>";
+    sidebarNav.appendChild(moreButton);
+  }
+
+  if (!document.getElementById("vexRC201MobileMoreBackdrop")) {
+    const backdrop = document.createElement("div");
+    backdrop.id = "vexRC201MobileMoreBackdrop";
+    backdrop.className = "vex-rc2-mobile-more-backdrop";
+    backdrop.addEventListener("click", closeVexRC201MobileMoreMenu);
+    document.body.appendChild(backdrop);
+  }
+
+  if (!document.getElementById("vexRC201MobileMorePanel")) {
+    const panel = document.createElement("div");
+    panel.id = "vexRC201MobileMorePanel";
+    panel.className = "vex-rc2-mobile-more-panel";
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-label", "Menu mais");
+    document.body.appendChild(panel);
+  }
+
+  moreButton.onclick = function () {
+    openVexRC201MobileMoreMenu();
+  };
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      closeVexRC201MobileMoreMenu();
+    }
+  });
+
+  document.querySelectorAll(".nav-item").forEach(function (button) {
+    if (button.id === "vexRC201MobileMoreButton") return;
+    button.addEventListener("click", function () {
+      closeVexRC201MobileMoreMenu();
+      syncVexRC201MobileMoreVisibility();
+    });
+  });
+}
+
+function openVexRC201MobileMoreMenu() {
+  const panel = document.getElementById("vexRC201MobileMorePanel");
+  const backdrop = document.getElementById("vexRC201MobileMoreBackdrop");
+  const moreButton = document.getElementById("vexRC201MobileMoreButton");
+
+  if (!panel || !backdrop) return;
+
+  const isAdmin = canManageContent();
+  panel.innerHTML = `
+    <div class="vex-rc2-more-header">
+      <div>
+        <strong>Mais opções</strong><br>
+        <span>Perfil, administração e saída</span>
+      </div>
+      <button class="vex-rc2-more-close" type="button" onclick="closeVexRC201MobileMoreMenu()" aria-label="Fechar menu">×</button>
+    </div>
+    <div class="vex-rc2-more-list">
+      <button class="vex-rc2-more-item" type="button" onclick="goToSection('profileSection'); closeVexRC201MobileMoreMenu(); syncVexRC201MobileMoreVisibility();">
+        <span>👤 Perfil</span><small>Dados da conta</small>
+      </button>
+      ${isAdmin ? `<button class="vex-rc2-more-item" type="button" onclick="goToSection('usersSection'); closeVexRC201MobileMoreMenu(); syncVexRC201MobileMoreVisibility();"><span>👥 Usuários</span><small>ADM</small></button>` : ""}
+      <button class="vex-rc2-more-item" type="button" onclick="goToSection('dashboardSection'); closeVexRC201MobileMoreMenu(); syncVexRC201MobileMoreVisibility();">
+        <span>⚙️ Configurações</span><small>Em breve</small>
+      </button>
+      <button class="vex-rc2-more-item danger" type="button" onclick="closeVexRC201MobileMoreMenu(); logoutUser();">
+        <span>🚪 Sair</span><small>Encerrar sessão</small>
+      </button>
+    </div>
+  `;
+
+  panel.classList.add("active");
+  backdrop.classList.add("active");
+  if (moreButton) moreButton.classList.add("active");
+}
+
+function closeVexRC201MobileMoreMenu() {
+  const panel = document.getElementById("vexRC201MobileMorePanel");
+  const backdrop = document.getElementById("vexRC201MobileMoreBackdrop");
+  if (panel) panel.classList.remove("active");
+  if (backdrop) backdrop.classList.remove("active");
+  syncVexRC201MobileMoreVisibility();
+}
+
+function syncVexRC201MobileMoreVisibility() {
+  const moreButton = document.getElementById("vexRC201MobileMoreButton");
+  if (!moreButton) return;
+
+  const profileActive = document.getElementById("profileSection")?.classList.contains("active");
+  const usersActive = document.getElementById("usersSection")?.classList.contains("active");
+  const panelActive = document.getElementById("vexRC201MobileMorePanel")?.classList.contains("active");
+
+  moreButton.classList.toggle("active", Boolean(profileActive || usersActive || panelActive));
+}
+
+window.openVexRC201MobileMoreMenu = openVexRC201MobileMoreMenu;
+window.closeVexRC201MobileMoreMenu = closeVexRC201MobileMoreMenu;
+window.syncVexRC201MobileMoreVisibility = syncVexRC201MobileMoreVisibility;
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeVexRC201MobileSafe);
+} else {
+  initializeVexRC201MobileSafe();
+}
+setTimeout(initializeVexRC201MobileSafe, 350);
+setTimeout(initializeVexRC201MobileSafe, 1200);

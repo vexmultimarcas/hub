@@ -112,3 +112,16 @@
 - Micro animações de hover, fade e scale com suporte a redução de movimento.
 - Service Worker atualizado para novo cache da Sprint 9.
 - Firebase, Authentication, Firestore, initialize() e fluxo de vendas preservados.
+
+
+## RC2.01 - Mobile seguro
+
+- Mantida a base funcional VEX-HUB(9) como origem.
+- Corrigida a centralização mobile do card Bom dia e do card VEX no Dashboard.
+- Corrigida a centralização mobile da tela de login e selo do desenvolvedor.
+- Menu inferior mobile ajustado para 5 itens: Home, Venda, Veículos, Relatórios e Mais.
+- Perfil, Usuários ADM e Sair foram movidos para o menu Mais no Android/iOS.
+- Botão Sair adicionado ao fluxo mobile sem alterar o menu desktop.
+- Botão flutuante + ocultado no mobile para evitar sobreposição com a navegação inferior.
+- Cache PWA atualizado para forçar atualização dos arquivos.
+- Sem alterações em Firebase, Auth, Firestore ou fluxo de cadastro de venda.

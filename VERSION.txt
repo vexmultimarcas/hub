@@ -1,1 +1,1 @@
-VEX HUB RC1.3 - Tipografia legível + ajustes reais de login/home
+VEX HUB RC2.01 - Mobile seguro: menu Mais, Sair no celular e centralização Android/iOS
