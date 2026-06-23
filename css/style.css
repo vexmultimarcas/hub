@@ -1342,6 +1342,45 @@ textarea:focus {
   margin: 0;
 }
 
+.admin-create-user-card {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  margin-bottom: 22px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.20);
+}
+
+.admin-create-user-card strong {
+  display: block;
+  color: #ffffff;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.admin-create-user-card p {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.admin-create-user-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.success-state {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: #bbf7d0;
+  line-height: 1.5;
+}
+
 .users-list {
   display: grid;
   gap: 14px;
@@ -1414,6 +1453,10 @@ textarea:focus {
 }
 
 @media (max-width: 760px) {
+  .admin-create-user-grid {
+    grid-template-columns: 1fr;
+  }
+
   .user-card {
     align-items: stretch;
     flex-direction: column;

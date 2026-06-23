@@ -17,6 +17,8 @@ Use as regras abaixo no Firebase Console em:
 
 Firestore Database > Rules
 
+O mesmo conteúdo também está disponível no arquivo `firestore.rules`, na raiz do projeto.
+
 ```js
 rules_version = '2';
 service cloud.firestore {
@@ -25,13 +27,13 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isJuniorAdminEmail() {
+    function isBootstrapAdminEmail() {
       return signedIn()
         && request.auth.token.email in ['frank.since96@gmail.com', 'consultorjunior.auto@gmail.com'];
     }
 
     function isAdmin() {
-      return isJuniorAdminEmail()
+      return isBootstrapAdminEmail()
         || (
           signedIn()
           && exists(/databases/$(database)/documents/users/$(request.auth.uid))
@@ -39,10 +41,22 @@ service cloud.firestore {
         );
     }
 
+    match /{path=**}/sales/{saleId} {
+      allow read: if signedIn();
+      allow create, update, delete: if signedIn() && isAdmin();
+    }
+
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
 
-      allow create: if signedIn() && request.auth.uid == userId && (request.resource.data.role == 'user' || isJuniorAdminEmail());
+      allow create: if signedIn() && (
+        (
+          request.auth.uid == userId
+          && (request.resource.data.role == 'user' || request.resource.data.role == 'admin')
+          && (request.resource.data.role == 'user' || isBootstrapAdminEmail())
+        )
+        || isAdmin()
+      );
 
       allow update: if signedIn() && (
         isAdmin()
@@ -55,8 +69,8 @@ service cloud.firestore {
       allow delete: if isAdmin();
 
       match /sales/{saleId} {
-        allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
-        allow create, update, delete: if signedIn() && request.auth.uid == userId && isAdmin();
+        allow read: if signedIn();
+        allow create, update, delete: if signedIn() && isAdmin();
       }
     }
   }
@@ -65,4 +79,6 @@ service cloud.firestore {
 
 ## Observação
 
-As vendas atuais continuam dentro de `users/{uid}/sales`, como já era na base estável. Nenhuma migração foi feita nesta Sprint.
+As vendas atuais continuam dentro de `users/{uid}/sales`, como já era na base estável. Nenhuma migração foi feita nesta Sprint. O app usa uma leitura compartilhada dessas subcoleções para que usuários logados consigam visualizar as vendas já cadastradas, mas apenas administradores podem criar, editar ou excluir.
+
+Se o painel **Usuários** mostrar a mensagem "O Firestore bloqueou a leitura da coleção de usuários", as regras acima ainda não foram publicadas no Firebase Console ou o e-mail logado não está com perfil `admin`.

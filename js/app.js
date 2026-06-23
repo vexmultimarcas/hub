@@ -18,6 +18,11 @@ const userEmailLabel = document.getElementById("userEmailLabel");
 const usersNavButton = document.getElementById("usersNavButton");
 const usersList = document.getElementById("usersList");
 const usersMessage = document.getElementById("usersMessage");
+const adminCreateUserForm = document.getElementById("adminCreateUserForm");
+const adminNewUserName = document.getElementById("adminNewUserName");
+const adminNewUserEmail = document.getElementById("adminNewUserEmail");
+const adminNewUserPassword = document.getElementById("adminNewUserPassword");
+const adminCreateUserMessage = document.getElementById("adminCreateUserMessage");
 const profileRole = document.getElementById("profileRole");
 
 const logoutButton = document.getElementById("logoutButton");
@@ -61,6 +66,7 @@ let currentUserProfile = null;
 let unsubscribeUsers = null;
 let users = [];
 let editingSaleId = null;
+let adminSecondaryFirebaseApp = null;
 
 
 const ADMIN_EMAILS = [
@@ -98,6 +104,10 @@ function initializeFirebase() {
 function initializeNavigation() {
   if (logoutButton) {
     logoutButton.addEventListener("click", logoutUser);
+  }
+
+  if (adminCreateUserForm) {
+    adminCreateUserForm.addEventListener("submit", createUserFromAdminPanel);
   }
 
   navButtons.forEach(function (button) {
@@ -434,19 +444,25 @@ function setupUserSalesCollection(user) {
 function loadUserSales() {
   stopSalesListener();
 
-  if (!salesCollection) {
+  if (!db || !currentUser) {
     return;
   }
 
-  unsubscribeSales = salesCollection
-    .orderBy("createdAtLocal", "desc")
+  unsubscribeSales = db.collectionGroup("sales")
     .onSnapshot(
       function (snapshot) {
         sales = snapshot.docs.map(function (doc) {
+          const ownerRef = doc.ref.parent && doc.ref.parent.parent ? doc.ref.parent.parent : null;
           return {
             id: doc.id,
+            ownerId: ownerRef ? ownerRef.id : "",
+            refPath: doc.ref.path,
             ...doc.data()
           };
+        });
+
+        sales.sort(function(a, b) {
+          return String(b.createdAtLocal || "").localeCompare(String(a.createdAtLocal || ""));
         });
 
         refreshApplication();
@@ -463,6 +479,22 @@ function loadUserSales() {
         }
       }
     );
+}
+
+function getSaleDocumentRef(saleId) {
+  if (!db || !saleId) {
+    return null;
+  }
+
+  const sale = sales.find(function (item) {
+    return item.id === saleId;
+  });
+
+  if (sale && sale.ownerId) {
+    return db.collection("users").doc(sale.ownerId).collection("sales").doc(saleId);
+  }
+
+  return salesCollection ? salesCollection.doc(saleId) : null;
 }
 
 function stopSalesListener() {
@@ -528,7 +560,10 @@ async function updateExistingSale(saleId, updatedSale) {
 
     delete payload.createdAtLocal;
 
-    await salesCollection.doc(saleId).update(payload);
+    const saleRef = getSaleDocumentRef(saleId);
+    if (!saleRef) return;
+
+    await saleRef.update(payload);
 
     sales = sales.map(function (sale) {
       if (sale.id === saleId) {
@@ -693,12 +728,15 @@ async function deleteSale(saleId) {
 
   const confirmDelete = confirm("Deseja excluir esta venda?");
 
-  if (!confirmDelete || !salesCollection) {
+  if (!confirmDelete) {
     return;
   }
 
   try {
-    await salesCollection.doc(saleId).delete();
+    const saleRef = getSaleDocumentRef(saleId);
+    if (!saleRef) return;
+
+    await saleRef.delete();
 
     sales = sales.filter(function (sale) {
       return sale.id !== saleId;
@@ -718,12 +756,15 @@ async function updateSaleStatus(saleId, newStatus) {
     return;
   }
 
-  if (!salesCollection || !saleId || !newStatus) {
+  if (!saleId || !newStatus) {
     return;
   }
 
   try {
-    await salesCollection.doc(saleId).update({
+    const saleRef = getSaleDocumentRef(saleId);
+    if (!saleRef) return;
+
+    await saleRef.update({
       afterSaleStatus: newStatus,
       updatedAtLocal: new Date().toISOString()
     });
@@ -753,12 +794,15 @@ async function updateSaleTransfer(saleId, newTransfer) {
     return;
   }
 
-  if (!salesCollection || !saleId || !newTransfer) {
+  if (!saleId || !newTransfer) {
     return;
   }
 
   try {
-    await salesCollection.doc(saleId).update({
+    const saleRef = getSaleDocumentRef(saleId);
+    if (!saleRef) return;
+
+    await saleRef.update({
       transferType: newTransfer,
       updatedAtLocal: new Date().toISOString()
     });
@@ -1982,6 +2026,7 @@ function loadUsersForAdmin() {
       },
       function (error) {
         console.error("Erro ao carregar usuários:", error);
+        const isPermissionError = error && error.code === "permission-denied";
         users = currentUser ? [{
           id: currentUser.uid,
           displayName: getCurrentUserDisplayName(),
@@ -1991,7 +2036,9 @@ function loadUsersForAdmin() {
         }] : [];
         renderUsersList();
         if (usersMessage) {
-          usersMessage.innerHTML = '<div class="empty-state">Não foi possível carregar todos os usuários. Confirme as regras do Firestore. Enquanto isso, sua conta ADM foi exibida em modo local.</div>';
+          usersMessage.innerHTML = isPermissionError
+            ? '<div class="empty-state">O Firestore bloqueou a leitura da coleção de usuários. Publique as regras oficiais em <b>Firestore Database &gt; Rules</b> para permitir que administradores leiam <b>users</b>. Enquanto isso, sua conta ADM foi exibida em modo local.</div>'
+            : '<div class="empty-state">Não foi possível carregar todos os usuários. Verifique a conexão ou as regras do Firestore. Enquanto isso, sua conta ADM foi exibida em modo local.</div>';
         }
       }
     );
@@ -2049,6 +2096,123 @@ function renderUsersList() {
       </article>
     `;
   }).join("");
+}
+
+function getAdminSecondaryAuth() {
+  if (typeof firebase === "undefined" || !auth) {
+    return null;
+  }
+
+  if (!adminSecondaryFirebaseApp) {
+    try {
+      adminSecondaryFirebaseApp = firebase.app("vexAdminUserCreate");
+    } catch (error) {
+      adminSecondaryFirebaseApp = firebase.initializeApp(firebase.app().options, "vexAdminUserCreate");
+    }
+  }
+
+  return adminSecondaryFirebaseApp.auth();
+}
+
+function showAdminCreateUserMessage(message, type) {
+  if (!adminCreateUserMessage) {
+    return;
+  }
+
+  adminCreateUserMessage.innerHTML = `<div class="${type === "success" ? "success-state" : "empty-state"}">${message}</div>`;
+}
+
+async function createUserFromAdminPanel(event) {
+  event.preventDefault();
+
+  if (!canManageContent()) {
+    showAdminCreateUserMessage("Apenas administradores podem cadastrar usuários.", "error");
+    return;
+  }
+
+  const displayName = String(adminNewUserName ? adminNewUserName.value : "").trim();
+  const email = normalizeEmail(adminNewUserEmail ? adminNewUserEmail.value : "");
+  const password = String(adminNewUserPassword ? adminNewUserPassword.value : "");
+
+  if (!displayName) {
+    showAdminCreateUserMessage("Informe o nome do usuário.", "error");
+    return;
+  }
+
+  if (!email) {
+    showAdminCreateUserMessage("Informe o e-mail do usuário.", "error");
+    return;
+  }
+
+  if (password.length < 6) {
+    showAdminCreateUserMessage("A senha provisória precisa ter pelo menos 6 caracteres.", "error");
+    return;
+  }
+
+  const secondaryAuth = getAdminSecondaryAuth();
+  if (!secondaryAuth || !db) {
+    showAdminCreateUserMessage("Firebase ainda não está pronto. Tente novamente em alguns segundos.", "error");
+    return;
+  }
+
+  const submitButton = adminCreateUserForm ? adminCreateUserForm.querySelector('button[type="submit"]') : null;
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = "Cadastrando...";
+  }
+
+  try {
+    const credential = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+    const createdUser = credential && credential.user ? credential.user : null;
+
+    if (!createdUser) {
+      throw new Error("Usuário não retornado pelo Firebase Authentication.");
+    }
+
+    if (typeof createdUser.updateProfile === "function") {
+      await createdUser.updateProfile({ displayName: displayName });
+    }
+
+    await db.collection("users").doc(createdUser.uid).set({
+      displayName: displayName,
+      email: email,
+      role: "user",
+      active: true,
+      createdAtLocal: new Date().toISOString(),
+      updatedAtLocal: new Date().toISOString(),
+      createdBy: currentUser ? currentUser.uid : ""
+    }, { merge: true });
+
+    await secondaryAuth.signOut();
+
+    if (adminCreateUserForm) {
+      adminCreateUserForm.reset();
+    }
+
+    showAdminCreateUserMessage("Usuário cadastrado com sucesso. Ele já aparece na lista como Usuário.", "success");
+  } catch (error) {
+    console.error("Erro ao cadastrar usuário pelo painel ADM:", error);
+    const code = error && error.code ? error.code : "";
+
+    if (code === "auth/email-already-in-use") {
+      showAdminCreateUserMessage("Este e-mail já existe no Firebase Authentication. Se ele não aparece na lista, publique as regras oficiais e peça para o usuário fazer o primeiro login.", "error");
+    } else if (code === "permission-denied") {
+      showAdminCreateUserMessage("O acesso foi criado no Authentication, mas o Firestore bloqueou o registro no painel. Publique o arquivo firestore.rules no Firebase Console.", "error");
+    } else {
+      showAdminCreateUserMessage("Não foi possível cadastrar o usuário. Verifique os dados, conexão e regras do Firestore.", "error");
+    }
+  } finally {
+    try {
+      await secondaryAuth.signOut();
+    } catch (error) {
+      console.warn("Não foi possível encerrar a sessão secundária:", error);
+    }
+
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = "Cadastrar usuário";
+    }
+  }
 }
 
 async function updateUserRole(userId, role) {
@@ -3402,7 +3566,10 @@ async function saveVexFormalizationClient(event, saleId) {
   }
 
   try {
-    await salesCollection.doc(saleId).update({
+    const saleRef = getSaleDocumentRef(saleId);
+    if (!saleRef) return;
+
+    await saleRef.update({
       "formalization.client": clientPayload,
       "formalization.updatedAtLocal": new Date().toISOString(),
       updatedAtLocal: new Date().toISOString()
@@ -3604,7 +3771,10 @@ async function saveVexFormalizationVehicle(event, saleId) {
   }
 
   try {
-    await salesCollection.doc(saleId).update({
+    const saleRef = getSaleDocumentRef(saleId);
+    if (!saleRef) return;
+
+    await saleRef.update({
       "formalization.vehicle": vehiclePayload,
       "formalization.updatedAtLocal": new Date().toISOString(),
       updatedAtLocal: new Date().toISOString()
@@ -3921,7 +4091,10 @@ async function saveVexFormalizationPayment(event, saleId) {
   }
 
   try {
-    await salesCollection.doc(saleId).update({
+    const saleRef = getSaleDocumentRef(saleId);
+    if (!saleRef) return;
+
+    await saleRef.update({
       "formalization.payment": paymentPayload,
       "formalization.updatedAtLocal": new Date().toISOString(),
       updatedAtLocal: new Date().toISOString()
@@ -4198,7 +4371,10 @@ async function saveVexFormalizationRepasse(event, saleId) {
   }
 
   try {
-    await salesCollection.doc(saleId).update({
+    const saleRef = getSaleDocumentRef(saleId);
+    if (!saleRef) return;
+
+    await saleRef.update({
       "formalization.repasse": repassePayload,
       "formalization.updatedAtLocal": new Date().toISOString(),
       updatedAtLocal: new Date().toISOString()
@@ -4543,7 +4719,10 @@ async function saveVexFormalizationTransfer(event, saleId) {
   }
 
   try {
-    await salesCollection.doc(saleId).update({
+    const saleRef = getSaleDocumentRef(saleId);
+    if (!saleRef) return;
+
+    await saleRef.update({
       "formalization.transfer": transferPayload,
       "formalization.updatedAtLocal": new Date().toISOString(),
       updatedAtLocal: new Date().toISOString()
@@ -4740,7 +4919,10 @@ async function saveVexFormalizationReceivedDocs(event, saleId) {
   }
 
   try {
-    await salesCollection.doc(saleId).update({
+    const saleRef = getSaleDocumentRef(saleId);
+    if (!saleRef) return;
+
+    await saleRef.update({
       "formalization.receivedDocs": docsPayload,
       "formalization.updatedAtLocal": new Date().toISOString(),
       updatedAtLocal: new Date().toISOString()

@@ -383,6 +383,33 @@
             <p>O Perfil mostra apenas a conta logada. Este painel mostra os usuários cadastrados no Firestore. Todo novo usuário entra como <b>Usuário</b>; somente um <b>Administrador</b> pode promover para Administrador.</p>
           </div>
 
+          <form id="adminCreateUserForm" class="admin-create-user-card">
+            <div>
+              <strong>Cadastrar colaborador</strong>
+              <p>Cria o acesso no Firebase Authentication e já registra o usuário no painel.</p>
+            </div>
+
+            <div class="admin-create-user-grid">
+              <label>
+                Nome de usuário
+                <input id="adminNewUserName" type="text" placeholder="Ex: Lucas Santos" autocomplete="off" />
+              </label>
+
+              <label>
+                E-mail
+                <input id="adminNewUserEmail" type="email" placeholder="colaborador@email.com" autocomplete="off" />
+              </label>
+
+              <label>
+                Senha provisória
+                <input id="adminNewUserPassword" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
+              </label>
+            </div>
+
+            <button class="primary-button" type="submit">Cadastrar usuário</button>
+            <div id="adminCreateUserMessage"></div>
+          </form>
+
           <div id="usersList" class="users-list"></div>
           <div id="usersMessage"></div>
         </section>
