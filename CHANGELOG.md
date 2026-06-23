@@ -252,3 +252,8 @@
 - Prévia do bloco que será usado no Grupo Vendas.
 - Salvamento em `formalization.receivedDocs`.
 - Cache PWA atualizado.
+
+RC3.0.6 - Contrato Particular Final
+- Contrato Particular ajustado para layout A4 em 4 páginas com referência no modelo oficial DOCX.
+- Forma de pagamento do contrato exibe apenas modalidades usadas na venda.
+- Termo de Repasse e Procuração preservados.
