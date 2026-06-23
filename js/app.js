@@ -5453,10 +5453,20 @@ function buildVexContractHtml(data) {
     return method ? formatCurrencyToBrazil(parseSaleCurrencyValue(method.value)) : "";
   }
 
+  const matchedPaymentMethods = new Set();
   const usedPaymentRows = paymentOrder.map(function(item) {
-    const value = findPaymentValue(item.keys);
-    return value ? `<tr><td>${escapeHTML(item.label)}</td><td>${escapeHTML(value)}</td></tr>` : "";
-  }).filter(Boolean).join("") || `<tr><td>${escapeHTML(primaryPayment || "FORMA DE PAGAMENTO")}</td><td>${escapeHTML(totalValue)}</td></tr>`;
+    const method = paymentMethods.find(function(paymentMethod) {
+      if (matchedPaymentMethods.has(paymentMethod)) return false;
+      const normalized = normalizeVexText(paymentMethod.type).toUpperCase();
+      return item.keys.some(function(key) { return normalized.includes(key); });
+    });
+    if (!method) return "";
+    matchedPaymentMethods.add(method);
+    return `<tr><td>${escapeHTML(item.label)}</td><td>${escapeHTML(formatCurrencyToBrazil(parseSaleCurrencyValue(method.value)))}</td></tr>`;
+  }).concat(paymentMethods.map(function(method) {
+    if (matchedPaymentMethods.has(method)) return "";
+    return `<tr><td>${escapeHTML(normalizeVexText(method.type).toUpperCase())}</td><td>${escapeHTML(formatCurrencyToBrazil(parseSaleCurrencyValue(method.value)))}</td></tr>`;
+  })).filter(Boolean).join("") || `<tr><td>${escapeHTML(primaryPayment || "FORMA DE PAGAMENTO")}</td><td>${escapeHTML(totalValue)}</td></tr>`;
 
   const paymentObservationRow = normalizeVexText(data.payment.notes) ? `<tr><td>Observação</td><td>${escapeHTML(data.payment.notes)}</td></tr>` : "";
   const gastosLine = expensesText ? `GASTOS:${escapeHTML(expensesText).toUpperCase()}` : "GASTOS:";
@@ -5506,30 +5516,27 @@ function buildVexContractHtml(data) {
           ${paymentObservationRow}
           <tr class="contract-total-row"><td>TOTAL</td><td>${escapeHTML(totalValue)}</td></tr>
         </table>
-        <p class="contract-page-number">Página 1 de 4</p>
-      </section>
-
-      <section class="vex-contract-page vex-contract-page-2">
-        <div class="contract-red-block">
+        <div class="contract-red-block contract-page-1-red">
           <p>Veículo vendido a preço promocional <strong><u>NÃO POSSUINDO</u></strong> qualquer garantia mecânica.</p>
           <p>Foi dado o abatimento no importe de <strong>${escapeHTML(formatCurrencyToBrazil(discount))}</strong> para que o comprador efetue todas as manutenções necessárias no veículo como preditivas, corretivas e preventivas, que se fizerem necessárias, bem como com eventuais vícios ocultos, em decorrência do abatimento fornecido; Carro consignado.</p>
         </div>
         <p class="contract-gastos"><strong>${gastosLine}</strong></p>
-        <p><strong>Parágrafo único</strong> – Caso o valor não seja integralmente quitado, o COMPRADOR assume o bem como <strong>fiel depositário</strong>, não podendo vendê-lo, cedê-lo ou transferi-lo até a quitação total, sob pena de responsabilidade civil e penal.</p>
+        <p class="contract-paragraph-unique"><strong>Parágrafo único</strong> – Caso o valor não seja integralmente quitado, o COMPRADOR assume o bem como <strong>fiel depositário</strong>, não podendo vendê-lo, cedê-lo ou transferi-lo até a quitação total, sob pena de responsabilidade civil e penal.</p>
+        <p class="contract-page-number">Página 1 de 4</p>
+      </section>
 
-        <p class="contract-center-title contract-section-gap">IV – DO ABATIMENTO DO PREÇO E RESPONSABILIDADE PELOS REPAROS</p>
+      <section class="vex-contract-page vex-contract-page-2">
+        <p class="contract-center-title">IV – DO ABATIMENTO DO PREÇO E RESPONSABILIDADE PELOS REPAROS</p>
         <p><strong><u>Cláusula 1ª</u></strong> – O COMPRADOR declara que <strong><u>teve ampla liberdade e realizou análise minuciosa do veículo</u></strong>, inclusive tendo sido orientado a submetê-lo à avaliação técnica por mecânico de sua confiança antes da compra. Declara ainda que fez minuciosa análise das condições em que o veículo se encontra, declarando que está ciente e de acordo com os reparos necessários.</p>
         <p><strong><u>Cláusula 2ª</u></strong> – Foi informado expressamente que <strong>o veículo não passou por qualquer revisão, preparação ou correção prévia para venda, sendo entregue no estado de conservação e uso em que se encontra</strong>, com necessidade de diversos reparos mecânicos, elétricos, estruturais, de suspensão, freios, motor e demais itens, decorrentes de desgaste natural ou falhas já existentes.</p>
         <p><strong><u>Cláusula 3ª</u></strong> – As partes reconhecem que o <strong><u>veículo é oriundo de repasse</u></strong>, motivo pelo qual <strong><u>foi concedido abatimento sobre o valor de mercado</u></strong>, ajustando-se que o COMPRADOR assume integralmente a responsabilidade de realizar, por sua conta e risco, todas as manutenções necessárias para sua utilização regular e segura.</p>
         <p><strong><u>Cláusula 4ª</u></strong> – O COMPRADOR <strong><u>afirma, com plena ciência, que está adquirindo o bem no estado em que se encontra e sem garantia mecânica ou geral</u></strong>, tendo sido claramente informado da necessidade de revisão completa e reparos em toda a parte mecânica, elétrica e estrutural do veículo — não se restringindo aos itens exemplificados, mas abrangendo eventuais defeitos ocultos ou futuros.</p>
-        <p><strong><u>Cláusula 5ª</u></strong> – Reconhece também que <strong><u>o valor do abatimento foi livremente acordado</u></strong> e que não poderá alegar posteriormente insuficiência, visto que teve a oportunidade de examinar o veículo com profissional de sua confiança antes da</p>
+        <p><strong><u>Cláusula 5ª</u></strong> – Reconhece também que <strong><u>o valor do abatimento foi livremente acordado</u></strong> e que não poderá alegar posteriormente insuficiência, visto que teve a oportunidade de examinar o veículo com profissional de sua confiança antes da assinatura deste instrumento, tendo sido orientado a avaliar previamente por um mecânico de sua confiança, quanto a compatibilidade dos reparos a serem feitos e do abatimento ofertado, visto que não poderá posteriormente em hipótese alguma, alegar que o abatimento não tenha sido suficiente para realizar as manutenções necessárias.</p>
         <p class="contract-page-number">Página 2 de 4</p>
       </section>
 
       <section class="vex-contract-page vex-contract-page-3">
-        <p>assinatura deste instrumento, tendo sido orientado a avaliar previamente por um mecânico de sua confiança, quanto a compatibilidade dos reparos a serem feitos e do abatimento ofertado, visto que não poderá posteriormente em hipótese alguma, alegar que o abatimento não tenha sido suficiente para realizar as manutenções necessárias.</p>
-
-        <p class="contract-center-title contract-section-gap">V – DA TRANSFERÊNCIA DE PROPRIEDADE</p>
+        <p class="contract-center-title">V – DA TRANSFERÊNCIA DE PROPRIEDADE</p>
         <p><strong><u>Cláusula 1ª</u></strong>: A transferência é de responsabilidade exclusiva do <strong>COMPRADOR</strong>, inclusive seus custos.</p>
         <p><strong><u>Cláusula 2ª</u></strong>: Caso o pagamento se dê via cheque ou forma a prazo, os documentos do veículo serão liberados somente após a quitação ou compensação bancária.</p>
         <p><strong><u>Cláusula 3ª</u></strong>: O Certificado de Registro do Veículo/ Autorização de Transferência Propriedade será entregue apenas após <strong>regularização de eventuais pendências administrativas ou financeiras</strong> entre COMPRADOR e VENDEDOR.</p>
@@ -5546,14 +5553,15 @@ function buildVexContractHtml(data) {
         <p>O <strong>VENDEDOR</strong> declara que, até a presente data, o veículo objeto deste contrato encontra-se livre e desembaraçado de ônus, gravames ou restrições de conhecimento da empresa, conforme verificação realizada nos sistemas oficiais disponíveis.</p>
         <p>Contudo, em atenção ao disposto no art. 447 do Código Civil, as partes reconhecem que a responsabilidade do <strong>VENDEDOR</strong> se limita à sua esfera de conhecimento e atuação, não se estendendo a eventuais registros, apontamentos ou restrições lançadas após a celebração do presente instrumento, ainda que decorrentes de fatos pretéritos a negociação.</p>
         <p>Fica pactuado, portanto, que eventual evicção ou reivindicação de terceiros somente ensejará responsabilidade do <strong>VENDEDOR</strong> nos casos em que comprovadamente tenha agido com dolo ou ciência prévia do vício ou ônus incidente sobre o bem.</p>
+
+        <p class="contract-center-title contract-section-gap">VIII- DA RESCISÃO</p>
+        <p><strong>Cláusula Primeira:</strong> A presente negociação é feita em caráter irrevogável, irretratável não se admitindo arrependimento. <strong>Oportunamente foi esclarecido ao COMPRADOR que o VENDEDOR não tem qualquer responsabilidade quanto aos termos acordados em contratos de financiamento firmados entre COMPRADOR e terceiros.</strong></p>
+        <p><strong>Cláusula Segunda:</strong> Em caso de inadimplemento de qualquer das obrigações assumidas neste contrato, a parte inocente poderá, a seu exclusivo critério, considerar rescindido o presente instrumento e exigir, da parte inadimplente, o pagamento de multa compensatória equivalente a 10% (dez por cento) sobre o valor total do contrato, independentemente de outras penalidades cabíveis, sem prejuízo da indenização por perdas e danos, se houver.</p>
         <p class="contract-page-number">Página 3 de 4</p>
       </section>
 
       <section class="vex-contract-page vex-contract-page-4">
-        <p class="contract-center-title">VIII- DA RESCISÃO</p>
-        <p><strong>Cláusula Primeira:</strong> A presente negociação é feita em caráter irrevogável, irretratável não se admitindo arrependimento. <strong>Oportunamente foi esclarecido ao COMPRADOR que o VENDEDOR não tem qualquer responsabilidade quanto aos termos acordados em contratos de financiamento firmados entre COMPRADOR e terceiros.</strong></p>
-        <p><strong>Cláusula Segunda:</strong> Em caso de inadimplemento de qualquer das obrigações assumidas neste contrato, a parte inocente poderá, a seu exclusivo critério, considerar rescindido o presente instrumento e exigir, da parte inadimplente, o pagamento de multa compensatória equivalente a 10% (dez por cento) sobre o valor total do contrato, independentemente de outras penalidades cabíveis, sem prejuízo da indenização por perdas e danos, se houver.</p>
-
+        <div class="contract-final-block">
         <p class="contract-center-title contract-section-gap">IX – DA CONFIDENCIALIDADE</p>
         <p>Este contrato e sua redação são protegidos por <strong>direitos autorais</strong>. É vedada sua reprodução, modificação ou reutilização sem autorização do <strong>VENDEDOR</strong> e/ou da profissional responsável. Violação sujeita às penalidades da <strong>Lei nº 9.610/98.</strong></p>
         <p>O COMPRADOR se compromete a não realizar postagens, publicações ou comentários públicos que impliquem exposição negativa, constrangimento ou ataque à reputação da empresa VENDEDORA, em redes sociais, sites ou quaisquer meios públicos, sob pena de responder civil e criminalmente por danos morais e à imagem.</p>
@@ -5561,6 +5569,7 @@ function buildVexContractHtml(data) {
         <p class="contract-center-title contract-section-gap">X – DO FORO</p>
         <p>As partes elegem o foro da Comarca de <strong>${escapeHTML(cityForo)}</strong> para solucionar qualquer disputa referente a este contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja.</p>
         <p>E, por estarem justas e contratadas, assinam o presente instrumento em duas vias de igual teor e forma, juntamente com duas testemunhas.</p>
+        </div>
 
         <div class="contract-date-line"><strong>${escapeHTML(cityForo)}</strong>, _____ de __________________________ de ____________.</div>
         <div class="contract-signature-line"><strong>VENDEDOR:</strong> _______________________________________________</div>
@@ -5722,18 +5731,27 @@ function getVexPrintableDocumentHtml(title, bodyHtml, type) {
     .contract-payment-table td:first-child{width:50%;font-weight:800;text-align:center;text-transform:uppercase;}
     .contract-payment-table td:last-child{text-align:center;}
     .contract-total-row td{font-weight:800;}
-    .contract-red-block{color:#f00;font-weight:700;font-style:italic;margin:5mm 8mm 5mm 8mm;}
-    .contract-red-block p{color:#f00;font-size:8.5pt;line-height:1.2;margin:2px 0;text-align:left;}
-    .contract-gastos{text-align:center!important;margin:0 7mm 5px!important;font-size:8pt!important;line-height:1.16!important;}
-    .contract-section-gap{margin-top:8mm!important;}
-    .vex-contract-page-2 p,.vex-contract-page-3 p,.vex-contract-page-4 p{font-size:8.25pt;line-height:1.22;margin:4px 0;text-align:left;}
-    .vex-contract-page-2{padding-top:16mm;padding-left:19mm;padding-right:19mm;}
-    .vex-contract-page-3{padding-top:12mm;padding-left:19mm;padding-right:19mm;}
-    .vex-contract-page-4{padding-top:18mm;padding-left:22mm;padding-right:22mm;}
-    .contract-list{margin:4px 0 9mm 15px;padding:0;font-size:8.1pt;line-height:1.25;}
-    .contract-list li{margin:2px 0;}
-    .contract-date-line{font-size:9pt;font-weight:400;text-align:left;margin-top:14mm;}
-    .contract-signature-line{font-size:8.5pt;font-weight:400;margin-top:9mm;}
+    .vex-contract-page-1 .contract-company-table td{height:5.4mm;}
+    .vex-contract-page-1 .contract-data-table td{height:6.1mm;}
+    .vex-contract-page-1 .contract-vehicle-table td{height:6.2mm;}
+    .vex-contract-page-1 .contract-payment-table td,.vex-contract-page-1 .contract-payment-table th{height:5.9mm;}
+    .contract-red-block{color:#f00;font-weight:700;font-style:italic;margin:4mm 8mm 4mm 8mm;}
+    .contract-red-block p{color:#f00;font-size:8.25pt;line-height:1.15;margin:1.5px 0;text-align:left;}
+    .contract-page-1-red{margin-top:6mm;margin-bottom:3mm;}
+    .contract-gastos{text-align:center!important;margin:0 7mm 3.5px!important;font-size:7.9pt!important;line-height:1.13!important;}
+    .contract-paragraph-unique{font-size:7.85pt!important;line-height:1.13!important;margin:0 1mm!important;}
+    .contract-section-gap{margin-top:5.5mm!important;}
+    .vex-contract-page-2 p{font-size:9.35pt;line-height:1.48;margin:7.2px 0;text-align:left;}
+    .vex-contract-page-3 p{font-size:9pt;line-height:1.39;margin:6.2px 0;text-align:left;}
+    .vex-contract-page-4 p{font-size:9.1pt;line-height:1.43;margin:6.6px 0;text-align:left;}
+    .vex-contract-page-2{padding-top:21mm;padding-left:42mm;padding-right:42mm;}
+    .vex-contract-page-3{padding-top:15mm;padding-left:38mm;padding-right:38mm;}
+    .vex-contract-page-4{padding-top:25mm;padding-left:38mm;padding-right:38mm;}
+    .contract-list{margin:5px 0 8mm 15px;padding:0;font-size:8.8pt;line-height:1.35;}
+    .contract-list li{margin:2.8px 0;}
+    .contract-final-block{min-height:146mm;}
+    .contract-date-line{font-size:9pt;font-weight:400;text-align:left;margin-top:10mm;}
+    .contract-signature-line{font-size:8.6pt;font-weight:400;margin-top:12mm;}
     .contract-page-number{position:absolute;left:0;right:0;bottom:6mm;text-align:center!important;font-size:7.2pt!important;margin:0!important;color:#111;}
     .vex-print-repasse .vex-print-content,.vex-print-procuracao .vex-print-content{font-size:10pt;line-height:1.2;padding:9mm 10mm;}
     .vex-print-repasse h1,.vex-print-procuracao h1{font-size:13pt;}
