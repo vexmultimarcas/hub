@@ -2441,3 +2441,144 @@ button,
   font-size: 0.92rem;
   line-height: 1.55;
 }
+
+/* =========================================================
+   RC3.0.8 - Identidade premium: abertura do app
+   ========================================================= */
+.vex-launch-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(225, 6, 0, 0.24), transparent 34%),
+    radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.055), transparent 24%),
+    linear-gradient(155deg, #050505 0%, #100202 48%, #050505 100%);
+  color: #fff;
+  transition: opacity 520ms ease, visibility 520ms ease;
+}
+
+.vex-launch-screen.is-hiding {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.vex-launch-aura {
+  position: absolute;
+  width: min(560px, 74vw);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(225, 6, 0, 0.18), transparent 66%);
+  filter: blur(12px);
+  animation: vexLaunchAura 1500ms ease both;
+}
+
+.vex-launch-mark {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  width: min(430px, 68vw);
+  animation: vexLaunchMark 900ms cubic-bezier(.2, .78, .22, 1) both;
+}
+
+.vex-launch-mark img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 34px rgba(225, 6, 0, 0.22));
+}
+
+.vex-launch-mark span {
+  display: block;
+  width: min(310px, 62vw);
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #ff160d 15%, #ff160d 85%, transparent);
+  box-shadow: 0 0 28px rgba(225, 6, 0, 0.55);
+  transform-origin: center;
+  animation: vexLaunchLine 1100ms ease 220ms both;
+}
+
+.vex-launch-screen strong,
+.vex-launch-screen small {
+  position: relative;
+  z-index: 1;
+  animation: vexLaunchText 820ms ease 480ms both;
+}
+
+.vex-launch-screen strong {
+  font-size: clamp(22px, 4vw, 34px);
+  line-height: 1;
+  letter-spacing: 0.16em;
+  font-weight: 800;
+}
+
+.vex-launch-screen small {
+  margin-top: -8px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: clamp(12px, 2vw, 15px);
+  letter-spacing: 0.08em;
+}
+
+@keyframes vexLaunchMark {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes vexLaunchLine {
+  from {
+    opacity: 0;
+    transform: scaleX(0.12);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes vexLaunchText {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes vexLaunchAura {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vex-launch-aura,
+  .vex-launch-mark,
+  .vex-launch-mark span,
+  .vex-launch-screen strong,
+  .vex-launch-screen small {
+    animation: none !important;
+  }
+}

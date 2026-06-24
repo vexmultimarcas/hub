@@ -3,6 +3,7 @@
 
 const homeScreen = document.getElementById("homeScreen");
 const dashboardScreen = document.getElementById("dashboardScreen");
+const vexLaunchScreen = document.getElementById("vexLaunchScreen");
 
 const loginForm = document.getElementById("loginForm");
 const loginEmail = document.getElementById("loginEmail");
@@ -77,6 +78,7 @@ const ADMIN_EMAILS = [
 initializeApplication();
 
 function initializeApplication() {
+  initializeVexLaunchExperience();
   initializeFirebase();
   initializeNavigation();
   initializeAuthModeSwitch();
@@ -91,6 +93,18 @@ function initializeApplication() {
   initializeVexPremiumExperience();
   initializeVexDashboardExecutive();
   listenAuthenticationState();
+}
+
+function initializeVexLaunchExperience() {
+  if (!vexLaunchScreen) return;
+
+  window.setTimeout(function () {
+    vexLaunchScreen.classList.add("is-hiding");
+  }, 1350);
+
+  window.setTimeout(function () {
+    vexLaunchScreen.remove();
+  }, 1950);
 }
 
 function initializeFirebase() {
