@@ -1520,6 +1520,35 @@ textarea:focus {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.access-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px !important;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.access-badge.active {
+  color: #d8ffe6 !important;
+  background: rgba(41, 166, 94, 0.18);
+  border: 1px solid rgba(41, 166, 94, 0.36);
+}
+
+.access-badge.blocked {
+  color: #ffd7d7 !important;
+  background: rgba(225, 6, 0, 0.18);
+  border: 1px solid rgba(225, 6, 0, 0.36);
+}
+
+.user-access-button {
+  min-height: 40px;
+  padding-inline: 14px;
+}
+
 @media (max-width: 720px) {
   .user-card-main {
     align-items: flex-start;
@@ -1531,6 +1560,10 @@ textarea:focus {
   }
 
   .role-badge {
+    justify-self: flex-start;
+  }
+
+  .access-badge {
     justify-self: flex-start;
   }
 }
@@ -2161,6 +2194,7 @@ button,
   .brand-panel .vex-s7-logo-signature {
     width: min(230px, 46%) !important;
     margin: 0 0 42px 0 !important;
+    transform: translateX(48px) !important;
   }
 
   .brand-panel h1 {

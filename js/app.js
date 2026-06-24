@@ -84,6 +84,8 @@ function initializeApplication() {
   initializeProfileForm();
   initializeSaleForm();
   initializeHistoryFilters();
+  initializeVexTextAutoFormatting();
+  initializeVexCepAutofill();
   initializeVexPhase02Vehicles();
   initializeVexPhase03Build02();
   initializeVexPremiumExperience();
@@ -405,6 +407,89 @@ function initializeHistoryFilters() {
   }
 }
 
+function shouldVexAutoFormatTextField(field) {
+  if (!field || field.dataset.vexAutoText === "true") return false;
+
+  const tag = String(field.tagName || "").toLowerCase();
+  const type = String(field.type || "").toLowerCase();
+  const id = String(field.id || "").toLowerCase();
+  const name = String(field.name || "").toLowerCase();
+
+  if (tag !== "textarea" && tag !== "input") return false;
+  if (["email", "password", "date", "number", "hidden", "file", "checkbox", "radio"].includes(type)) return false;
+  if (/(email|senha|password|cpf|cnpj|rg|cep|phone|telefone|celular|placa|plate|renavam|chassi|chassis|valor|value|km|quilometragem|date|data)/i.test(id + " " + name)) return false;
+
+  return true;
+}
+
+function formatVexTextForDisplay(value) {
+  const text = String(value || "").trim().replace(/\s+/g, " ");
+  if (!text) return "";
+  if (text.length <= 3 && text === text.toUpperCase()) return text;
+
+  return text.toLowerCase().replace(/(^|[\s./-])([a-zà-ÿ])/g, function(match, prefix, letter) {
+    return prefix + letter.toUpperCase();
+  });
+}
+
+function initializeVexTextAutoFormatting() {
+  document.addEventListener("blur", function(event) {
+    const field = event.target;
+    if (!shouldVexAutoFormatTextField(field)) return;
+    field.value = formatVexTextForDisplay(field.value);
+  }, true);
+}
+
+function setVexFieldValueIfEmpty(id, value) {
+  const field = document.getElementById(id);
+  if (field && !String(field.value || "").trim() && value) {
+    field.value = value;
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+}
+
+async function fillVexAddressFromCep(cepValue, mapping, messageElementId) {
+  const cep = String(cepValue || "").replace(/\D/g, "");
+  if (cep.length !== 8) return;
+
+  const message = messageElementId ? document.getElementById(messageElementId) : null;
+
+  try {
+    if (message) message.innerHTML = `<div class="empty-state">Buscando endereço pelo CEP...</div>`;
+    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const data = await response.json();
+
+    if (!response.ok || data.erro) {
+      if (message) message.innerHTML = `<div class="empty-state">CEP não encontrado. Preencha o endereço manualmente.</div>`;
+      return;
+    }
+
+    setVexFieldValueIfEmpty(mapping.street, data.logradouro);
+    setVexFieldValueIfEmpty(mapping.district, data.bairro);
+    setVexFieldValueIfEmpty(mapping.city, data.localidade);
+    setVexFieldValueIfEmpty(mapping.state, data.uf);
+
+    if (message) message.innerHTML = `<div class="success-state">Endereço preenchido automaticamente pelo CEP.</div>`;
+  } catch (error) {
+    console.warn("Não foi possível buscar o CEP:", error);
+    if (message) message.innerHTML = `<div class="empty-state">Não foi possível consultar o CEP agora. Preencha o endereço manualmente.</div>`;
+  }
+}
+
+function initializeVexCepAutofill() {
+  document.addEventListener("blur", function(event) {
+    const field = event.target;
+    if (!field || field.id !== "formalClientCep") return;
+
+    fillVexAddressFromCep(field.value, {
+      street: "formalClientStreet",
+      district: "formalClientDistrict",
+      city: "formalClientCity",
+      state: "formalClientState"
+    }, "formalClientMessage");
+  }, true);
+}
+
 function listenAuthenticationState() {
   if (!auth) {
     return;
@@ -414,6 +499,14 @@ function listenAuthenticationState() {
     if (user) {
       currentUser = user;
       currentUserProfile = await loadUserProfile(user);
+
+      if (currentUserProfile && currentUserProfile.active === false) {
+        await auth.signOut();
+        showLogin();
+        showLoginMessage("Seu acesso esta bloqueado. Fale com um administrador.");
+        return;
+      }
+
       showDashboard();
       updateUserIdentityUI();
       updateAccessControlUI();
@@ -2072,6 +2165,10 @@ function renderUsersList() {
     const disabled = isCurrent ? "disabled" : "";
     const hint = isCurrent ? "Esta é sua conta atual. Não é possível rebaixar você mesmo pelo painel." : "";
     const roleBadgeClass = role === "admin" ? "role-badge admin" : "role-badge user";
+    const isActive = user.active !== false;
+    const accessBadgeClass = isActive ? "access-badge active" : "access-badge blocked";
+    const accessLabel = isActive ? "Ativo" : "Bloqueado";
+    const blockButtonLabel = isActive ? "Bloquear acesso" : "Desbloquear acesso";
     const lastLogin = user.lastLoginAtLocal ? formatUserDate(user.lastLoginAtLocal) : "Último acesso não registrado";
 
     return `
@@ -2088,10 +2185,12 @@ function renderUsersList() {
 
         <div class="user-card-actions">
           <span class="${roleBadgeClass}">${getRoleLabel(role)}</span>
+          <span class="${accessBadgeClass}">${accessLabel}</span>
           <select class="role-select" ${disabled} onchange="updateUserRole('${user.id}', this.value)">
             <option value="user" ${role === "user" ? "selected" : ""}>Usuário</option>
             <option value="admin" ${role === "admin" ? "selected" : ""}>Administrador</option>
           </select>
+          <button class="secondary-button user-access-button" type="button" ${disabled} onclick="toggleUserAccess('${user.id}', ${isActive ? "false" : "true"})">${blockButtonLabel}</button>
         </div>
       </article>
     `;
@@ -2246,6 +2345,35 @@ async function updateUserRole(userId, role) {
   }
 }
 
+async function toggleUserAccess(userId, active) {
+  if (!canManageContent()) {
+    alert("Apenas administradores podem bloquear ou desbloquear usuários.");
+    return;
+  }
+
+  if (!db || !userId) {
+    return;
+  }
+
+  if (currentUser && userId === currentUser.uid) {
+    alert("Por segurança, você não pode bloquear a própria conta.");
+    renderUsersList();
+    return;
+  }
+
+  try {
+    await db.collection("users").doc(userId).set({
+      active: Boolean(active),
+      updatedAtLocal: new Date().toISOString(),
+      updatedBy: currentUser ? currentUser.uid : ""
+    }, { merge: true });
+  } catch (error) {
+    console.error("Erro ao alterar acesso do usuário:", error);
+    alert("Não foi possível alterar o acesso. Verifique as regras do Firestore.");
+    renderUsersList();
+  }
+}
+
 function formatUserDate(value) {
   if (!value) {
     return "Último acesso não registrado";
@@ -2358,7 +2486,8 @@ async function ensureUserProfileDocument(user, displayName) {
 async function loadUserProfile(user) {
   const profile = {
     displayName: user && user.displayName ? user.displayName : "",
-    role: isBootstrapAdminEmail(user && user.email) ? "admin" : "user"
+    role: isBootstrapAdminEmail(user && user.email) ? "admin" : "user",
+    active: true
   };
 
   if (!user || !db) {
@@ -2378,10 +2507,15 @@ async function loadUserProfile(user) {
       if (data.role) {
         profile.role = data.role === "admin" ? "admin" : "user";
       }
+
+      if (typeof data.active === "boolean") {
+        profile.active = data.active;
+      }
     }
 
     if (isBootstrapAdminEmail(user.email)) {
       profile.role = "admin";
+      profile.active = true;
     }
 
     await ensureUserProfileDocument(user, profile.displayName || createFriendlyNameFromEmail(user.email || ""));
@@ -3068,6 +3202,7 @@ window.deleteSale = deleteSale;
 window.updateSaleStatus = updateSaleStatus;
 window.updateSaleTransfer = updateSaleTransfer;
 window.updateUserRole = updateUserRole;
+window.toggleUserAccess = toggleUserAccess;
 window.openSaleDetails = openSaleDetails;
 window.closeSaleDetails = closeSaleDetails;
 
@@ -5366,6 +5501,24 @@ function getVexVehicleFullName(vehicle) {
   return [vehicle.vehicleBrand, vehicle.vehicleModel, vehicle.vehicleVersion].filter(Boolean).join(" ");
 }
 
+function getVexVehicleModelWithoutRepeatedBrand(vehicle) {
+  const brand = normalizeVexText(vehicle && vehicle.vehicleBrand);
+  const model = normalizeVexText(vehicle && vehicle.vehicleModel);
+
+  if (!brand || !model) return model;
+
+  const normalizedBrand = brand.toUpperCase();
+  const normalizedModel = model.toUpperCase();
+
+  if (normalizedModel === normalizedBrand) return model;
+
+  if (normalizedModel.startsWith(normalizedBrand + " ")) {
+    return model.slice(brand.length).trim();
+  }
+
+  return model;
+}
+
 
 function getVexSaleDocumentNumber(sale) {
   const baseNumber = 1057430;
@@ -5843,26 +5996,58 @@ function buildVexRepasseHtml(data) {
   `;
 }
 function buildVexProcuracaoHtml(data) {
+  const rg = [data.client.clientRg, data.client.clientRgIssuer, data.client.clientRgIssuerUf].filter(Boolean).join(" ");
+  const enderecoCliente = getVexClientAddress(data.client);
+  const veiculo = getVexVehicleFullName(data.vehicle);
+  const vehicleModel = getVexVehicleModelWithoutRepeatedBrand(data.vehicle);
+
   return `
-    <h1>PROCURAÇÃO PARA TRANSFERÊNCIA DE PROPRIETÁRIO</h1>
-    <p><strong>OUTORGANTE:</strong> ${escapeHTML(data.client.clientName)}</p>
-    <p><strong>CPF/CNPJ:</strong> ${escapeHTML(data.client.clientCpf)} <strong>RG:</strong> ${escapeHTML([data.client.clientRg, data.client.clientRgIssuer, data.client.clientRgIssuerUf].filter(Boolean).join(" "))}</p>
-    <p><strong>ENDEREÇO:</strong> ${escapeHTML(getVexClientAddress(data.client))}</p>
-    <p><strong>CELULAR:</strong> ${escapeHTML(data.client.clientPhone)} <strong>E-MAIL:</strong> ${escapeHTML(data.client.clientEmail)}</p>
-    <p><strong>OUTORGADO:</strong> ${escapeHTML(data.representative.name)}</p>
-    <p><strong>CPF/CNPJ:</strong> ${escapeHTML(data.representative.cpf)}</p>
-    <p><strong>ENDEREÇO:</strong> ${escapeHTML(data.representative.address)}</p>
-    <p><strong>PODERES:</strong> Por esse instrumento de Procuração, o Outorgante nomeia e constitui seu bastante procurador o Outorgado, para o fim especial de comprar e vender como proprietário/vendedor/comprador o CRV (Certificado de Registro de Veículos) do veículo com as seguintes características; para o fim especial de regularizar a documentação.</p>
-    <p><strong>DADOS DO VEÍCULO:</strong></p>
-    <ul>
-      <li>PLACA: ${escapeHTML(data.vehicle.vehiclePlate)} ANO/MODELO: ${escapeHTML(data.vehicle.vehicleYear)} RENAVAM: ${escapeHTML(data.vehicle.vehicleRenavam)}</li>
-      <li>CHASSI: ${escapeHTML(data.vehicle.vehicleChassis)} MARCA: ${escapeHTML(data.vehicle.vehicleBrand)} MODELO: ${escapeHTML(data.vehicle.vehicleModel)}</li>
-      <li>VERSÃO: ${escapeHTML(data.vehicle.vehicleVersion)}</li>
-    </ul>
-    <p>Adquirido pelo Outorgante; representar perante as repartições públicas federais, estaduais, municipais, DETRAN e onde mais necessário for; neles assim e requerer, juntar e desentranhar quaisquer guias, papéis, requerimentos, documentos e o que mais se torne necessário, pagar quaisquer impostos, tributos e taxas para efetivar a transferência e efetuar o emplacamento do mesmo, em suma, tudo o mais praticar ao bom e fiel desempenho do presente mandato.</p>
-    <p>Todos os dados desta procuração foram fornecidos e conferidos pelo (a) Outorgante, que por eles se responsabiliza nos termos da Lei. Esta procuração é válida até o dia que o CRV for transferido para o proprietário.</p>
-    <br><br><p>Assinatura do proprietário (Outorgante)</p>
-    <p>Obs: reconhecer firma por autenticidade.</p>
+    <article class="vex-procuracao-doc">
+      <h1>PROCURAÇÃO PARA TRANSFERÊNCIA DE PROPRIETÁRIO</h1>
+
+      <section class="vex-procuracao-party">
+        <p><strong>OUTORGANTE:</strong> ${escapeHTML(data.client.clientName)}</p>
+        <div class="vex-procuracao-two-col">
+          <p><strong>CPF/CNPJ:</strong> ${escapeHTML(data.client.clientCpf)}</p>
+          <p><strong>RG:</strong> ${escapeHTML(rg)}</p>
+        </div>
+        <p><strong>ENDEREÇO:</strong> ${escapeHTML(enderecoCliente)}</p>
+        <div class="vex-procuracao-two-col">
+          <p><strong>CELULAR:</strong> ${escapeHTML(data.client.clientPhone)}</p>
+          <p><strong>E-MAIL:</strong> ${escapeHTML(data.client.clientEmail)}</p>
+        </div>
+      </section>
+
+      <section class="vex-procuracao-party vex-procuracao-outorgado">
+        <p><strong>OUTORGADO:</strong> ${escapeHTML(data.representative.name)}</p>
+        <p><strong>CPF/CNPJ:</strong> ${escapeHTML(data.representative.cpf)}</p>
+        <p><strong>ENDEREÇO:</strong> ${escapeHTML(data.representative.address)}</p>
+      </section>
+
+      <section class="vex-procuracao-powers">
+        <p><strong>PODERES:</strong> Por esse instrumento de Procuração, o Outorgante nomeia e constitui seu bastante procurador o Outorgado, para o fim especial de comprar e vender como proprietário/vendedor/comprador o CRV (Certificado de Registro de Veículos) do veículo com as seguintes características; para o fim especial de regularizar a documentação.</p>
+      </section>
+
+      <section class="vex-procuracao-vehicle">
+        <p><strong>DADOS DO VEÍCULO:</strong></p>
+        <ul>
+          <li><strong>PLACA:</strong> ${escapeHTML(data.vehicle.vehiclePlate)} <strong>ANO/MODELO:</strong> ${escapeHTML(data.vehicle.vehicleYear)} <strong>RENAVAM:</strong> ${escapeHTML(data.vehicle.vehicleRenavam)}</li>
+          <li><strong>CHASSI:</strong> ${escapeHTML(data.vehicle.vehicleChassis)} <strong>MARCA:</strong> ${escapeHTML(data.vehicle.vehicleBrand)} <strong>MODELO:</strong> ${escapeHTML(vehicleModel)}</li>
+          <li><strong>VERSÃO:</strong> ${escapeHTML(data.vehicle.vehicleVersion || veiculo)}</li>
+        </ul>
+      </section>
+
+      <section class="vex-procuracao-legal">
+        <p>Adquirido pelo Outorgante; representar perante as repartições públicas federais, estaduais, municipais, DETRAN e onde mais necessário for; neles assim e requerer, juntar e desentranhar quaisquer guias, papéis, requerimentos, documentos e o que mais se torne necessário, pagar quaisquer impostos, tributos e taxas para efetivar a transferência e efetuar o emplacamento do mesmo, em suma, tudo o mais praticar ao bom e fiel desempenho do presente mandato.</p>
+        <p>Todos os dados desta procuração foram fornecidos e conferidos pelo (a) Outorgante, que por eles se responsabiliza nos termos da Lei. Esta procuração é válida até o dia que o CRV for transferido para o proprietário.</p>
+      </section>
+
+      <footer class="vex-procuracao-signature">
+        <div></div>
+        <p>Assinatura do proprietário (Outorgante)</p>
+        <p><strong>Obs:</strong> reconhecer firma por autenticidade.</p>
+      </footer>
+    </article>
   `;
 }
 
@@ -5891,25 +6076,25 @@ function getVexPrintableDocumentHtml(title, bodyHtml, type) {
     .vex-contract-doc{width:100%;color:#111;font-family:Arial,Helvetica,sans-serif;background:#fff;}
     .vex-contract-page{width:210mm;min-height:297mm;position:relative;padding:17mm 16mm 12mm 16mm;page-break-after:always;break-after:page;background:#fff;overflow:hidden;}
     .vex-contract-page:last-child{page-break-after:auto;break-after:auto;}
-    .vex-print-contract h1{font-size:9.5pt;line-height:1.05;text-align:center;margin:0 0 4px;font-weight:800;text-transform:uppercase;letter-spacing:.05px;}
-    .vex-print-contract h2{font-size:7.8pt;line-height:1.05;text-align:center;margin:0 0 12mm;font-weight:700;text-transform:uppercase;font-style:italic;}
-    .vex-print-contract p{font-size:8pt;line-height:1.18;margin:2.2px 0;text-align:left;}
+    .vex-print-contract h1{font-size:10.2pt;line-height:1.08;text-align:center;margin:0 0 4px;font-weight:800;text-transform:uppercase;letter-spacing:.05px;}
+    .vex-print-contract h2{font-size:8.35pt;line-height:1.08;text-align:center;margin:0 0 11mm;font-weight:700;text-transform:uppercase;font-style:italic;}
+    .vex-print-contract p{font-size:10pt;line-height:1.24;margin:2.4px 0;text-align:left;}
     .vex-print-contract strong{font-weight:800;}
-    .contract-center-title{font-weight:800;text-align:center!important;text-transform:uppercase;margin:6px 0 4px!important;font-size:8pt!important;}
-    .contract-intro{text-align:center!important;margin:0 0 4px!important;font-size:7.6pt!important;}
+    .contract-center-title{font-weight:800;text-align:center!important;text-transform:uppercase;margin:6px 0 4px!important;font-size:10pt!important;}
+    .contract-intro{text-align:center!important;margin:0 0 4px!important;font-size:9.4pt!important;}
     .contract-box{width:100%;border-collapse:collapse;border:1px solid #000;margin:0 auto 5px;table-layout:fixed;}
-    .contract-box td,.contract-box th{border:1px solid #000;padding:2px 4px;vertical-align:middle;text-align:center;font-size:6.4pt;line-height:1.08;color:#111;}
+    .contract-box td,.contract-box th{border:1px solid #000;padding:2px 4px;vertical-align:middle;text-align:center;font-size:8.45pt;line-height:1.12;color:#111;}
     .contract-box th{font-weight:800;background:#fff;text-transform:uppercase;}
     .contract-company-table{width:88%;margin-bottom:6px;}
-    .contract-company-table td{font-weight:400;font-size:6.5pt;line-height:1.1;padding:3px 4px;}
+    .contract-company-table td{font-weight:400;font-size:8.45pt;line-height:1.14;padding:3px 4px;}
     .contract-data-table td.label{width:20%;font-weight:800;text-align:center;}
     .contract-data-table td{height:4.8mm;}
     .contract-object-title{margin-top:12mm!important;}
-    .contract-small-title{margin:0 0 3px!important;font-size:7.2pt!important;}
+    .contract-small-title{margin:0 0 3px!important;font-size:9.2pt!important;}
     .contract-vehicle-table{margin-bottom:8mm;}
-    .contract-value-line{text-align:center!important;margin:0 0 6mm!important;font-size:7.4pt!important;}
+    .contract-value-line{text-align:center!important;margin:0 0 5mm!important;font-size:9.4pt!important;}
     .contract-payment-table{width:100%;margin-top:0;}
-    .contract-payment-table td,.contract-payment-table th{font-size:6.7pt;height:4.8mm;padding:2px 5px;}
+    .contract-payment-table td,.contract-payment-table th{font-size:8.65pt;height:4.8mm;padding:2px 5px;}
     .contract-payment-table td:first-child{width:50%;font-weight:800;text-align:center;text-transform:uppercase;}
     .contract-payment-table td:last-child{text-align:center;}
     .contract-total-row td{font-weight:800;}
@@ -5918,23 +6103,23 @@ function getVexPrintableDocumentHtml(title, bodyHtml, type) {
     .vex-contract-page-1 .contract-vehicle-table td{height:6.2mm;}
     .vex-contract-page-1 .contract-payment-table td,.vex-contract-page-1 .contract-payment-table th{height:5.9mm;}
     .contract-red-block{color:#f00;font-weight:700;font-style:italic;margin:4mm 8mm 4mm 8mm;}
-    .contract-red-block p{color:#f00;font-size:8.25pt;line-height:1.15;margin:1.5px 0;text-align:left;}
+    .contract-red-block p{color:#f00;font-size:9.7pt;line-height:1.18;margin:1.5px 0;text-align:left;}
     .contract-page-1-red{margin-top:6mm;margin-bottom:3mm;}
-    .contract-gastos{text-align:center!important;margin:0 7mm 3.5px!important;font-size:7.9pt!important;line-height:1.13!important;}
-    .contract-paragraph-unique{font-size:7.85pt!important;line-height:1.13!important;margin:0 1mm!important;}
+    .contract-gastos{text-align:center!important;margin:0 7mm 3.5px!important;font-size:9.6pt!important;line-height:1.16!important;}
+    .contract-paragraph-unique{font-size:9.35pt!important;line-height:1.18!important;margin:0 1mm!important;}
     .contract-section-gap{margin-top:5.5mm!important;}
-    .vex-contract-page-2 p{font-size:9.35pt;line-height:1.48;margin:7.2px 0;text-align:left;}
-    .vex-contract-page-3 p{font-size:9pt;line-height:1.39;margin:6.2px 0;text-align:left;}
-    .vex-contract-page-4 p{font-size:9.1pt;line-height:1.43;margin:6.6px 0;text-align:left;}
-    .vex-contract-page-2{padding-top:21mm;padding-left:42mm;padding-right:42mm;}
-    .vex-contract-page-3{padding-top:15mm;padding-left:38mm;padding-right:38mm;}
-    .vex-contract-page-4{padding-top:25mm;padding-left:38mm;padding-right:38mm;}
-    .contract-list{margin:5px 0 8mm 15px;padding:0;font-size:8.8pt;line-height:1.35;}
-    .contract-list li{margin:2.8px 0;}
+    .vex-contract-page-2 p{font-size:11.7pt;line-height:1.55;margin:8px 0;text-align:left;}
+    .vex-contract-page-3 p{font-size:10.4pt;line-height:1.42;margin:6.2px 0;text-align:left;}
+    .vex-contract-page-4 p{font-size:10.4pt;line-height:1.42;margin:6.4px 0;text-align:left;}
+    .vex-contract-page-2{padding-top:16mm;padding-left:35mm;padding-right:35mm;}
+    .vex-contract-page-3{padding-top:15mm;padding-left:32mm;padding-right:32mm;}
+    .vex-contract-page-4{padding-top:24mm;padding-left:32mm;padding-right:32mm;}
+    .contract-list{margin:5px 0 7mm 15px;padding:0;font-size:10.2pt;line-height:1.34;}
+    .contract-list li{margin:3px 0;}
     .contract-final-block{min-height:146mm;}
-    .contract-date-line{font-size:9pt;font-weight:400;text-align:left;margin-top:10mm;}
-    .contract-signature-line{font-size:8.6pt;font-weight:400;margin-top:12mm;}
-    .contract-page-number{position:absolute;left:0;right:0;bottom:6mm;text-align:center!important;font-size:7.2pt!important;margin:0!important;color:#111;}
+    .contract-date-line{font-size:10.2pt;font-weight:400;text-align:left;margin-top:10mm;}
+    .contract-signature-line{font-size:10pt;font-weight:400;margin-top:12mm;}
+    .contract-page-number{position:absolute;left:0;right:0;bottom:6mm;text-align:center!important;font-size:8.2pt!important;margin:0!important;color:#111;}
     .vex-print-repasse .vex-print-content,.vex-print-procuracao .vex-print-content{font-size:10pt;line-height:1.2;padding:9mm 10mm;}
     .vex-print-repasse h1,.vex-print-procuracao h1{font-size:13pt;}
     .vex-print-repasse h2,.vex-print-procuracao h2{font-size:10.5pt;margin-bottom:8px;}
@@ -5965,8 +6150,26 @@ function getVexPrintableDocumentHtml(title, bodyHtml, type) {
     .vex-repasse-signatures{display:grid;grid-template-columns:1fr 1fr;column-gap:28px;position:absolute;left:0;right:0;bottom:22mm;text-align:center;}
     .vex-repasse-signature div{border-top:1px solid #000;height:1px;margin:0 0 2px;}
     .vex-repasse-signature strong{font-size:10pt;line-height:1;font-weight:800;text-transform:uppercase;}
-    .vex-print-procuracao ul{margin:5px 0 7px 18px;padding:0;}
-    .vex-print-procuracao li{margin:2px 0;}
+    .vex-print-procuracao .vex-print-sheet{width:210mm;min-height:297mm;box-shadow:none;}
+    .vex-print-procuracao .vex-print-content{padding:0;font-family:Arial,Helvetica,sans-serif;color:#000;}
+    .vex-procuracao-doc{width:100%;min-height:297mm;padding:24mm 22mm 18mm;position:relative;font-size:10.2pt;line-height:1.4;color:#000;background:#fff;}
+    .vex-procuracao-doc h1{font-size:14.8pt!important;line-height:1.08!important;margin:0 0 10mm!important;text-align:left!important;text-transform:uppercase!important;font-weight:400!important;letter-spacing:0!important;border-left:2px solid #000;padding-left:2px;white-space:nowrap;}
+    .vex-procuracao-doc p{font-size:10.2pt;line-height:1.4;margin:0 0 4mm;text-align:left;}
+    .vex-procuracao-doc strong{font-weight:800;}
+    .vex-procuracao-party{margin:0 0 8mm;}
+    .vex-procuracao-outorgado{margin-bottom:9mm;}
+    .vex-procuracao-two-col{display:grid;grid-template-columns:1fr 1fr;column-gap:22mm;align-items:start;}
+    .vex-procuracao-two-col p{margin-bottom:4mm;}
+    .vex-procuracao-powers{margin:0 0 4mm;}
+    .vex-procuracao-vehicle{margin:0 0 6mm;}
+    .vex-procuracao-vehicle>p{font-weight:800;margin-bottom:2.5mm;}
+    .vex-procuracao-vehicle ul{margin:0 0 0 7mm;padding:0;}
+    .vex-procuracao-vehicle li{font-size:10.2pt;line-height:1.4;margin:0 0 3mm;padding-left:2mm;}
+    .vex-procuracao-legal{margin-top:5mm;}
+    .vex-procuracao-legal p{margin-bottom:4.5mm;}
+    .vex-procuracao-signature{margin-top:22mm;}
+    .vex-procuracao-signature div{border-top:1.6px solid #000;height:1px;margin:0 0 5mm;}
+    .vex-procuracao-signature p{font-size:9.8pt;line-height:1.35;margin:0 0 3mm;}
     @media print{body{background:#fff;padding:0;}.vex-print-sheet{width:auto;min-height:auto;margin:0;box-shadow:none;page-break-after:always;}.vex-print-sheet:last-child{page-break-after:auto;}.vex-print-content{padding:0;}button{display:none;}}
   </style></head><body class="vex-print-${escapeHTML(documentType)}"><section class="vex-print-sheet"><main class="vex-print-content">${bodyHtml}</main></section></body></html>`;
 }
@@ -8648,6 +8851,7 @@ function injectVexRC13LegibilityPatch() {
       .brand-panel .vex-s7-logo-signature {
         width: min(230px, 46%) !important;
         margin: 0 0 42px 0 !important;
+        transform: translateX(48px) !important;
       }
       .brand-panel h1 { margin-top: 0 !important; }
       .authenticity-seal {
