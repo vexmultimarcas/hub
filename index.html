@@ -59,12 +59,13 @@
         <form id="loginForm" class="login-card">
           <div>
             <span class="eyebrow">Aplicativo VEX</span>
-            <h2>Bem-vindo de volta</h2>
-            <p>Acesse com seu e-mail e senha autorizados para continuar.</p>
+            <h2 id="authTitle">Bem-vindo de volta</h2>
+            <p id="authSubtitle">Acesse com seu e-mail e senha autorizados para continuar.</p>
           </div>
 
-          <div class="auth-mode-switch single-mode" aria-label="Acesso ao aplicativo">
-            <button id="loginModeButton" class="auth-mode-button active" type="button">Entrar</button>
+          <div class="auth-mode-switch auth-entry-toggle" aria-label="Acesso ao aplicativo">
+            <button id="loginModeButton" class="auth-mode-button hidden" type="button">Voltar para entrar</button>
+            <button id="registerModeButton" class="auth-mode-button active" type="button">Criar cadastro</button>
           </div>
 
           <label id="displayNameField" class="display-name-field hidden">

@@ -15,6 +15,8 @@ const displayNameField = document.getElementById("displayNameField");
 const registerDisplayName = document.getElementById("registerDisplayName");
 const authSubmitButton = document.getElementById("authSubmitButton");
 const authHelperText = document.getElementById("authHelperText");
+const authTitle = document.getElementById("authTitle");
+const authSubtitle = document.getElementById("authSubtitle");
 const userEmailLabel = document.getElementById("userEmailLabel");
 const usersNavButton = document.getElementById("usersNavButton");
 const usersList = document.getElementById("usersList");
@@ -170,10 +172,12 @@ function setAuthMode(mode) {
 
   if (loginModeButton) {
     loginModeButton.classList.toggle("active", authMode === "login");
+    loginModeButton.classList.toggle("hidden", authMode === "login");
   }
 
   if (registerModeButton) {
     registerModeButton.classList.toggle("active", authMode === "register");
+    registerModeButton.classList.toggle("hidden", authMode === "register");
   }
 
   if (displayNameField) {
@@ -184,10 +188,31 @@ function setAuthMode(mode) {
     authSubmitButton.textContent = authMode === "register" ? "Criar conta" : "Entrar";
   }
 
+  if (authTitle) {
+    authTitle.textContent = authMode === "register" ? "Criar cadastro" : "Bem-vindo de volta";
+  }
+
+  if (authSubtitle) {
+    authSubtitle.textContent = authMode === "register"
+      ? "Informe seu nome, e-mail e senha para acessar o VEX HUB."
+      : "Acesse com seu e-mail e senha autorizados para continuar.";
+  }
+
+  if (loginPassword) {
+    loginPassword.setAttribute("autocomplete", authMode === "register" ? "new-password" : "current-password");
+    loginPassword.setAttribute("placeholder", authMode === "register" ? "Crie uma senha segura" : "Digite sua senha");
+  }
+
   if (authHelperText) {
     authHelperText.textContent = authMode === "register"
       ? "O nome será usado no Dashboard, exemplo: Bom dia, Junior."
       : "Para contas já criadas no Firebase, entre normalmente com e-mail e senha.";
+  }
+
+  if (authHelperText) {
+    authHelperText.textContent = authMode === "register"
+      ? "O nome sera usado no Dashboard, exemplo: Bom dia, Junior."
+      : "Nao tem cadastro? Use o botao Criar cadastro acima.";
   }
 
   showLoginMessage("");
@@ -502,6 +527,55 @@ function initializeVexCepAutofill() {
       state: "formalClientState"
     }, "formalClientMessage");
   }, true);
+}
+
+function getVexWhatsappPhone(sale) {
+  const rawPhone = sale && sale.formalization && sale.formalization.client && sale.formalization.client.clientPhone
+    ? sale.formalization.client.clientPhone
+    : sale && sale.clientPhone
+      ? sale.clientPhone
+      : "";
+  const digits = String(rawPhone || "").replace(/\D/g, "");
+
+  if (!digits || digits.length < 10) {
+    return "";
+  }
+
+  return digits.indexOf("55") === 0 ? digits : "55" + digits;
+}
+
+function buildVexWhatsappMessage(sale, context) {
+  const clientName = sale && sale.clientName ? sale.clientName : "tudo bem";
+  const vehicle = `${sale && sale.vehicleModel ? sale.vehicleModel : "seu veiculo"} ${sale && sale.vehicleYear ? sale.vehicleYear : ""}`.trim();
+  const status = sale && sale.afterSaleStatus ? sale.afterSaleStatus : "em andamento";
+  const transfer = sale && sale.transferType ? sale.transferType : "nao informada";
+
+  if (context === "transfer") {
+    return `Ola, ${clientName}! Tudo bem? Aqui e da VEX Multimarcas. Estou entrando em contato para acompanhar a transferencia do ${vehicle}. Pode me confirmar como esta o andamento?`;
+  }
+
+  return `Ola, ${clientName}! Tudo bem? Aqui e da VEX Multimarcas. Estou acompanhando seu atendimento referente ao ${vehicle}. Status atual: ${status}. Transferencia: ${transfer}. Pode me dar um retorno, por favor?`;
+}
+
+function openVexClientWhatsapp(saleId, context) {
+  const sale = sales.find(function(item) {
+    return item.id === saleId;
+  });
+
+  if (!sale) {
+    alert("Venda nao encontrada para abrir o WhatsApp.");
+    return;
+  }
+
+  const phone = getVexWhatsappPhone(sale);
+
+  if (!phone) {
+    alert("Telefone do cliente nao informado ou invalido.");
+    return;
+  }
+
+  const message = encodeURIComponent(buildVexWhatsappMessage(sale, context || "followup"));
+  window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
 }
 
 function listenAuthenticationState() {
@@ -1250,6 +1324,7 @@ function openSaleDetails(saleId) {
     <div class="drawer-actions vex-drawer-actions-safe">
       ${canManageContent() ? `<button class="primary-button" type="button" onclick="startEditSale('${sale.id}')">Editar</button>` : ""}
       <button class="primary-button" type="button" onclick="openVexFormalization('${sale.id}')">Formalização</button>
+      <button class="secondary-button" type="button" onclick="openVexClientWhatsapp('${sale.id}', 'transfer')">WhatsApp</button>
       <button class="secondary-button" type="button" onclick="closeSaleDetails();">Fechar</button>
       ${canManageContent() ? `<button class="danger-button" type="button" onclick="deleteSale('${sale.id}'); closeSaleDetails();">Excluir</button>` : ""}
     </div>
@@ -3203,6 +3278,84 @@ function formatDateToBrazil(date) {
   return `${day}/${month}/${year}`;
 }
 
+/* =========================================================
+   RC3.0.9 - WhatsApp rapido para pendencias
+   ========================================================= */
+function renderVexSmartAlerts(pendingAfterSales, pendingTransfers, goalPercent, growth) {
+  const container = document.getElementById("vexSmartAlerts");
+
+  if (!container) {
+    return;
+  }
+
+  const growthText = growth === null ? "Novo mes iniciado" : `${growth >= 0 ? "+" : ""}${growth.toFixed(0)}% vs mes anterior`;
+  const pendingContacts = sales.filter(function(sale) {
+    return sale.afterSaleStatus !== "Finalizado";
+  }).sort(function(a, b) {
+    return new Date(b.saleDate || b.createdAtLocal || 0).getTime() - new Date(a.saleDate || a.createdAtLocal || 0).getTime();
+  });
+  const pendingContactHtml = pendingContacts.length ? `
+    <div class="vex-alert-contact-panel">
+      <span class="vex-alert-contact-title">Todos em aberto (${pendingContacts.length})</span>
+      ${pendingContacts.map(function(sale) {
+        const reason = sale.transferType === "Pela loja" || sale.afterSaleStatus === "Transferencia em andamento" || sale.afterSaleStatus === "TransferÃªncia em andamento" ? "transfer" : "followup";
+
+        return `
+          <article class="vex-alert-contact-row">
+            <span>
+              <strong>${escapeHTML(sale.clientName || "Cliente")}</strong>
+              <small>${escapeHTML(sale.vehicleModel || "Veiculo")} - ${escapeHTML(sale.afterSaleStatus || "Pendente")}</small>
+            </span>
+            <button type="button" onclick="openVexClientWhatsapp('${sale.id}', '${reason}')">WhatsApp</button>
+          </article>
+        `;
+      }).join("")}
+    </div>
+  ` : "";
+
+  container.innerHTML = `
+    <div><span>!</span><strong>${pendingAfterSales}</strong><small>pos-venda(s) pendente(s)</small></div>
+    <div><span>TR</span><strong>${pendingTransfers}</strong><small>transferencia(s) em atencao</small></div>
+    <div><span>%</span><strong>${goalPercent.toFixed(0)}%</strong><small>da meta do mes</small></div>
+    <div><span>+</span><strong>${escapeHTML(growthText)}</strong><small>crescimento</small></div>
+    ${pendingContactHtml}
+  `;
+}
+
+function renderVexLatestVehicles() {
+  const container = document.getElementById("vexLatestVehicles");
+
+  if (!container) {
+    return;
+  }
+
+  const latestSales = sales.slice(0, 5);
+
+  if (latestSales.length === 0) {
+    container.innerHTML = `<div class="vex-dashboard-empty">Nenhum veiculo vendido ainda.</div>`;
+    return;
+  }
+
+  container.innerHTML = latestSales.map(function (sale) {
+    const hasPendingContact = sale.afterSaleStatus !== "Finalizado" || sale.transferType === "Pela loja";
+    const whatsappReason = sale.transferType === "Pela loja" || sale.afterSaleStatus === "Transferencia em andamento" || sale.afterSaleStatus === "TransferÃªncia em andamento" ? "transfer" : "followup";
+
+    return `
+      <button class="vex-latest-item" type="button" onclick="openSaleDetails('${sale.id}')">
+        <span class="vex-latest-icon">V</span>
+        <span>
+          <strong>${escapeHTML(sale.vehicleModel || "Veiculo")}</strong>
+          <small>${escapeHTML(sale.clientName || "Cliente")} - ${formatDateToBrazil(sale.saleDate)}</small>
+        </span>
+        <span class="vex-latest-actions">
+          <em>${escapeHTML(formatSaleValuePremium(sale.saleValue))}</em>
+          ${hasPendingContact ? `<span class="vex-whatsapp-chip" onclick="event.stopPropagation(); openVexClientWhatsapp('${sale.id}', '${whatsappReason}')">WhatsApp</span>` : ""}
+        </span>
+      </button>
+    `;
+  }).join("");
+}
+
 function escapeHTML(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -3217,6 +3370,7 @@ window.updateSaleStatus = updateSaleStatus;
 window.updateSaleTransfer = updateSaleTransfer;
 window.updateUserRole = updateUserRole;
 window.toggleUserAccess = toggleUserAccess;
+window.openVexClientWhatsapp = openVexClientWhatsapp;
 window.openSaleDetails = openSaleDetails;
 window.closeSaleDetails = closeSaleDetails;
 

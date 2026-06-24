@@ -1471,6 +1471,21 @@ textarea:focus {
   grid-template-columns: 1fr;
 }
 
+.auth-entry-toggle {
+  grid-template-columns: 1fr;
+}
+
+.auth-entry-toggle .auth-mode-button {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.auth-entry-toggle .auth-mode-button:hover {
+  color: #ffffff;
+  border-color: rgba(225, 6, 0, 0.38);
+  background: rgba(225, 6, 0, 0.12);
+}
+
 .user-card-main {
   display: flex !important;
   align-items: center;
@@ -2580,5 +2595,106 @@ button,
   .vex-launch-screen strong,
   .vex-launch-screen small {
     animation: none !important;
+  }
+}
+
+/* =========================================================
+   RC3.0.9 - WhatsApp rapido para pendencias
+   ========================================================= */
+.vex-alert-list .vex-alert-contact-panel {
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+  padding: 12px !important;
+  max-height: 360px;
+  overflow: auto;
+  border-color: rgba(34, 197, 94, 0.22) !important;
+  background:
+    radial-gradient(circle at top left, rgba(34, 197, 94, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.045) !important;
+}
+
+.vex-alert-contact-title {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.vex-alert-contact-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.vex-alert-contact-row span,
+.vex-latest-actions {
+  min-width: 0;
+}
+
+.vex-alert-contact-row strong,
+.vex-alert-contact-row small {
+  display: block;
+}
+
+.vex-alert-contact-row strong {
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.vex-alert-contact-row small {
+  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.vex-alert-contact-row button,
+.vex-whatsapp-chip {
+  border: 1px solid rgba(34, 197, 94, 0.34);
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.14);
+  color: #dcfce7;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.vex-alert-contact-row button {
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.vex-whatsapp-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 6px;
+  padding: 7px 10px;
+}
+
+.vex-latest-actions {
+  display: grid;
+  justify-items: end;
+}
+
+.vex-latest-actions em {
+  text-align: right;
+}
+
+@media (max-width: 720px) {
+  .vex-alert-contact-row {
+    grid-template-columns: 1fr;
+  }
+
+  .vex-alert-contact-row button {
+    width: 100%;
   }
 }

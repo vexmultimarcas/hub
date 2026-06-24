@@ -1,4 +1,4 @@
-const CACHE_NAME = "vex-hub-rc3-0-8-premium-identity";
+const CACHE_NAME = "vex-hub-rc3-0-11-cadastro-login";
 
 const FILES_TO_CACHE = [
   "./",
