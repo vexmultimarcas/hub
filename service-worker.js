@@ -1,4 +1,4 @@
-const CACHE_NAME = "vex-hub-rc3-0-11-cadastro-login";
+const CACHE_NAME = "vex-hub-rc3-0-13-dashboard-clean";
 
 const FILES_TO_CACHE = [
   "./",

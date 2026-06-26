@@ -2698,3 +2698,430 @@ button,
     width: 100%;
   }
 }
+
+/* =========================================================
+   RC3.0.12 - Central de Pendencias Premium
+   ========================================================= */
+.vex-alert-list .vex-pending-center {
+  grid-template-columns: 1fr !important;
+  align-items: stretch !important;
+  gap: 12px !important;
+  max-height: 520px;
+  overflow: auto;
+  padding: 14px !important;
+  border-color: rgba(225, 6, 0, 0.25) !important;
+  background:
+    radial-gradient(circle at top left, rgba(225, 6, 0, 0.14), transparent 36%),
+    rgba(255, 255, 255, 0.04) !important;
+}
+
+.vex-pending-center-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vex-pending-center-title span,
+.vex-pending-category header strong {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.vex-pending-center-title strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 13px;
+  background: rgba(225, 6, 0, 0.34);
+  border: 1px solid rgba(225, 6, 0, 0.42);
+}
+
+.vex-pending-category {
+  display: grid;
+  gap: 8px;
+}
+
+.vex-pending-category header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 3px;
+}
+
+.vex-pending-category header span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: #fecaca;
+  font-size: 12px;
+  font-weight: 800;
+  background: rgba(225, 6, 0, 0.14);
+}
+
+.vex-pending-list {
+  display: grid;
+  gap: 8px;
+}
+
+.vex-pending-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.vex-pending-row.warning {
+  border-color: rgba(251, 191, 36, 0.26);
+  background: rgba(251, 191, 36, 0.07);
+}
+
+.vex-pending-row.danger {
+  border-color: rgba(225, 6, 0, 0.34);
+  background: rgba(225, 6, 0, 0.09);
+}
+
+.vex-pending-row strong,
+.vex-pending-row small {
+  display: block;
+}
+
+.vex-pending-row strong {
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.vex-pending-row small {
+  margin-top: 3px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.vex-pending-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.vex-pending-actions button {
+  min-height: 32px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.vex-pending-actions button:first-child {
+  color: #dcfce7;
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.34);
+}
+
+.vex-pending-actions button.muted {
+  color: #fecaca;
+  background: rgba(225, 6, 0, 0.12);
+  border-color: rgba(225, 6, 0, 0.26);
+}
+
+.vex-pending-empty {
+  margin: 0;
+  padding: 14px;
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.64);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+@media (max-width: 720px) {
+  .vex-pending-row {
+    grid-template-columns: 1fr;
+  }
+
+  .vex-pending-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .vex-pending-actions button {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   RC3.0.13 - Dashboard Clean Loja
+   ========================================================= */
+.vex-dashboard-clean {
+  gap: 18px;
+}
+
+.vex-clean-hero,
+.vex-clean-kpis article,
+.vex-clean-panel {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(225, 6, 0, 0.12), transparent 32%),
+    linear-gradient(145deg, rgba(8, 8, 8, 0.98), rgba(17, 24, 39, 0.88));
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.34);
+}
+
+.vex-clean-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 26px;
+}
+
+.vex-clean-hero h2 {
+  margin: 12px 0 8px;
+  color: #fff;
+  font-size: clamp(30px, 4vw, 54px);
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.vex-clean-hero p {
+  color: rgba(255, 255, 255, 0.62);
+  text-transform: capitalize;
+}
+
+.vex-clean-action {
+  width: auto;
+  min-width: 160px;
+  padding-inline: 22px;
+}
+
+.vex-clean-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.vex-clean-kpis article,
+.vex-clean-panel {
+  padding: 20px;
+}
+
+.vex-clean-kpis span,
+.vex-clean-kpis small,
+.vex-clean-panel-header span,
+.vex-clean-latest-item small {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.vex-clean-kpis span {
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.vex-clean-kpis strong {
+  display: block;
+  margin: 12px 0 8px;
+  color: #fff;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.vex-clean-kpis small {
+  font-size: 13px;
+}
+
+.vex-clean-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: 18px;
+}
+
+.vex-clean-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.vex-clean-panel-header h3 {
+  margin: 8px 0 0;
+  color: #fff;
+  font-size: 24px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.vex-clean-latest-list {
+  display: grid;
+  gap: 10px;
+}
+
+.vex-clean-latest-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  text-align: left;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.vex-clean-latest-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(225, 6, 0, 0.28);
+  background: rgba(225, 6, 0, 0.08);
+}
+
+.vex-clean-car-mark {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #fff;
+  font-weight: 850;
+  background: rgba(225, 6, 0, 0.20);
+  border: 1px solid rgba(225, 6, 0, 0.28);
+}
+
+.vex-clean-latest-item strong,
+.vex-clean-latest-item small {
+  display: block;
+  min-width: 0;
+}
+
+.vex-clean-latest-item strong {
+  overflow: hidden;
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vex-clean-latest-item small {
+  margin-top: 3px;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vex-clean-latest-item em {
+  color: #fff;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.vex-clean-chart {
+  height: 280px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.vex-clean-chart-item {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  justify-items: center;
+}
+
+.vex-clean-chart-bar-wrap {
+  width: 100%;
+  height: 190px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.vex-clean-chart-bar {
+  width: min(34px, 68%);
+  min-height: 8px;
+  border-radius: 999px 999px 6px 6px;
+  background: linear-gradient(180deg, #ff3b32, #b40602);
+  box-shadow: 0 0 22px rgba(225, 6, 0, 0.26);
+}
+
+.vex-clean-chart-item strong {
+  color: #fff;
+  font-size: 14px;
+}
+
+.vex-clean-chart-item small {
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+@media (max-width: 920px) {
+  .vex-clean-hero,
+  .vex-clean-panel-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .vex-clean-action {
+    width: 100%;
+  }
+
+  .vex-clean-kpis,
+  .vex-clean-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vex-clean-chart {
+    height: 240px;
+  }
+
+  .vex-clean-chart-bar-wrap {
+    height: 150px;
+  }
+}
+
+@media (max-width: 560px) {
+  .vex-clean-latest-item {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .vex-clean-latest-item em {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

@@ -3356,6 +3356,347 @@ function renderVexLatestVehicles() {
   }).join("");
 }
 
+/* =========================================================
+   RC3.0.12 - Central de Pendencias Premium
+   ========================================================= */
+function getVexPendingCategories() {
+  const categories = [
+    { key: "transfer", label: "Transferencia", rows: [] },
+    { key: "afterSale", label: "Pos-venda", rows: [] },
+    { key: "docs", label: "Documentos", rows: [] },
+    { key: "payment", label: "Pagamento", rows: [] },
+    { key: "formalization", label: "Formalizacao", rows: [] },
+    { key: "phone", label: "Sem telefone", rows: [] }
+  ];
+  const byKey = categories.reduce(function(map, category) {
+    map[category.key] = category;
+    return map;
+  }, {});
+
+  sales.forEach(function(sale) {
+    const client = getVexFormalizationClientData(sale);
+    const vehicle = getVexFormalizationVehicleData(sale);
+    const payment = getVexFormalizationPaymentData(sale);
+    const docs = getVexFormalizationReceivedDocsData(sale);
+    const transfer = getVexFormalizationTransferData(sale);
+    const transferStatus = getVexTransferStatus(transfer);
+    const clientCompletion = getVexClientCompletion(client);
+    const vehicleCompletion = getVexVehicleCompletion(vehicle);
+    const paymentCompletion = getVexPaymentCompletion(payment, sale);
+    const docsCompletion = getVexReceivedDocsCompletion(docs);
+    const transferCompletion = getVexTransferCompletion(transfer);
+    const phone = getVexWhatsappPhone(sale);
+    const base = {
+      id: sale.id,
+      clientName: sale.clientName || client.clientName || "Cliente",
+      vehicleName: `${sale.vehicleModel || vehicle.vehicleModel || "Veiculo"} ${sale.vehicleYear || vehicle.vehicleYear || ""}`.trim(),
+      saleDate: sale.saleDate || sale.createdAtLocal || "",
+      hasPhone: Boolean(phone)
+    };
+
+    if (sale.afterSaleStatus !== "Finalizado") {
+      byKey.afterSale.rows.push({
+        ...base,
+        status: sale.afterSaleStatus || "Pendente",
+        action: "openSaleDetails",
+        whatsapp: "followup"
+      });
+    }
+
+    if (transferStatus.className !== "done" || (sale.transferType === "Pela loja" && sale.afterSaleStatus !== "Finalizado")) {
+      byKey.transfer.rows.push({
+        ...base,
+        status: transferStatus.label,
+        action: "openVexFormalizationTransfer",
+        whatsapp: "transfer",
+        danger: transferStatus.className === "danger",
+        warning: transferStatus.className === "warning"
+      });
+    }
+
+    if (!docsCompletion.complete) {
+      byKey.docs.rows.push({
+        ...base,
+        status: `${docsCompletion.done}/${docsCompletion.total} recebidos`,
+        action: "openVexFormalizationReceivedDocs",
+        whatsapp: "followup"
+      });
+    }
+
+    if (!paymentCompletion.complete) {
+      byKey.payment.rows.push({
+        ...base,
+        status: paymentCompletion.totalOk ? "Conferencia pendente" : "Valor divergente",
+        action: "openVexFormalizationPayment",
+        whatsapp: "followup",
+        warning: true
+      });
+    }
+
+    if (!clientCompletion.complete || !vehicleCompletion.complete || !paymentCompletion.complete || !docsCompletion.complete || !transferCompletion.complete) {
+      byKey.formalization.rows.push({
+        ...base,
+        status: `${Math.round((clientCompletion.percent + vehicleCompletion.percent + paymentCompletion.percent + docsCompletion.percent + transferCompletion.percent) / 5)}% completo`,
+        action: "openVexFormalization",
+        whatsapp: "followup"
+      });
+    }
+
+    if (!phone && sale.afterSaleStatus !== "Finalizado") {
+      byKey.phone.rows.push({
+        ...base,
+        status: "Cadastrar telefone",
+        action: "openVexFormalizationClient",
+        whatsapp: ""
+      });
+    }
+  });
+
+  categories.forEach(function(category) {
+    category.rows.sort(function(a, b) {
+      if (a.danger !== b.danger) return a.danger ? -1 : 1;
+      if (a.warning !== b.warning) return a.warning ? -1 : 1;
+      return new Date(b.saleDate || 0).getTime() - new Date(a.saleDate || 0).getTime();
+    });
+  });
+
+  return categories;
+}
+
+function renderVexPendingCategory(category) {
+  if (!category.rows.length) {
+    return "";
+  }
+
+  return `
+    <section class="vex-pending-category vex-pending-${category.key}">
+      <header>
+        <strong>${escapeHTML(category.label)}</strong>
+        <span>${category.rows.length}</span>
+      </header>
+      <div class="vex-pending-list">
+        ${category.rows.map(function(row) {
+          const statusClass = row.danger ? "danger" : row.warning ? "warning" : "";
+          const actionName = row.action || "openVexFormalization";
+          return `
+            <article class="vex-pending-row ${statusClass}">
+              <div>
+                <strong>${escapeHTML(row.clientName)}</strong>
+                <small>${escapeHTML(row.vehicleName)} - ${escapeHTML(row.status)}</small>
+              </div>
+              <div class="vex-pending-actions">
+                ${row.hasPhone && row.whatsapp ? `<button type="button" onclick="openVexClientWhatsapp('${row.id}', '${row.whatsapp}')">WhatsApp</button>` : `<button type="button" class="muted" onclick="openVexFormalizationClient('${row.id}')">Sem telefone</button>`}
+                <button type="button" onclick="${actionName}('${row.id}')">Abrir</button>
+              </div>
+            </article>
+          `;
+        }).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderVexSmartAlerts(pendingAfterSales, pendingTransfers, goalPercent, growth) {
+  const container = document.getElementById("vexSmartAlerts");
+
+  if (!container) {
+    return;
+  }
+
+  const categories = getVexPendingCategories();
+  const totalPendencies = categories.reduce(function(total, category) {
+    return total + category.rows.length;
+  }, 0);
+  const transferCategory = categories.find(function(category) { return category.key === "transfer"; });
+  const phoneCategory = categories.find(function(category) { return category.key === "phone"; });
+  const growthText = growth === null ? "Novo mes" : `${growth >= 0 ? "+" : ""}${growth.toFixed(0)}%`;
+  const categoryHtml = categories.map(renderVexPendingCategory).filter(Boolean).join("");
+
+  container.innerHTML = `
+    <div><span>!</span><strong>${pendingAfterSales}</strong><small>pos-vendas em aberto</small></div>
+    <div><span>TR</span><strong>${transferCategory ? transferCategory.rows.length : pendingTransfers}</strong><small>transferencias</small></div>
+    <div><span>TEL</span><strong>${phoneCategory ? phoneCategory.rows.length : 0}</strong><small>sem telefone valido</small></div>
+    <div><span>+</span><strong>${escapeHTML(growthText)}</strong><small>crescimento</small></div>
+    <div class="vex-pending-center">
+      <div class="vex-pending-center-title">
+        <span>Central de Pendencias</span>
+        <strong>${totalPendencies}</strong>
+      </div>
+      ${categoryHtml || `<p class="vex-pending-empty">Nenhuma pendencia encontrada.</p>`}
+    </div>
+  `;
+}
+
+/* =========================================================
+   RC3.0.13 - Dashboard Clean Loja
+   ========================================================= */
+function prepareVexDashboardLayout() {
+  const dashboardSection = document.getElementById("dashboardSection");
+
+  if (!dashboardSection || dashboardSection.getAttribute("data-vex-dashboard-ready") === "rc3-0-13") {
+    return;
+  }
+
+  dashboardSection.setAttribute("data-vex-dashboard-ready", "rc3-0-13");
+
+  dashboardSection.innerHTML = `
+    <div class="vex-dashboard-shell vex-dashboard-clean">
+      <section class="vex-clean-hero">
+        <div>
+          <span class="vex-kicker">VEX MULTIMARCAS</span>
+          <h2 id="vexGreetingTitle">Dashboard</h2>
+          <p id="vexCurrentDate">Visao geral da loja</p>
+        </div>
+        <button class="primary-button vex-clean-action" type="button" onclick="goToSection('newSaleSection')">Nova venda</button>
+      </section>
+
+      <section class="vex-clean-kpis">
+        <article>
+          <span>Vendidos no mes</span>
+          <strong id="vexCleanMonthSales">0</strong>
+          <small>Veiculos lancados</small>
+        </article>
+        <article>
+          <span>Valor vendido</span>
+          <strong id="vexCleanMonthValue">R$ 0,00</strong>
+          <small>Somente mes atual</small>
+        </article>
+        <article>
+          <span>Crescimento</span>
+          <strong id="vexCleanGrowth">0%</strong>
+          <small>Comparado ao mes anterior</small>
+        </article>
+      </section>
+
+      <section class="vex-clean-grid">
+        <article class="vex-clean-panel vex-clean-latest-panel">
+          <div class="vex-clean-panel-header">
+            <div>
+              <span class="vex-kicker">Ultimos carros</span>
+              <h3>Vendidos recentemente</h3>
+            </div>
+            <button class="vex-mini-button" type="button" onclick="goToSection('historySection')">Ver todos</button>
+          </div>
+          <div id="vexLatestVehicles" class="vex-clean-latest-list"></div>
+        </article>
+
+        <article class="vex-clean-panel">
+          <div class="vex-clean-panel-header">
+            <div>
+              <span class="vex-kicker">Crescimento</span>
+              <h3>Vendas por mes</h3>
+            </div>
+          </div>
+          <div id="vexMonthlyGrowthChart" class="vex-clean-chart"></div>
+        </article>
+      </section>
+    </div>
+  `;
+}
+
+function getVexMonthlySalesBuckets(monthsCount) {
+  const months = [];
+  const now = new Date();
+
+  for (let index = monthsCount - 1; index >= 0; index -= 1) {
+    const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    months.push({
+      key,
+      label: date.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""),
+      count: 0,
+      value: 0
+    });
+  }
+
+  sales.forEach(function(sale) {
+    const rawDate = sale.saleDate || sale.createdAtLocal || "";
+    const parsedDate = rawDate ? new Date(rawDate) : null;
+    if (!parsedDate || Number.isNaN(parsedDate.getTime())) return;
+
+    const key = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, "0")}`;
+    const bucket = months.find(function(item) {
+      return item.key === key;
+    });
+
+    if (bucket) {
+      bucket.count += 1;
+      bucket.value += sale.saleValueNumber ? Number(sale.saleValueNumber) : parseSaleCurrencyValue(sale.saleValue || "");
+    }
+  });
+
+  return months;
+}
+
+function renderVexMonthlyGrowthChart() {
+  const container = document.getElementById("vexMonthlyGrowthChart");
+  if (!container) return;
+
+  const months = getVexMonthlySalesBuckets(6);
+  const maxCount = Math.max(1, ...months.map(function(month) { return month.count; }));
+
+  container.innerHTML = months.map(function(month) {
+    const height = Math.max(8, Math.round((month.count / maxCount) * 100));
+    return `
+      <div class="vex-clean-chart-item">
+        <div class="vex-clean-chart-bar-wrap">
+          <span class="vex-clean-chart-bar" style="height:${height}%"></span>
+        </div>
+        <strong>${month.count}</strong>
+        <small>${escapeHTML(month.label)}</small>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderVexLatestVehicles() {
+  const container = document.getElementById("vexLatestVehicles");
+
+  if (!container) {
+    return;
+  }
+
+  const latestSales = sales.slice(0, 6);
+
+  if (latestSales.length === 0) {
+    container.innerHTML = `<div class="vex-dashboard-empty">Nenhum veiculo vendido ainda.</div>`;
+    return;
+  }
+
+  container.innerHTML = latestSales.map(function(sale) {
+    const vehicleName = `${sale.vehicleModel || "Veiculo"} ${sale.vehicleYear || ""}`.trim();
+    return `
+      <button class="vex-clean-latest-item" type="button" onclick="openSaleDetails('${sale.id}')">
+        <span class="vex-clean-car-mark">V</span>
+        <span>
+          <strong>${escapeHTML(vehicleName)}</strong>
+          <small>${escapeHTML(sale.clientName || "Cliente")} - ${formatDateToBrazil(sale.saleDate)}</small>
+        </span>
+        <em>${escapeHTML(formatSaleValuePremium(sale.saleValue))}</em>
+      </button>
+    `;
+  }).join("");
+}
+
+function updateVexDashboardExecutive() {
+  prepareVexDashboardLayout();
+
+  const currentMonthSales = getCurrentMonthSales();
+  const previousMonthSales = getPreviousMonthSales();
+  const monthlySoldValue = getTotalSoldValue(currentMonthSales);
+  const previousMonthSoldValue = getTotalSoldValue(previousMonthSales);
+  const growth = calculateVexGrowth(monthlySoldValue, previousMonthSoldValue);
+
+  setTextById("vexGreetingTitle", getGreetingText());
+  setTextById("vexCurrentDate", getCurrentDateLabel());
+  setTextById("vexCleanMonthSales", currentMonthSales.length);
+  setTextById("vexCleanMonthValue", formatCurrencyToBrazil(monthlySoldValue));
+  setTextById("vexCleanGrowth", growth === null ? "Novo mes" : `${growth >= 0 ? "+" : ""}${growth.toFixed(0)}%`);
+
+  renderVexLatestVehicles();
+  renderVexMonthlyGrowthChart();
+}
+
 function escapeHTML(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -9809,3 +10150,25 @@ function injectVexRC203DetailsStyles() {
 }
 
 injectVexRC203DetailsStyles();
+
+/* =========================================================
+   RC3.0.13 - Dashboard Clean Loja (override final)
+   ========================================================= */
+function updateVexDashboardExecutive() {
+  prepareVexDashboardLayout();
+
+  const currentMonthSales = getCurrentMonthSales();
+  const previousMonthSales = getPreviousMonthSales();
+  const monthlySoldValue = getTotalSoldValue(currentMonthSales);
+  const previousMonthSoldValue = getTotalSoldValue(previousMonthSales);
+  const growth = calculateVexGrowth(monthlySoldValue, previousMonthSoldValue);
+
+  setTextById("vexGreetingTitle", getGreetingText());
+  setTextById("vexCurrentDate", getCurrentDateLabel());
+  setTextById("vexCleanMonthSales", currentMonthSales.length);
+  setTextById("vexCleanMonthValue", formatCurrencyToBrazil(monthlySoldValue));
+  setTextById("vexCleanGrowth", growth === null ? "Novo mes" : `${growth >= 0 ? "+" : ""}${growth.toFixed(0)}%`);
+
+  renderVexLatestVehicles();
+  renderVexMonthlyGrowthChart();
+}
