@@ -1,4 +1,4 @@
-const CACHE_NAME = "vex-hub-rc3-0-18-estoque-foto-leve";
+const CACHE_NAME = "vex-hub-rc3-0-20-estoque-nuvem-fallback";
 
 const FILES_TO_CACHE = [
   "./",

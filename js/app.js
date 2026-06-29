@@ -72,6 +72,8 @@ let editingSaleId = null;
 let adminSecondaryFirebaseApp = null;
 let vexInventory = [];
 let vexInventoryPhotoDraft = "";
+let vexInventoryCollection = null;
+let unsubscribeVexInventory = null;
 
 
 const ADMIN_EMAILS = [
@@ -607,6 +609,7 @@ function listenAuthenticationState() {
       updateAccessControlUI();
       setupUserSalesCollection(user);
       loadUserSales();
+      setupVexInventoryCloud();
       loadUsersForAdmin();
     } else {
       currentUser = null;
@@ -614,7 +617,9 @@ function listenAuthenticationState() {
       users = [];
       sales = [];
       salesCollection = null;
+      vexInventoryCollection = null;
       stopSalesListener();
+      stopVexInventoryListener();
       stopUsersListener();
       refreshApplication();
       showLogin();
@@ -1073,7 +1078,7 @@ function refreshApplication() {
 }
 
 /* =========================================================
-   RC3.0.18 - Estoque local com foto leve
+   RC3.0.19 - Estoque em nuvem com foto leve
    ========================================================= */
 const VEX_INVENTORY_STORAGE_KEY = "vexHubInventoryV1";
 
@@ -1286,6 +1291,102 @@ function saveVexInventory() {
   }
 }
 
+function stopVexInventoryListener() {
+  if (unsubscribeVexInventory) {
+    unsubscribeVexInventory();
+    unsubscribeVexInventory = null;
+  }
+}
+
+function setupVexInventoryCloud() {
+  stopVexInventoryListener();
+
+  if (!db || !currentUser) {
+    return;
+  }
+
+  vexInventoryCollection = db.collection("inventory");
+  syncLocalVexInventoryToCloud();
+
+  unsubscribeVexInventory = vexInventoryCollection
+    .orderBy("updatedAtLocal", "desc")
+    .onSnapshot(
+      function(snapshot) {
+        vexInventory = snapshot.docs.map(function(doc) {
+          return {
+            id: doc.id,
+            ...doc.data()
+          };
+        });
+
+        saveVexInventory();
+        renderVexInventory();
+      },
+      function(error) {
+        console.error("Erro ao carregar estoque em nuvem:", error);
+        showVexInventoryMessage(getVexInventoryCloudBlockedMessage(), "error");
+        renderVexInventory();
+      }
+    );
+}
+
+async function syncLocalVexInventoryToCloud() {
+  if (!vexInventoryCollection || !canManageContent() || !Array.isArray(vexInventory) || !vexInventory.length) {
+    return;
+  }
+
+  try {
+    await Promise.all(vexInventory.map(function(item) {
+      const docId = getVexInventoryDocId(item);
+      return vexInventoryCollection.doc(docId).set({
+        ...item,
+        id: docId,
+        migratedFromLocal: true,
+        updatedAtLocal: item.updatedAtLocal || new Date().toISOString()
+      }, { merge: true });
+    }));
+  } catch (error) {
+    console.warn("Nao foi possivel migrar estoque local para nuvem:", error);
+  }
+}
+
+function getVexInventoryDocId(item) {
+  const plate = normalizeVexPlate(item && item.plate);
+  return plate || String(item && item.id ? item.id : `stock-${Date.now()}`);
+}
+
+async function persistVexInventoryItem(item) {
+  const docId = getVexInventoryDocId(item);
+  const payload = {
+    ...item,
+    id: docId,
+    updatedAtLocal: item.updatedAtLocal || new Date().toISOString()
+  };
+
+  vexInventory = vexInventory.filter(function(vehicle) {
+    return getVexInventoryDocId(vehicle) !== docId;
+  });
+  vexInventory.unshift(payload);
+  saveVexInventory();
+  renderVexInventory();
+
+  if (vexInventoryCollection && canManageContent()) {
+    await vexInventoryCollection.doc(docId).set(payload, { merge: true });
+  }
+}
+
+function getVexInventoryCloudBlockedMessage() {
+  return "Estoque local ativo. Para aparecer no celular, publique o firestore.rules atualizado no Firebase Console liberando a colecao inventory.";
+}
+
+async function removeVexInventoryItemFromCloud(id) {
+  if (!vexInventoryCollection || !canManageContent()) {
+    return;
+  }
+
+  await vexInventoryCollection.doc(id).delete();
+}
+
 function bindVexInventoryForm() {
   const form = document.getElementById("inventoryForm");
   const photoInput = document.getElementById("inventoryPhotoInput");
@@ -1385,7 +1486,7 @@ function compressVexInventoryPhoto(file) {
       const image = new Image();
 
       image.onload = function() {
-        const maxWidth = 720;
+        const maxWidth = 560;
         const scale = Math.min(1, maxWidth / image.width);
         const canvas = document.createElement("canvas");
         canvas.width = Math.max(1, Math.round(image.width * scale));
@@ -1396,7 +1497,7 @@ function compressVexInventoryPhoto(file) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-        resolve(canvas.toDataURL("image/jpeg", 0.68));
+        resolve(canvas.toDataURL("image/jpeg", 0.56));
       };
 
       image.onerror = reject;
@@ -1438,7 +1539,7 @@ function getElementValue(id) {
   return element ? element.value.trim() : "";
 }
 
-function saveVexInventoryFromForm(event) {
+async function saveVexInventoryFromForm(event) {
   event.preventDefault();
 
   if (!canManageContent()) {
@@ -1457,21 +1558,22 @@ function saveVexInventoryFromForm(event) {
   const item = {
     ...(existing || {}),
     ...data,
-    id: existing ? existing.id : `stock-${Date.now()}`,
+    id: existing ? existing.id : getVexInventoryDocId(data),
     status: "Disponivel",
     fipeValueNumber: parseSaleCurrencyValue(data.fipeValue),
     updatedAtLocal: new Date().toISOString(),
     createdAtLocal: existing ? existing.createdAtLocal : new Date().toISOString()
   };
 
-  vexInventory = vexInventory.filter(function(vehicle) {
-    return normalizeVexPlate(vehicle.plate) !== data.plate;
-  });
-  vexInventory.unshift(item);
-  saveVexInventory();
-  renderVexInventory();
-  clearVexInventoryForm();
-  showVexInventoryMessage("Veiculo salvo no estoque.");
+  try {
+    await persistVexInventoryItem(item);
+    clearVexInventoryForm();
+    showVexInventoryMessage(vexInventoryCollection ? "Veiculo salvo no estoque em nuvem." : "Veiculo salvo neste aparelho.");
+  } catch (error) {
+    console.error("Erro ao salvar estoque:", error);
+    clearVexInventoryForm();
+    showVexInventoryMessage(getVexInventoryCloudBlockedMessage(), "error");
+  }
 }
 
 function getVexInventoryItemByPlate(plate) {
@@ -1541,22 +1643,41 @@ function editVexInventoryItem(id) {
   showVexInventoryMessage("Editando veiculo do estoque.");
 }
 
-function deleteVexInventoryPhoto(id) {
+async function deleteVexInventoryPhoto(id) {
+  const itemToSave = vexInventory.find(function(item) { return item.id === id; });
+  if (!itemToSave) return;
+
+  const updatedItem = { ...itemToSave, photoUrl: "", updatedAtLocal: new Date().toISOString() };
+
   vexInventory = vexInventory.map(function(item) {
     if (item.id === id) {
-      return { ...item, photoUrl: "", updatedAtLocal: new Date().toISOString() };
+      return updatedItem;
     }
     return item;
   });
   saveVexInventory();
   renderVexInventory();
+
+  try {
+    if (vexInventoryCollection && canManageContent()) {
+      await vexInventoryCollection.doc(id).set(updatedItem, { merge: true });
+    }
+  } catch (error) {
+    showVexInventoryMessage("Foto removida localmente, mas nao sincronizou em nuvem.", "error");
+  }
 }
 
-function deleteVexInventoryItem(id) {
+async function deleteVexInventoryItem(id) {
   if (!confirm("Excluir este veiculo do estoque?")) return;
   vexInventory = vexInventory.filter(function(item) { return item.id !== id; });
   saveVexInventory();
   renderVexInventory();
+
+  try {
+    await removeVexInventoryItemFromCloud(id);
+  } catch (error) {
+    showVexInventoryMessage("Veiculo excluido localmente, mas nao sincronizou em nuvem.", "error");
+  }
 }
 
 function clearVexInventoryForm() {
