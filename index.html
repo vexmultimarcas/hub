@@ -105,6 +105,7 @@
         <nav class="sidebar-nav">
           <button class="nav-item active" data-section="dashboardSection">Dashboard</button>
           <button class="nav-item" data-section="newSaleSection">+ Nova Venda</button>
+          <button class="nav-item" data-section="inventorySection">Estoque</button>
           <button class="nav-item" data-section="historySection">Veículos</button>
           <button class="nav-item" data-section="reportsSection">Relatórios</button>
           <button class="nav-item" data-section="profileSection">Perfil</button>
@@ -282,6 +283,101 @@
           </form>
         </section>
 
+        <section id="inventorySection" class="content-section">
+          <div class="section-header">
+            <div>
+              <span class="eyebrow">Estoque</span>
+              <h2>Estoque de Veiculos</h2>
+              <p>Cadastre os carros disponiveis, anexe foto leve e use a placa para acelerar a venda.</p>
+            </div>
+
+            <strong id="inventoryCounter" class="counter-pill">0 veiculos</strong>
+          </div>
+
+          <form id="inventoryForm" class="form-card inventory-card">
+            <div class="inventory-photo-box">
+              <div id="inventoryPhotoPreview" class="inventory-photo-preview">
+                <span>Foto do veiculo</span>
+              </div>
+              <label class="secondary-button inventory-photo-button">
+                Tirar foto / anexar
+                <input id="inventoryPhotoInput" type="file" accept="image/*" capture="environment" />
+              </label>
+              <button id="inventoryRemovePhotoButton" class="ghost-button" type="button">Excluir foto</button>
+            </div>
+
+            <div class="form-grid">
+              <label>
+                Placa
+                <input id="inventoryPlate" type="text" placeholder="Ex: ABC1D23" maxlength="7" />
+              </label>
+
+              <label>
+                Veiculo / Modelo
+                <input id="inventoryModel" type="text" placeholder="Ex: EcoSport FSL 1.6" />
+              </label>
+
+              <label>
+                Ano / Modelo
+                <input id="inventoryYear" type="text" placeholder="Ex: 2012/2012" />
+              </label>
+
+              <label>
+                Versao
+                <input id="inventoryVersion" type="text" placeholder="Ex: Completo" />
+              </label>
+
+              <label>
+                Cambio
+                <select id="inventoryTransmission">
+                  <option value="">Selecione</option>
+                  <option value="Automatico">Automatico</option>
+                  <option value="Manual">Manual</option>
+                </select>
+              </label>
+
+              <label>
+                Cor
+                <input id="inventoryColor" type="text" placeholder="Ex: Cinza" />
+              </label>
+
+              <label>
+                KM atual
+                <input id="inventoryKm" type="text" placeholder="Ex: 103.570" />
+              </label>
+
+              <label>
+                Valor FIPE / tabela
+                <input id="inventoryFipeValue" type="text" placeholder="Ex: R$ 41.990,00" />
+              </label>
+            </div>
+
+            <label>
+              Colar material do veiculo
+              <textarea id="inventoryRawText" placeholder="Cole aqui a descricao completa do carro. O app tenta aproveitar apenas placa, KM, FIPE, ano, cambio, cor, versao e modelo."></textarea>
+            </label>
+
+            <label>
+              Observacoes internas
+              <textarea id="inventoryNotes" placeholder="Manutencoes, revisoes ou observacoes atuais do estoque"></textarea>
+            </label>
+
+            <div class="inventory-actions">
+              <button id="inventoryParseButton" class="secondary-button" type="button">Ler texto colado</button>
+              <button class="primary-button" type="submit">Salvar no estoque</button>
+            </div>
+
+            <div id="inventoryMessage"></div>
+          </form>
+
+          <div class="filters-card inventory-filters">
+            <input id="inventorySearch" type="text" placeholder="Pesquisar placa, modelo, cor..." />
+            <button id="inventoryClearButton" class="secondary-button" type="button">Limpar formulario</button>
+          </div>
+
+          <div id="inventoryList" class="inventory-list"></div>
+        </section>
+
         <section id="historySection" class="content-section">
           <div class="section-header">
             <div>
@@ -335,13 +431,23 @@
 
           <div class="reports-grid">
             <div><span>Total de vendas</span><strong id="reportTotalSales">0</strong></div>
-            <div><span>Comissão total</span><strong id="reportTotalCommission">R$ 0,00</strong></div>
-            <div><span>Comissão Frank</span><strong id="reportFrankCommission">R$ 0,00</strong></div>
-            <div><span>Comissão Lucas</span><strong id="reportLucasCommission">R$ 0,00</strong></div>
-            <div><span>Transferências Loja</span><strong id="reportStoreTransfer">0</strong></div>
-            <div><span>Transferências Cliente</span><strong id="reportClientTransfer">0</strong></div>
-            <div><span>Pós-vendas pendentes</span><strong id="reportPendingAfterSales">0</strong></div>
-            <div><span>Pós-vendas finalizados</span><strong id="reportFinishedAfterSales">0</strong></div>
+            <div><span>Transferencias Loja</span><strong id="reportStoreTransfer">0</strong></div>
+            <div><span>Transferencias Cliente</span><strong id="reportClientTransfer">0</strong></div>
+            <div><span>Pos-vendas pendentes</span><strong id="reportPendingAfterSales">0</strong></div>
+            <div><span>Pos-vendas finalizados</span><strong id="reportFinishedAfterSales">0</strong></div>
+          </div>
+
+          <div class="reports-print-panel">
+            <div>
+              <span class="eyebrow">Arquivos geraveis</span>
+              <h3>Baixar relatorios em PDF</h3>
+              <p>Gere o PDF mensal de veiculos vendidos com ou sem comissao.</p>
+            </div>
+            <div class="reports-print-actions">
+              <button class="secondary-button" type="button" onclick="printVexSalesReport('frank')">Baixar PDF Frank</button>
+              <button class="secondary-button" type="button" onclick="printVexSalesReport('lucas')">Baixar PDF Lucas</button>
+              <button class="primary-button" type="button" onclick="printVexSalesReport('partner')">Baixar PDF Vendas</button>
+            </div>
           </div>
         </section>
 

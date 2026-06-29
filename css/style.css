@@ -3125,3 +3125,62 @@ button,
     justify-self: start;
   }
 }
+
+/* =========================================================
+   RC3.0.14 - Relatorios PDF de vendas e comissao
+   ========================================================= */
+.reports-print-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top left, rgba(225, 6, 0, 0.14), transparent 34%),
+    rgba(255, 255, 255, 0.045);
+}
+
+.reports-print-panel h3 {
+  margin: 8px 0 6px;
+  color: #fff;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.reports-print-panel p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.45;
+}
+
+.reports-print-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.reports-print-actions button {
+  width: auto;
+  min-height: 42px;
+  padding-inline: 16px;
+  white-space: nowrap;
+}
+
+@media (max-width: 820px) {
+  .reports-print-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-print-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .reports-print-actions button {
+    width: 100%;
+  }
+}
