@@ -397,7 +397,10 @@ function initializeSaleForm() {
       vehicleTransmission: vehicleTransmission,
       vehicleColor: vehicleColor,
       vehiclePlate: vehiclePlate,
-      vehicleKm: vehicleKm,
+    vehicleKm: vehicleKm,
+      vehicleType: inventoryMatch ? inventoryMatch.type || "" : (currentEditingSale ? currentEditingSale.vehicleType || "" : ""),
+      vehicleChassis: inventoryMatch ? inventoryMatch.chassis || "" : (currentEditingSale ? currentEditingSale.vehicleChassis || "" : ""),
+      vehicleRenavam: inventoryMatch ? inventoryMatch.renavam || "" : (currentEditingSale ? currentEditingSale.vehicleRenavam || "" : ""),
       vehiclePhotoUrl: inventoryMatch ? inventoryMatch.photoUrl || "" : (currentEditingSale ? currentEditingSale.vehiclePhotoUrl || "" : ""),
       inventoryVehicleId: inventoryMatch ? inventoryMatch.id || "" : (currentEditingSale ? currentEditingSale.inventoryVehicleId || "" : ""),
       saleValue: saleValue,
@@ -1439,6 +1442,8 @@ function bindVexInventoryForm() {
 
 function initializeVexInventoryMasks() {
   const plate = document.getElementById("inventoryPlate");
+  const chassis = document.getElementById("inventoryChassis");
+  const renavam = document.getElementById("inventoryRenavam");
   const km = document.getElementById("inventoryKm");
   const fipe = document.getElementById("inventoryFipeValue");
 
@@ -1453,6 +1458,20 @@ function initializeVexInventoryMasks() {
     km.dataset.vexInventoryMask = "true";
     km.addEventListener("input", function() {
       km.value = maskVexF03Integer(km.value);
+    });
+  }
+
+  if (chassis && chassis.dataset.vexInventoryMask !== "true") {
+    chassis.dataset.vexInventoryMask = "true";
+    chassis.addEventListener("input", function() {
+      chassis.value = String(chassis.value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17);
+    });
+  }
+
+  if (renavam && renavam.dataset.vexInventoryMask !== "true") {
+    renavam.dataset.vexInventoryMask = "true";
+    renavam.addEventListener("input", function() {
+      renavam.value = String(renavam.value || "").replace(/\D/g, "").slice(0, 11);
     });
   }
 
@@ -1532,6 +1551,9 @@ function getVexInventoryFormData() {
     version: getElementValue("inventoryVersion"),
     transmission: getElementValue("inventoryTransmission"),
     color: getElementValue("inventoryColor"),
+    type: getElementValue("inventoryType"),
+    chassis: getElementValue("inventoryChassis"),
+    renavam: getElementValue("inventoryRenavam"),
     km: getElementValue("inventoryKm"),
     fipeValue: getElementValue("inventoryFipeValue"),
     notes: getElementValue("inventoryNotes"),
@@ -1597,7 +1619,7 @@ function renderVexInventory() {
 
   const search = String(getElementValue("inventorySearch")).toLowerCase();
   const filtered = vexInventory.filter(function(item) {
-    const haystack = [item.plate, item.model, item.year, item.version, item.transmission, item.color].join(" ").toLowerCase();
+    const haystack = [item.plate, item.model, item.year, item.version, item.transmission, item.color, item.type, item.chassis, item.renavam].join(" ").toLowerCase();
     return !search || haystack.includes(search);
   });
 
@@ -1616,8 +1638,9 @@ function renderVexInventory() {
         <div class="inventory-thumb">${item.photoUrl ? `<img src="${escapeHTML(item.photoUrl)}" alt="${escapeHTML(item.model)}" />` : `<span>${escapeHTML(item.plate || "VEX")}</span>`}</div>
         <div class="inventory-info">
           <strong>${escapeHTML(item.model)}</strong>
-          <small>${escapeHTML(item.year || "-")} - ${escapeHTML(item.version || "-")} - ${escapeHTML(item.color || "-")}</small>
+          <small>${escapeHTML(item.year || "-")} - ${escapeHTML(item.version || "-")} - ${escapeHTML(item.color || "-")} - ${escapeHTML(item.type || "-")}</small>
           <span>Placa ${escapeHTML(item.plate)} | KM ${escapeHTML(item.km || "-")} | FIPE ${escapeHTML(item.fipeValue || "-")}</span>
+          <span>Chassi ${escapeHTML(item.chassis || "-")} | Renavam ${escapeHTML(item.renavam || "-")}</span>
         </div>
         <div class="inventory-item-actions">
           <button class="secondary-button" type="button" onclick="fillSaleFromInventory('${escapeHTML(item.id)}')">Usar na venda</button>
@@ -1640,6 +1663,9 @@ function editVexInventoryItem(id) {
   setSaleFieldValue("inventoryVersion", item.version);
   setSaleFieldValue("inventoryTransmission", item.transmission);
   setSaleFieldValue("inventoryColor", item.color);
+  setSaleFieldValue("inventoryType", item.type);
+  setSaleFieldValue("inventoryChassis", item.chassis);
+  setSaleFieldValue("inventoryRenavam", item.renavam);
   setSaleFieldValue("inventoryKm", item.km);
   setSaleFieldValue("inventoryFipeValue", item.fipeValue);
   setSaleFieldValue("inventoryNotes", item.notes);
@@ -1710,6 +1736,9 @@ function parseVexInventoryRawText() {
   const plate = compact.match(/\b[A-Z]{3}[0-9][A-Z0-9][0-9]{2}\b/i);
   const km = compact.match(/(?:km|quilometragem)[^\d]{0,12}([\d.]{2,})/i) || compact.match(/\b(\d{2,3}\.?\d{3})\s*km\b/i);
   const fipe = compact.match(/(?:fipe|tabela)[^\d]{0,20}(?:r\$)?\s*([\d.]+,\d{2})/i);
+  const chassis = compact.match(/(?:chassi|chassis)[\s:.-]+([A-Z0-9]{11,17})/i);
+  const renavam = compact.match(/(?:renavam)[\s:.-]+(\d{9,11})/i);
+  const type = compact.match(/(?:tipo|categoria)[\s:.-]+([^,.;]+)/i);
   const year = compact.match(/\b(19|20)\d{2}\s*\/\s*(19|20)\d{2}\b/) || compact.match(/\b(19|20)\d{2}\b/);
   const color = compact.match(/(?:cor)[\s:.-]+([^,.;]+)/i);
   const transmission = /autom[aá]tico/i.test(compact) ? "Automatico" : (/manual/i.test(compact) ? "Manual" : "");
@@ -1719,6 +1748,9 @@ function parseVexInventoryRawText() {
   if (fipe) setSaleFieldValue("inventoryFipeValue", maskVexF03Money(fipe[1]));
   if (year) setSaleFieldValue("inventoryYear", year[0].replace(/\s+/g, ""));
   if (color) setSaleFieldValue("inventoryColor", color[1].trim().split(" ")[0]);
+  if (chassis) setSaleFieldValue("inventoryChassis", String(chassis[1]).toUpperCase());
+  if (renavam) setSaleFieldValue("inventoryRenavam", renavam[1]);
+  if (type) setSaleFieldValue("inventoryType", type[1].trim());
   if (transmission) setSaleFieldValue("inventoryTransmission", transmission);
 
   const modelInput = document.getElementById("inventoryModel");
