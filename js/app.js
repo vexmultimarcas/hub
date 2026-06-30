@@ -74,6 +74,7 @@ let vexInventory = [];
 let vexInventoryPhotoDraft = "";
 let vexInventoryCollection = null;
 let unsubscribeVexInventory = null;
+let vexInventoryEditingId = "";
 
 
 const ADMIN_EMAILS = [
@@ -401,6 +402,7 @@ function initializeSaleForm() {
       vehicleType: inventoryMatch ? inventoryMatch.type || "" : (currentEditingSale ? currentEditingSale.vehicleType || "" : ""),
       vehicleChassis: inventoryMatch ? inventoryMatch.chassis || "" : (currentEditingSale ? currentEditingSale.vehicleChassis || "" : ""),
       vehicleRenavam: inventoryMatch ? inventoryMatch.renavam || "" : (currentEditingSale ? currentEditingSale.vehicleRenavam || "" : ""),
+      vehicleFuel: inventoryMatch ? inventoryMatch.fuel || "" : (currentEditingSale ? currentEditingSale.vehicleFuel || "" : ""),
       vehiclePhotoUrl: inventoryMatch ? inventoryMatch.photoUrl || "" : (currentEditingSale ? currentEditingSale.vehiclePhotoUrl || "" : ""),
       inventoryVehicleId: inventoryMatch ? inventoryMatch.id || "" : (currentEditingSale ? currentEditingSale.inventoryVehicleId || "" : ""),
       saleValue: saleValue,
@@ -1315,12 +1317,22 @@ function setupVexInventoryCloud() {
     .orderBy("updatedAtLocal", "desc")
     .onSnapshot(
       function(snapshot) {
-        vexInventory = snapshot.docs.map(function(doc) {
+        const cloudInventory = snapshot.docs.map(function(doc) {
           return {
-            id: doc.id,
-            ...doc.data()
+            ...doc.data(),
+            id: doc.id
           };
         });
+        const byPlate = new Map();
+
+        cloudInventory.forEach(function(item) {
+          const key = normalizeVexPlate(item.plate) || item.id;
+          if (!byPlate.has(key)) {
+            byPlate.set(key, item);
+          }
+        });
+
+        vexInventory = Array.from(byPlate.values());
 
         saveVexInventory();
         renderVexInventory();
@@ -1552,6 +1564,7 @@ function getVexInventoryFormData() {
     transmission: getElementValue("inventoryTransmission"),
     color: getElementValue("inventoryColor"),
     type: getElementValue("inventoryType"),
+    fuel: getElementValue("inventoryFuel"),
     chassis: getElementValue("inventoryChassis"),
     renavam: getElementValue("inventoryRenavam"),
     km: getElementValue("inventoryKm"),
@@ -1582,7 +1595,10 @@ async function saveVexInventoryFromForm(event) {
     return;
   }
 
-  const existing = getVexInventoryItemByPlate(data.plate);
+  const editingItem = vexInventoryEditingId
+    ? vexInventory.find(function(vehicle) { return vehicle.id === vexInventoryEditingId; })
+    : null;
+  const existing = editingItem || getVexInventoryItemByPlate(data.plate);
   const item = {
     ...(existing || {}),
     ...data,
@@ -1594,6 +1610,17 @@ async function saveVexInventoryFromForm(event) {
   };
 
   try {
+    const nextDocId = getVexInventoryDocId(item);
+    const previousDocId = vexInventoryEditingId || "";
+    if (previousDocId && previousDocId !== nextDocId) {
+      vexInventory = vexInventory.filter(function(vehicle) {
+        return vehicle.id !== previousDocId;
+      });
+      if (vexInventoryCollection && canManageContent()) {
+        await vexInventoryCollection.doc(previousDocId).delete();
+      }
+    }
+
     await persistVexInventoryItem(item);
     clearVexInventoryForm();
     showVexInventoryMessage(vexInventoryCollection ? "Veiculo salvo no estoque em nuvem." : "Veiculo salvo neste aparelho.");
@@ -1619,7 +1646,7 @@ function renderVexInventory() {
 
   const search = String(getElementValue("inventorySearch")).toLowerCase();
   const filtered = vexInventory.filter(function(item) {
-    const haystack = [item.plate, item.model, item.year, item.version, item.transmission, item.color, item.type, item.chassis, item.renavam].join(" ").toLowerCase();
+    const haystack = [item.plate, item.model, item.year, item.version, item.transmission, item.color, item.type, item.fuel, item.chassis, item.renavam].join(" ").toLowerCase();
     return !search || haystack.includes(search);
   });
 
@@ -1639,6 +1666,7 @@ function renderVexInventory() {
         <div class="inventory-info">
           <strong>${escapeHTML(item.model)}</strong>
           <small>${escapeHTML(item.year || "-")} - ${escapeHTML(item.version || "-")} - ${escapeHTML(item.color || "-")} - ${escapeHTML(item.type || "-")}</small>
+          <span>Combustivel ${escapeHTML(item.fuel || "-")}</span>
           <span>Placa ${escapeHTML(item.plate)} | KM ${escapeHTML(item.km || "-")} | FIPE ${escapeHTML(item.fipeValue || "-")}</span>
           <span>Chassi ${escapeHTML(item.chassis || "-")} | Renavam ${escapeHTML(item.renavam || "-")}</span>
         </div>
@@ -1657,6 +1685,7 @@ function editVexInventoryItem(id) {
   const item = vexInventory.find(function(vehicle) { return vehicle.id === id; });
   if (!item) return;
 
+  vexInventoryEditingId = item.id || "";
   setSaleFieldValue("inventoryPlate", item.plate);
   setSaleFieldValue("inventoryModel", item.model);
   setSaleFieldValue("inventoryYear", item.year);
@@ -1664,6 +1693,7 @@ function editVexInventoryItem(id) {
   setSaleFieldValue("inventoryTransmission", item.transmission);
   setSaleFieldValue("inventoryColor", item.color);
   setSaleFieldValue("inventoryType", item.type);
+  setSaleFieldValue("inventoryFuel", item.fuel);
   setSaleFieldValue("inventoryChassis", item.chassis);
   setSaleFieldValue("inventoryRenavam", item.renavam);
   setSaleFieldValue("inventoryKm", item.km);
@@ -1716,6 +1746,7 @@ function clearVexInventoryForm() {
   const form = document.getElementById("inventoryForm");
   if (form) form.reset();
   vexInventoryPhotoDraft = "";
+  vexInventoryEditingId = "";
   updateVexInventoryPhotoPreview("");
 }
 
@@ -1739,6 +1770,7 @@ function parseVexInventoryRawText() {
   const chassis = compact.match(/(?:chassi|chassis)[\s:.-]+([A-Z0-9]{11,17})/i);
   const renavam = compact.match(/(?:renavam)[\s:.-]+(\d{9,11})/i);
   const type = compact.match(/(?:tipo|categoria)[\s:.-]+([^,.;]+)/i);
+  const fuel = compact.match(/(?:combustivel|combustível)[\s:.-]+([^,.;]+)/i);
   const year = compact.match(/\b(19|20)\d{2}\s*\/\s*(19|20)\d{2}\b/) || compact.match(/\b(19|20)\d{2}\b/);
   const color = compact.match(/(?:cor)[\s:.-]+([^,.;]+)/i);
   const transmission = /autom[aá]tico/i.test(compact) ? "Automatico" : (/manual/i.test(compact) ? "Manual" : "");
@@ -1751,6 +1783,7 @@ function parseVexInventoryRawText() {
   if (chassis) setSaleFieldValue("inventoryChassis", String(chassis[1]).toUpperCase());
   if (renavam) setSaleFieldValue("inventoryRenavam", renavam[1]);
   if (type) setSaleFieldValue("inventoryType", type[1].trim());
+  if (fuel) setSaleFieldValue("inventoryFuel", fuel[1].trim());
   if (transmission) setSaleFieldValue("inventoryTransmission", transmission);
 
   const modelInput = document.getElementById("inventoryModel");
@@ -1772,7 +1805,7 @@ function insertVexInventorySaleLookup() {
   panel.innerHTML = `
     <div>
       <strong>Buscar no estoque por placa</strong>
-      <small>Preenche modelo, ano, FIPE, versao, cambio, cor e KM. Confira o KM antes de salvar.</small>
+      <small>Preenche modelo, ano, FIPE, versao, cambio, combustivel, cor, KM, chassi e renavam. Confira antes de salvar.</small>
     </div>
     <div class="vex-inventory-sale-actions">
       <input id="saleInventoryPlateLookup" type="text" maxlength="7" placeholder="ABC1D23" />
@@ -1804,6 +1837,25 @@ function fillSaleFromInventoryLookup() {
 
   applyVexInventoryToSaleForm(item);
   if (message) message.textContent = "Dados carregados do estoque. Confira KM e valor da venda.";
+}
+
+function autofillSaleFromInventoryPlate(plate) {
+  const normalized = normalizeVexPlate(plate);
+  const message = document.getElementById("saleInventoryLookupMessage");
+
+  if (normalized.length !== 7) {
+    return;
+  }
+
+  const item = getVexInventoryItemByPlate(normalized);
+
+  if (!item) {
+    if (message) message.textContent = "Placa nao encontrada no estoque.";
+    return;
+  }
+
+  applyVexInventoryToSaleForm(item);
+  if (message) message.textContent = "Dados carregados automaticamente do estoque. Confira KM e valor da venda.";
 }
 
 function fillSaleFromInventory(id) {
@@ -4508,6 +4560,7 @@ function getVexReportSaleRows(definition) {
       year: vehicle.vehicleYear || sale.vehicleYear || "",
       version: vehicle.vehicleVersion || sale.vehicleVersion || "",
       transmission: vehicle.vehicleTransmission || sale.vehicleTransmission || "",
+      fuel: vehicle.vehicleFuel || sale.vehicleFuel || (inventoryMatch ? inventoryMatch.fuel || "" : ""),
       color: vehicle.vehicleColor || sale.vehicleColor || "",
       plate: vehicle.vehiclePlate || sale.vehiclePlate || "",
       km: vehicle.vehicleKm || sale.vehicleKm || "",
@@ -4621,6 +4674,7 @@ function buildVexSalesReportHtml(type) {
                   <th>ANO/MOD</th>
                   <th>VERSAO</th>
                   <th>CAMBIO</th>
+                  <th>COMBUST.</th>
                   <th>COR</th>
                   <th>PLACA</th>
                   <th>KM ATUAL</th>
@@ -4639,6 +4693,7 @@ function buildVexSalesReportHtml(type) {
                       <td>${escapeHTML(row.year)}</td>
                       <td>${escapeHTML(row.version || "-")}</td>
                       <td>${escapeHTML(row.transmission || "-")}</td>
+                      <td>${escapeHTML(row.fuel || "-")}</td>
                       <td>${escapeHTML(row.color || "-")}</td>
                       <td>${escapeHTML(row.plate || "-")}</td>
                       <td>${escapeHTML(row.km || "-")}</td>
@@ -8135,6 +8190,8 @@ function initializeVexPhase03Build02Masks() {
         .toUpperCase()
         .replace(/[^A-Z0-9]/g, "")
         .slice(0, 7);
+
+      autofillSaleFromInventoryPlate(plate.value);
     });
   }
 }
