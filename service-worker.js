@@ -1,4 +1,4 @@
-const CACHE_NAME = "vex-hub-rc3-0-43-relatorio-colunas-valores";
+const CACHE_NAME = "vex-hub-rc3-0-44-contraste-global";
 
 const FILES_TO_CACHE = [
   "./",

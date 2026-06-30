@@ -4728,6 +4728,201 @@ function updateVexDashboardExecutive() {
   renderVexMonthlyGrowthChart();
 }
 
+/* =========================================================
+   RC3.0.44 - Correcao final de contraste em drawers
+   Entra por ultimo para vencer estilos antigos injetados.
+   ========================================================= */
+function injectVexFinalContrastStyles() {
+  if (document.getElementById("vex-final-contrast-styles")) return;
+
+  const style = document.createElement("style");
+  style.id = "vex-final-contrast-styles";
+  style.textContent = `
+    html body .sale-details-overlay .sale-details-drawer,
+    html body .vex-drawer-root .vex-drawer-panel {
+      background: #f6f8fb !important;
+      color: #0f172a !important;
+    }
+
+    html body .sale-details-overlay .drawer-section,
+    html body .sale-details-overlay .drawer-hero,
+    html body .vex-drawer-root .vex-drawer-hero,
+    html body .vex-drawer-root .vex-formalization-form-card,
+    html body .vex-drawer-root .vex-formalization-summary-item,
+    html body .vex-drawer-root .vex-detail-item,
+    html body .vex-drawer-root .vex-document-card {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      border-color: #d8e0ea !important;
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08) !important;
+    }
+
+    html body .sale-details-overlay h1,
+    html body .sale-details-overlay h2,
+    html body .sale-details-overlay h3,
+    html body .sale-details-overlay h4,
+    html body .sale-details-overlay strong,
+    html body .vex-drawer-root h1,
+    html body .vex-drawer-root h2,
+    html body .vex-drawer-root h3,
+    html body .vex-drawer-root h4,
+    html body .vex-drawer-root strong {
+      color: #050b16 !important;
+      opacity: 1 !important;
+      text-shadow: none !important;
+    }
+
+    html body .sale-details-overlay p,
+    html body .sale-details-overlay span,
+    html body .sale-details-overlay small,
+    html body .sale-details-overlay label,
+    html body .vex-drawer-root p,
+    html body .vex-drawer-root span,
+    html body .vex-drawer-root small,
+    html body .vex-drawer-root label {
+      color: #334155 !important;
+      opacity: 1 !important;
+      text-shadow: none !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-field span,
+    html body .sale-details-overlay .drawer-grid span,
+    html body .vex-drawer-root .vex-detail-item span,
+    html body .vex-drawer-root .vex-formalization-summary-item span {
+      color: #475467 !important;
+      font-weight: 950 !important;
+      letter-spacing: 0.06em !important;
+      text-transform: uppercase !important;
+    }
+
+    html body .sale-details-overlay input,
+    html body .sale-details-overlay select,
+    html body .sale-details-overlay textarea,
+    html body .vex-drawer-root input,
+    html body .vex-drawer-root select,
+    html body .vex-drawer-root textarea,
+    html body .vex-drawer-root .formalPaymentMethodValue,
+    html body .vex-drawer-root .formalPaymentMethodType {
+      background: #ffffff !important;
+      color: #050b16 !important;
+      -webkit-text-fill-color: #050b16 !important;
+      border: 1px solid #cbd5e1 !important;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05) !important;
+      opacity: 1 !important;
+    }
+
+    html body .vex-drawer-root input::placeholder,
+    html body .vex-drawer-root textarea::placeholder,
+    html body .sale-details-overlay input::placeholder,
+    html body .sale-details-overlay textarea::placeholder {
+      color: #64748b !important;
+      opacity: 1 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-step {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      border: 1px solid #d8e0ea !important;
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-step.done {
+      background: #f0fdf4 !important;
+      border-color: #86efac !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-step.pending {
+      background: #fff7ed !important;
+      border-color: #fdba74 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-step small,
+    html body .vex-drawer-root .vex-formalization-step em {
+      color: #334155 !important;
+      opacity: 1 !important;
+      font-weight: 800 !important;
+    }
+
+    html body .vex-drawer-root .vex-drawer-actions-safe,
+    html body .sale-details-overlay .vex-drawer-actions-safe,
+    html body .sale-details-overlay .drawer-actions {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 10px !important;
+      align-items: stretch !important;
+    }
+
+    html body .vex-drawer-root .vex-drawer-actions-safe button,
+    html body .sale-details-overlay .vex-drawer-actions-safe button,
+    html body .sale-details-overlay .drawer-actions button {
+      width: 100% !important;
+      min-height: 50px !important;
+      border-radius: 14px !important;
+      font-weight: 950 !important;
+      opacity: 1 !important;
+      text-shadow: none !important;
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.10) !important;
+    }
+
+    html body .vex-drawer-root .vex-drawer-actions-safe .primary-button,
+    html body .sale-details-overlay .vex-drawer-actions-safe .primary-button,
+    html body .sale-details-overlay .drawer-actions .primary-button {
+      background: linear-gradient(135deg, #d90404, #970000) !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      border: 0 !important;
+    }
+
+    html body .vex-drawer-root .vex-drawer-actions-safe .secondary-button,
+    html body .sale-details-overlay .vex-drawer-actions-safe .secondary-button,
+    html body .sale-details-overlay .drawer-actions .secondary-button {
+      background: #111820 !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      border: 1px solid #111820 !important;
+    }
+
+    html body .vex-drawer-root .vex-drawer-actions-safe .danger-button,
+    html body .sale-details-overlay .vex-drawer-actions-safe .danger-button,
+    html body .sale-details-overlay .drawer-actions .danger-button {
+      background: #fff1f2 !important;
+      color: #b91c1c !important;
+      -webkit-text-fill-color: #b91c1c !important;
+      border: 1px solid #fca5a5 !important;
+    }
+
+    html body .vex-drawer-root .vex-drawer-actions-safe button:disabled,
+    html body .sale-details-overlay .drawer-actions button:disabled {
+      background: #e5e7eb !important;
+      color: #64748b !important;
+      -webkit-text-fill-color: #64748b !important;
+      border: 1px solid #cbd5e1 !important;
+      opacity: 1 !important;
+    }
+
+    html body .vex-drawer-root .vex-message-preview,
+    html body .vex-drawer-root pre,
+    html body .sale-details-overlay .drawer-notes {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      -webkit-text-fill-color: #0f172a !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+
+    @media (max-width: 640px) {
+      html body .vex-drawer-root .vex-drawer-actions-safe,
+      html body .sale-details-overlay .vex-drawer-actions-safe,
+      html body .sale-details-overlay .drawer-actions {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexFinalContrastStyles();
+
 // Tema claro pausado na RC3.0.31 para restaurar o visual escuro aprovado.
 
 setTimeout(() => {
