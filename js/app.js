@@ -765,6 +765,7 @@ async function saveSale(sale) {
       refreshApplication();
     }
 
+    await markVexInventorySoldFromSale(saleWithId);
     renderSaleConfirmation(saleWithId, "Venda salva na nuvem com sucesso.");
     saleForm.reset();
     goToSection("historySection");
@@ -822,6 +823,7 @@ async function updateExistingSale(saleId, updatedSale) {
     };
 
     clearSaleEditMode();
+    await markVexInventorySoldFromSale(editedSale);
     refreshApplication();
     renderSaleConfirmation(editedSale, "Venda atualizada com sucesso.");
     saleForm.reset();
@@ -1447,6 +1449,8 @@ async function removeVexInventoryItemFromCloud(id) {
 
 function bindVexInventoryForm() {
   const form = document.getElementById("inventoryForm");
+  const addButton = document.getElementById("inventoryAddButton");
+  const cancelButton = document.getElementById("inventoryCancelButton");
   const photoInput = document.getElementById("inventoryPhotoInput");
   const galleryInput = document.getElementById("inventoryGalleryInput");
   const removePhotoButton = document.getElementById("inventoryRemovePhotoButton");
@@ -1457,6 +1461,21 @@ function bindVexInventoryForm() {
   if (form && form.dataset.vexInventoryReady !== "true") {
     form.dataset.vexInventoryReady = "true";
     form.addEventListener("submit", saveVexInventoryFromForm);
+  }
+
+  if (addButton && addButton.dataset.vexInventoryReady !== "true") {
+    addButton.dataset.vexInventoryReady = "true";
+    addButton.addEventListener("click", function() {
+      clearVexInventoryForm({ keepOpen: true });
+      openVexInventoryForm("add");
+    });
+  }
+
+  if (cancelButton && cancelButton.dataset.vexInventoryReady !== "true") {
+    cancelButton.dataset.vexInventoryReady = "true";
+    cancelButton.addEventListener("click", function() {
+      clearVexInventoryForm();
+    });
   }
 
   if (photoInput && photoInput.dataset.vexInventoryReady !== "true") {
@@ -1598,6 +1617,31 @@ function updateVexInventoryPhotoPreview(photoUrl) {
     : `<span>Foto do veiculo</span>`;
 }
 
+function openVexInventoryForm(mode) {
+  const section = document.getElementById("inventorySection");
+  const title = document.getElementById("inventoryFormTitle");
+
+  if (section) {
+    section.classList.add("inventory-form-open");
+  }
+
+  if (title) {
+    title.textContent = mode === "edit" ? "Editar veiculo" : "Adicionar veiculo";
+  }
+
+  const form = document.getElementById("inventoryForm");
+  if (form && typeof form.scrollIntoView === "function") {
+    form.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function closeVexInventoryForm() {
+  const section = document.getElementById("inventorySection");
+  if (section) {
+    section.classList.remove("inventory-form-open");
+  }
+}
+
 function getVexInventoryFormData() {
   return {
     plate: normalizeVexPlate(getElementValue("inventoryPlate")),
@@ -1612,6 +1656,7 @@ function getVexInventoryFormData() {
     renavam: getElementValue("inventoryRenavam"),
     km: getElementValue("inventoryKm"),
     fipeValue: getElementValue("inventoryFipeValue"),
+    status: getElementValue("inventoryStatus") || "Disponivel",
     notes: getElementValue("inventoryNotes"),
     rawText: getElementValue("inventoryRawText"),
     photoUrl: vexInventoryPhotoDraft
@@ -1646,7 +1691,7 @@ async function saveVexInventoryFromForm(event) {
     ...(existing || {}),
     ...data,
     id: existing ? existing.id : getVexInventoryDocId(data),
-    status: "Disponivel",
+    status: data.status || (existing ? existing.status : "Disponivel"),
     fipeValueNumber: parseSaleCurrencyValue(data.fipeValue),
     updatedAtLocal: new Date().toISOString(),
     createdAtLocal: existing ? existing.createdAtLocal : new Date().toISOString()
@@ -1691,6 +1736,16 @@ function renderVexInventory() {
   const filtered = vexInventory.filter(function(item) {
     const haystack = [item.plate, item.model, item.year, item.version, item.transmission, item.color, item.type, item.fuel, item.chassis, item.renavam].join(" ").toLowerCase();
     return !search || haystack.includes(search);
+  }).sort(function(a, b) {
+    const modelA = String(a.model || "").trim();
+    const modelB = String(b.model || "").trim();
+    const modelOrder = modelA.localeCompare(modelB, "pt-BR", { sensitivity: "base" });
+
+    if (modelOrder !== 0) {
+      return modelOrder;
+    }
+
+    return String(a.year || "").localeCompare(String(b.year || ""), "pt-BR", { sensitivity: "base" });
   });
 
   if (counter) {
@@ -1703,11 +1758,20 @@ function renderVexInventory() {
   }
 
   list.innerHTML = filtered.map(function(item) {
+    const status = String(item.status || "Disponivel");
+    const normalizedStatus = status.toLowerCase();
+    const isSold = normalizedStatus === "vendido";
+    const isReserved = normalizedStatus === "reservado";
+    const itemClass = isSold ? " is-sold" : (isReserved ? " is-reserved" : "");
+    const statusBadgeClass = isSold ? "inventory-status-sold" : (isReserved ? "inventory-status-reserved" : "inventory-status-available");
+    const useSaleDisabled = isSold ? " disabled" : "";
+    const soldRibbon = isSold ? `<div class="inventory-sold-ribbon">Vendido</div>` : "";
+
     return `
-      <article class="inventory-item">
-        <div class="inventory-thumb">${item.photoUrl ? `<img src="${escapeHTML(item.photoUrl)}" alt="${escapeHTML(item.model)}" />` : `<span>${escapeHTML(item.plate || "VEX")}</span>`}</div>
+      <article class="inventory-item${itemClass}">
+        <div class="inventory-thumb">${item.photoUrl ? `<img src="${escapeHTML(item.photoUrl)}" alt="${escapeHTML(item.model)}" />` : `<span>${escapeHTML(item.plate || "VEX")}</span>`}${soldRibbon}</div>
         <div class="inventory-info">
-          <strong>${escapeHTML(item.model)}</strong>
+          <strong>${escapeHTML(item.model)} <em class="inventory-status-pill ${statusBadgeClass}">${escapeHTML(status)}</em></strong>
           <small>${escapeHTML(item.year || "-")} - ${escapeHTML(item.version || "-")} - ${escapeHTML(item.color || "-")} - ${escapeHTML(item.type || "-")}</small>
           <span>Combustivel ${escapeHTML(item.fuel || "-")}</span>
           <span>Placa ${escapeHTML(item.plate)} | KM ${escapeHTML(item.km || "-")} | FIPE ${escapeHTML(item.fipeValue || "-")}</span>
@@ -1715,7 +1779,7 @@ function renderVexInventory() {
         </div>
         <div class="inventory-item-actions">
           <button class="secondary-button" type="button" onclick="openVexInventoryDetails('${escapeHTML(item.id)}')">Visualizar</button>
-          <button class="secondary-button" type="button" onclick="fillSaleFromInventory('${escapeHTML(item.id)}')">Usar na venda</button>
+          <button class="secondary-button" type="button" onclick="fillSaleFromInventory('${escapeHTML(item.id)}')"${useSaleDisabled}>Usar na venda</button>
           <button class="ghost-button" type="button" onclick="editVexInventoryItem('${escapeHTML(item.id)}')">Editar</button>
           <button class="ghost-button" type="button" onclick="deleteVexInventoryPhoto('${escapeHTML(item.id)}')">Excluir foto</button>
           <button class="ghost-button" type="button" onclick="deleteVexInventoryItem('${escapeHTML(item.id)}')">Excluir</button>
@@ -1804,10 +1868,12 @@ function editVexInventoryItem(id) {
   setSaleFieldValue("inventoryRenavam", item.renavam);
   setSaleFieldValue("inventoryKm", item.km);
   setSaleFieldValue("inventoryFipeValue", item.fipeValue);
+  setSaleFieldValue("inventoryStatus", item.status || "Disponivel");
   setSaleFieldValue("inventoryNotes", item.notes);
   setSaleFieldValue("inventoryRawText", item.rawText);
   vexInventoryPhotoDraft = item.photoUrl || "";
   updateVexInventoryPhotoPreview(vexInventoryPhotoDraft);
+  openVexInventoryForm("edit");
   showVexInventoryMessage("Editando veiculo do estoque.");
 }
 
@@ -1848,12 +1914,16 @@ async function deleteVexInventoryItem(id) {
   }
 }
 
-function clearVexInventoryForm() {
+function clearVexInventoryForm(options) {
+  const keepOpen = Boolean(options && options.keepOpen);
   const form = document.getElementById("inventoryForm");
   if (form) form.reset();
   vexInventoryPhotoDraft = "";
   vexInventoryEditingId = "";
   updateVexInventoryPhotoPreview("");
+  if (!keepOpen) {
+    closeVexInventoryForm();
+  }
 }
 
 function showVexInventoryMessage(message, type) {
@@ -1978,6 +2048,10 @@ function autofillSaleFromInventoryPlate(plate) {
 function fillSaleFromInventory(id) {
   const item = vexInventory.find(function(vehicle) { return vehicle.id === id; });
   if (!item) return;
+  if (String(item.status || "").toLowerCase() === "vendido") {
+    showVexInventoryMessage("Este veiculo ja esta marcado como vendido no estoque.", "error");
+    return;
+  }
   applyVexInventoryToSaleForm(item);
   goToSection("newSaleSection");
 }
@@ -1992,6 +2066,28 @@ function applyVexInventoryToSaleForm(item) {
   setSaleFieldValue("vehiclePlate", item.plate);
   setSaleFieldValue("vehicleKm", item.km);
   setSaleFieldValue("saleInventoryPlateLookup", item.plate);
+}
+
+async function markVexInventorySoldFromSale(sale) {
+  const id = sale && sale.inventoryVehicleId ? sale.inventoryVehicleId : "";
+  const plate = sale && sale.vehiclePlate ? sale.vehiclePlate : "";
+  const item = id
+    ? vexInventory.find(function(vehicle) { return vehicle.id === id; })
+    : getVexInventoryItemByPlate(plate);
+
+  if (!item || String(item.status || "").toLowerCase() === "vendido") {
+    return;
+  }
+
+  const updatedItem = {
+    ...item,
+    status: "Vendido",
+    soldSaleId: sale.id || "",
+    soldAtLocal: new Date().toISOString(),
+    updatedAtLocal: new Date().toISOString()
+  };
+
+  await persistVexInventoryItem(updatedItem);
 }
 
 function renderSaleConfirmation(sale, message) {
@@ -4922,6 +5018,241 @@ function injectVexFinalContrastStyles() {
 }
 
 injectVexFinalContrastStyles();
+
+/* =========================================================
+   RC3.0.47 - Menu lateral VEX Oficial
+   Visual premium preto fosco com destaque vermelho.
+   ========================================================= */
+function injectVexOfficialSidebarStyles() {
+  if (document.getElementById("vex-official-sidebar-styles")) return;
+
+  const style = document.createElement("style");
+  style.id = "vex-official-sidebar-styles";
+  style.textContent = `
+    @media (min-width: 761px) {
+      html body #dashboardScreen.screen.active .sidebar {
+        width: 286px !important;
+        min-height: 100vh !important;
+        padding: 22px 18px !important;
+        gap: 22px !important;
+        position: sticky !important;
+        top: 0 !important;
+        background:
+          linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0) 22%),
+          linear-gradient(180deg, #08090b 0%, #111820 52%, #08090b 100%) !important;
+        border-right: 1px solid rgba(217, 4, 4, 0.28) !important;
+        box-shadow: 18px 0 46px rgba(15, 23, 42, 0.16) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at 18% 4%, rgba(217, 4, 4, 0.20), transparent 30%),
+          linear-gradient(90deg, rgba(217, 4, 4, 0.18), transparent 22%);
+        opacity: 0.72;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-brand {
+        min-height: 92px !important;
+        padding: 16px 12px 18px !important;
+        display: grid !important;
+        grid-template-columns: 72px minmax(0, 1fr) !important;
+        gap: 13px !important;
+        align-items: center !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small {
+        width: 72px !important;
+        height: 54px !important;
+        border-radius: 2px !important;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+        filter: drop-shadow(0 8px 18px rgba(217, 4, 4, 0.18)) !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-brand strong {
+        color: #ffffff !important;
+        font-size: 15px !important;
+        line-height: 1.05 !important;
+        font-weight: 950 !important;
+        letter-spacing: 0.06em !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-brand span {
+        display: block !important;
+        margin-top: 6px !important;
+        color: #aab4c2 !important;
+        font-size: 11px !important;
+        line-height: 1.25 !important;
+        font-weight: 750 !important;
+        letter-spacing: 0.02em !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-nav {
+        display: grid !important;
+        gap: 7px !important;
+        padding: 4px 0 !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-nav::before {
+        content: "MENU DO APP";
+        display: block;
+        margin: 0 10px 4px;
+        color: #7f8a99;
+        font-size: 10px;
+        font-weight: 950;
+        letter-spacing: 0.18em;
+      }
+
+      html body #dashboardScreen.screen.active .nav-item {
+        position: relative !important;
+        min-height: 48px !important;
+        padding: 0 14px 0 46px !important;
+        display: flex !important;
+        align-items: center !important;
+        border-radius: 2px !important;
+        background: transparent !important;
+        border: 1px solid transparent !important;
+        color: #cbd5e1 !important;
+        font-size: 14px !important;
+        font-weight: 850 !important;
+        letter-spacing: 0 !important;
+        text-align: left !important;
+        transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease !important;
+      }
+
+      html body #dashboardScreen.screen.active .nav-item::before {
+        position: absolute !important;
+        left: 15px !important;
+        top: 50% !important;
+        width: 20px !important;
+        transform: translateY(-50%) !important;
+        display: grid !important;
+        place-items: center !important;
+        color: #7f8a99 !important;
+        font-size: 15px !important;
+        font-weight: 950 !important;
+        line-height: 1 !important;
+      }
+
+      html body #dashboardScreen.screen.active .nav-item[data-section="dashboardSection"]::before { content: "01" !important; font-size: 10px !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="newSaleSection"]::before { content: "+" !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="inventorySection"]::before { content: "□" !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="historySection"]::before { content: "≡" !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="reportsSection"]::before { content: "▥" !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="profileSection"]::before { content: "◉" !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="usersSection"]::before { content: "⚙" !important; }
+
+      html body #dashboardScreen.screen.active .nav-item::after {
+        content: "" !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 8px !important;
+        bottom: 8px !important;
+        width: 4px !important;
+        height: auto !important;
+        right: auto !important;
+        border-radius: 0 999px 999px 0 !important;
+        background: #d90404 !important;
+        transform: scaleY(0) !important;
+        transform-origin: center !important;
+        transition: transform 160ms ease !important;
+      }
+
+      html body #dashboardScreen.screen.active .nav-item:hover {
+        color: #ffffff !important;
+        background: rgba(255, 255, 255, 0.055) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        transform: translateX(2px) !important;
+      }
+
+      html body #dashboardScreen.screen.active .nav-item:hover::before {
+        color: #ffffff !important;
+      }
+
+      html body #dashboardScreen.screen.active .nav-item.active {
+        color: #ffffff !important;
+        background:
+          linear-gradient(90deg, rgba(217, 4, 4, 0.26), rgba(217, 4, 4, 0.05)),
+          rgba(255, 255, 255, 0.055) !important;
+        border-color: rgba(217, 4, 4, 0.36) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 24px rgba(0,0,0,0.16) !important;
+      }
+
+      html body #dashboardScreen.screen.active .nav-item.active::before {
+        color: #ffffff !important;
+      }
+
+      html body #dashboardScreen.screen.active .nav-item.active::after {
+        transform: scaleY(1) !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-footer {
+        margin-top: auto !important;
+        padding: 16px 12px 4px !important;
+        gap: 12px !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.10) !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-footer #userEmailLabel {
+        color: #cbd5e1 !important;
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+        font-weight: 800 !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-footer #userEmailLabel::before {
+        content: "USUARIO LOGADO";
+        display: block;
+        margin-bottom: 5px;
+        color: #7f8a99;
+        font-size: 9px;
+        font-weight: 950;
+        letter-spacing: 0.16em;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-footer .ghost-button,
+      html body #dashboardScreen.screen.active .sidebar-footer button {
+        min-height: 42px !important;
+        border-radius: 2px !important;
+        background: rgba(255, 255, 255, 0.06) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        font-weight: 950 !important;
+        box-shadow: none !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-footer .ghost-button:hover,
+      html body #dashboardScreen.screen.active .sidebar-footer button:hover {
+        background: rgba(217, 4, 4, 0.18) !important;
+        border-color: rgba(217, 4, 4, 0.38) !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexOfficialSidebarStyles();
 
 // Tema claro pausado na RC3.0.31 para restaurar o visual escuro aprovado.
 

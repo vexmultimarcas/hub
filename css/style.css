@@ -4728,3 +4728,173 @@ html body .vex-drawer-root .danger-button {
   border: 1px solid #fca5a5 !important;
   font-weight: 950 !important;
 }
+
+/* =========================================================
+   RC3.0.46 - Estoque com lista principal e cadastro separado
+   ========================================================= */
+html body #dashboardScreen.screen.active #inventorySection {
+  display: none !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection.content-section.active {
+  display: block !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-header-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection #inventoryAddButton {
+  min-height: 44px !important;
+  border-radius: 2px !important;
+  padding: 0 18px !important;
+  background: linear-gradient(135deg, #d90404, #970000) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  font-weight: 950 !important;
+  box-shadow: 0 12px 24px rgba(217, 4, 4, 0.16) !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection #inventoryForm {
+  display: none !important;
+  margin-bottom: 18px !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection.inventory-form-open #inventoryForm {
+  display: grid !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-form-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
+  padding-bottom: 18px !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-form-head > div {
+  display: grid !important;
+  gap: 6px !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-form-head h3 {
+  margin: 0 !important;
+  color: #111111 !important;
+  font-size: 26px !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-form-head p {
+  margin: 0 !important;
+  color: #475467 !important;
+  font-weight: 750 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection #inventoryCancelButton {
+  min-width: 120px !important;
+  min-height: 42px !important;
+  border-radius: 2px !important;
+  background: #111820 !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  font-weight: 950 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-filters {
+  grid-template-columns: 1fr !important;
+  margin-bottom: 18px !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-list {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-item {
+  border-radius: 2px !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: 5px solid #d90404 !important;
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.06) !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-item.is-sold {
+  border-left-color: #111827 !important;
+  background: #f8fafc !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-thumb {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-sold-ribbon {
+  position: absolute !important;
+  inset: auto -38px 18px auto !important;
+  width: 150px !important;
+  transform: rotate(-35deg) !important;
+  background: #d90404 !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 18px rgba(217, 4, 4, 0.24) !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.08em !important;
+  line-height: 26px !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-status-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: fit-content !important;
+  margin-left: 8px !important;
+  border-radius: 999px !important;
+  padding: 4px 9px !important;
+  font-size: 10px !important;
+  font-style: normal !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  vertical-align: middle !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-status-available {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-status-reserved {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-status-sold {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-item-actions button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.5 !important;
+}
+
+@media (max-width: 720px) {
+  html body #dashboardScreen.screen.active #inventorySection .inventory-header-actions,
+  html body #dashboardScreen.screen.active #inventorySection .inventory-form-head {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  html body #dashboardScreen.screen.active #inventorySection #inventoryAddButton,
+  html body #dashboardScreen.screen.active #inventorySection #inventoryCancelButton {
+    width: 100% !important;
+  }
+}

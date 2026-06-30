@@ -288,13 +288,25 @@
             <div>
               <span class="eyebrow">Estoque</span>
               <h2>Estoque de Veiculos</h2>
-              <p>Cadastre os carros disponiveis, anexe foto leve e use a placa para acelerar a venda.</p>
+              <p>Lista dos carros disponiveis no estoque. Use a busca ou adicione um novo veiculo.</p>
             </div>
 
-            <strong id="inventoryCounter" class="counter-pill">0 veiculos</strong>
+            <div class="inventory-header-actions">
+              <strong id="inventoryCounter" class="counter-pill">0 veiculos</strong>
+              <button id="inventoryAddButton" class="primary-button" type="button">Adicionar veiculo</button>
+            </div>
           </div>
 
           <form id="inventoryForm" class="form-card inventory-card">
+            <div class="inventory-form-head">
+              <div>
+                <span class="eyebrow">Cadastro</span>
+                <h3 id="inventoryFormTitle">Adicionar veiculo</h3>
+                <p>Preencha os dados do carro, anexe a foto e salve no estoque.</p>
+              </div>
+              <button id="inventoryCancelButton" class="secondary-button" type="button">Cancelar</button>
+            </div>
+
             <div class="inventory-photo-box">
               <div id="inventoryPhotoPreview" class="inventory-photo-preview">
                 <span>Foto do veiculo</span>
@@ -374,6 +386,15 @@
                 Valor FIPE / tabela
                 <input id="inventoryFipeValue" type="text" placeholder="Ex: R$ 41.990,00" />
               </label>
+
+              <label>
+                Status no estoque
+                <select id="inventoryStatus">
+                  <option value="Disponivel">Disponivel</option>
+                  <option value="Reservado">Reservado</option>
+                  <option value="Vendido">Vendido</option>
+                </select>
+              </label>
             </div>
 
             <label>
@@ -396,7 +417,6 @@
 
           <div class="filters-card inventory-filters">
             <input id="inventorySearch" type="text" placeholder="Pesquisar placa, modelo, cor..." />
-            <button id="inventoryClearButton" class="secondary-button" type="button">Limpar formulario</button>
           </div>
 
           <div id="inventoryList" class="inventory-list"></div>

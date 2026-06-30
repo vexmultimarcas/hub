@@ -1,4 +1,4 @@
-const CACHE_NAME = "vex-hub-rc3-0-44-contraste-global";
+const CACHE_NAME = "vex-hub-rc3-0-48-estoque-tarja-vendido";
 
 const FILES_TO_CACHE = [
   "./",
