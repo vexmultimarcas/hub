@@ -366,6 +366,7 @@ function initializeSaleForm() {
     const saleNotes = document.getElementById("saleNotes").value.trim();
     const inventoryMatch = getVexInventoryItemByPlate(vehiclePlate);
     const currentEditingSale = editingSaleId ? sales.find(function(item) { return item.id === editingSaleId; }) : null;
+    const inventoryRepasseItems = getVexInventoryRepasseItems(inventoryMatch);
 
     if (
       clientName === "" ||
@@ -418,11 +419,53 @@ function initializeSaleForm() {
       createdAtLocal: new Date().toISOString()
     };
 
+    if (inventoryRepasseItems.length && !hasVexSaleRepasseItems(currentEditingSale)) {
+      const currentFormalization = currentEditingSale && currentEditingSale.formalization ? currentEditingSale.formalization : {};
+      const currentRepasse = currentFormalization.repasse || {};
+      newSale.formalization = {
+        ...currentFormalization,
+        repasse: {
+          ...currentRepasse,
+          items: inventoryRepasseItems,
+          notes: currentRepasse.notes || "Material importado automaticamente do estoque."
+        }
+      };
+    }
+
     if (editingSaleId) {
       await updateExistingSale(editingSaleId, newSale);
     } else {
       await saveSale(newSale);
     }
+  });
+}
+
+function getVexInventoryRepasseItems(inventoryItem) {
+  const source = inventoryItem && inventoryItem.notes ? String(inventoryItem.notes) : "";
+  if (!source.trim()) return [];
+
+  return source
+    .split(/\n|;|\|/g)
+    .map(function(line) {
+      return line.trim().replace(/^[-•]+/, "").trim();
+    })
+    .filter(Boolean)
+    .slice(0, 8)
+    .map(function(description) {
+      return {
+        category: "Material",
+        description: description
+      };
+    });
+}
+
+function hasVexSaleRepasseItems(sale) {
+  const items = sale && sale.formalization && sale.formalization.repasse && Array.isArray(sale.formalization.repasse.items)
+    ? sale.formalization.repasse.items
+    : [];
+
+  return items.some(function(item) {
+    return item && item.description && item.description.trim();
   });
 }
 
@@ -1796,36 +1839,47 @@ function parseVexInventoryRawText() {
 
 function insertVexInventorySaleLookup() {
   const saleFormElement = document.getElementById("saleForm");
-  const saleNotes = document.getElementById("saleNotes");
-  if (!saleFormElement || !saleNotes || document.getElementById("vexInventorySaleLookup")) return;
+  const vehiclePlate = document.getElementById("vehiclePlate");
+  if (!saleFormElement || !vehiclePlate) return;
+
+  moveVexSalePlateToFirstField();
+  if (document.getElementById("vexInventorySaleLookup")) return;
 
   const panel = document.createElement("div");
   panel.id = "vexInventorySaleLookup";
   panel.className = "vex-inventory-sale-lookup";
   panel.innerHTML = `
     <div>
-      <strong>Buscar no estoque por placa</strong>
-      <small>Preenche modelo, ano, FIPE, versao, cambio, combustivel, cor, KM, chassi e renavam. Confira antes de salvar.</small>
-    </div>
-    <div class="vex-inventory-sale-actions">
-      <input id="saleInventoryPlateLookup" type="text" maxlength="7" placeholder="ABC1D23" />
-      <button class="secondary-button" type="button" onclick="fillSaleFromInventoryLookup()">Puxar dados</button>
+      <strong>Placa primeiro</strong>
+      <small>Digite a placa no primeiro campo da venda. Se o carro estiver no estoque, o app preenche modelo, ano, FIPE, versao, cambio, cor, KM, chassi, renavam e material.</small>
     </div>
     <p id="saleInventoryLookupMessage"></p>
   `;
 
-  saleFormElement.insertBefore(panel, saleNotes.closest("label"));
+  const formGrid = saleFormElement.querySelector(".form-grid");
+  saleFormElement.insertBefore(panel, formGrid || saleFormElement.firstChild);
+}
 
-  const input = document.getElementById("saleInventoryPlateLookup");
-  if (input) {
-    input.addEventListener("input", function() {
-      input.value = normalizeVexPlate(input.value);
-    });
+function moveVexSalePlateToFirstField() {
+  const formGrid = document.querySelector("#saleForm .form-grid");
+  const plate = document.getElementById("vehiclePlate");
+  const plateLabel = plate ? plate.closest("label") : null;
+  if (!formGrid || !plateLabel || plateLabel.dataset.vexPlateFirst === "true") return;
+
+  plateLabel.dataset.vexPlateFirst = "true";
+  formGrid.insertBefore(plateLabel, formGrid.firstElementChild);
+
+  const plateLabelText = Array.from(plateLabel.childNodes).find(function(node) {
+    return node.nodeType === Node.TEXT_NODE && node.textContent.trim();
+  });
+
+  if (plateLabelText) {
+    plateLabelText.textContent = "Placa do estoque";
   }
 }
 
 function fillSaleFromInventoryLookup() {
-  const input = document.getElementById("saleInventoryPlateLookup");
+  const input = document.getElementById("saleInventoryPlateLookup") || document.getElementById("vehiclePlate");
   const plate = input ? input.value : "";
   const item = getVexInventoryItemByPlate(plate);
   const message = document.getElementById("saleInventoryLookupMessage");
@@ -4520,6 +4574,418 @@ function updateVexDashboardExecutive() {
 }
 
 /* =========================================================
+   RC3.0.27 - Visual Clean Loja (override definitivo)
+   ========================================================= */
+function getVexInventoryAvailableCountFinal() {
+  if (!Array.isArray(vexInventory)) return 0;
+  return vexInventory.filter((item) => String(item.status || "Disponivel").toLowerCase() !== "vendido").length;
+}
+
+function prepareVexDashboardLayout() {
+  const dashboardSection = document.getElementById("dashboardSection");
+  if (!dashboardSection) return;
+  if (dashboardSection.getAttribute("data-vex-dashboard-ready") === "rc3-0-27-final") return;
+
+  dashboardSection.setAttribute("data-vex-dashboard-ready", "rc3-0-27-final");
+  dashboardSection.innerHTML = `
+    <div class="vex-dashboard-minimal">
+      <section class="vex-clean-kpis" aria-label="Resumo da loja">
+        <article class="vex-clean-kpi">
+          <span>Vendidos no mes</span>
+          <strong id="vexCleanMonthSales">0</strong>
+          <small>veiculos</small>
+        </article>
+        <article class="vex-clean-kpi">
+          <span>Valor vendido</span>
+          <strong id="vexCleanMonthValue">R$ 0,00</strong>
+          <small>mes atual</small>
+        </article>
+        <article class="vex-clean-kpi">
+          <span>Estoque</span>
+          <strong id="vexCleanInventoryCount">0</strong>
+          <small>disponiveis</small>
+        </article>
+        <article class="vex-clean-kpi">
+          <span>Crescimento</span>
+          <strong id="vexCleanGrowth">0%</strong>
+          <small>vs. mes anterior</small>
+        </article>
+      </section>
+
+      <section class="vex-clean-grid">
+        <article class="vex-clean-panel vex-clean-panel-main">
+          <div class="vex-clean-panel-head">
+            <div>
+              <span>Ultimas vendas</span>
+              <h2>Carros vendidos recentemente</h2>
+            </div>
+            <button class="ghost-button vex-clean-action" type="button" data-section-target="saleSection">Nova venda</button>
+          </div>
+          <div id="vexLatestVehiclesList" class="vex-clean-list"></div>
+        </article>
+
+        <article class="vex-clean-panel">
+          <div class="vex-clean-panel-head">
+            <div>
+              <span>Evolucao</span>
+              <h2>Vendas por mes</h2>
+            </div>
+            <button class="ghost-button vex-clean-action" type="button" data-section-target="inventorySection">Estoque</button>
+          </div>
+          <div id="vexMonthlyGrowthChart" class="vex-clean-chart"></div>
+        </article>
+      </section>
+    </div>
+  `;
+
+  dashboardSection.querySelectorAll("[data-section-target]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = button.getAttribute("data-section-target");
+      if (target) navigateToSection(target);
+    });
+  });
+}
+
+function updateVexDashboardExecutive() {
+  prepareVexDashboardLayout();
+
+  const currentMonthSales = getCurrentMonthSales();
+  const previousMonthSales = getPreviousMonthSales();
+  const monthlySoldValue = getTotalSoldValue(currentMonthSales);
+  const previousMonthSoldValue = getTotalSoldValue(previousMonthSales);
+  const growth = calculateVexGrowth(monthlySoldValue, previousMonthSoldValue);
+
+  setTextById("vexCleanMonthSales", currentMonthSales.length);
+  setTextById("vexCleanMonthValue", formatCurrencyToBrazil(monthlySoldValue));
+  setTextById("vexCleanInventoryCount", getVexInventoryAvailableCountFinal());
+  setTextById("vexCleanGrowth", growth === null ? "Novo mes" : `${growth >= 0 ? "+" : ""}${growth.toFixed(0)}%`);
+
+  renderVexLatestVehicles();
+  renderVexMonthlyGrowthChart();
+}
+
+injectVexVisualCleanStyles();
+
+setTimeout(() => {
+  const dashboardSection = document.getElementById("dashboardSection");
+  if (dashboardSection) dashboardSection.removeAttribute("data-vex-dashboard-ready");
+  if (typeof updateVexDashboardExecutive === "function") updateVexDashboardExecutive();
+}, 0);
+
+/* =========================================================
+   RC3.0.27 - Visual Clean Loja
+   Dashboard objetivo + tema mais leve
+   ========================================================= */
+function getVexInventoryAvailableCount() {
+  return (vexInventory || []).filter(function(item) {
+    return String(item.status || "Disponivel").toLowerCase() !== "vendido";
+  }).length;
+}
+
+function prepareVexDashboardLayout() {
+  const dashboardSection = document.getElementById("dashboardSection");
+
+  if (!dashboardSection || dashboardSection.getAttribute("data-vex-dashboard-ready") === "rc3-0-27") {
+    return;
+  }
+
+  dashboardSection.setAttribute("data-vex-dashboard-ready", "rc3-0-27");
+  dashboardSection.innerHTML = `
+    <div class="vex-dashboard-shell vex-dashboard-clean vex-dashboard-minimal">
+      <section class="vex-clean-kpis">
+        <article>
+          <span>Vendidos no mes</span>
+          <strong id="vexCleanMonthSales">0</strong>
+          <small>Vendas lancadas</small>
+        </article>
+        <article>
+          <span>Valor vendido</span>
+          <strong id="vexCleanMonthValue">R$ 0,00</strong>
+          <small>Somente mes atual</small>
+        </article>
+        <article>
+          <span>Estoque</span>
+          <strong id="vexCleanInventoryCount">0</strong>
+          <small>Veiculos disponiveis</small>
+        </article>
+        <article>
+          <span>Crescimento</span>
+          <strong id="vexCleanGrowth">0%</strong>
+          <small>Vs. mes anterior</small>
+        </article>
+      </section>
+
+      <section class="vex-clean-grid">
+        <article class="vex-clean-panel vex-clean-latest-panel">
+          <div class="vex-clean-panel-header">
+            <div>
+              <span class="vex-kicker">Vendas</span>
+              <h3>Ultimos carros vendidos</h3>
+            </div>
+            <button class="vex-mini-button" type="button" onclick="goToSection('newSaleSection')">Nova venda</button>
+          </div>
+          <div id="vexLatestVehicles" class="vex-clean-latest-list"></div>
+        </article>
+
+        <article class="vex-clean-panel">
+          <div class="vex-clean-panel-header">
+            <div>
+              <span class="vex-kicker">Mes a mes</span>
+              <h3>Crescimento</h3>
+            </div>
+            <button class="vex-mini-button" type="button" onclick="goToSection('inventorySection')">Estoque</button>
+          </div>
+          <div id="vexMonthlyGrowthChart" class="vex-clean-chart"></div>
+        </article>
+      </section>
+    </div>
+  `;
+}
+
+function updateVexDashboardExecutive() {
+  prepareVexDashboardLayout();
+
+  const currentMonthSales = getCurrentMonthSales();
+  const previousMonthSales = getPreviousMonthSales();
+  const monthlySoldValue = getTotalSoldValue(currentMonthSales);
+  const previousMonthSoldValue = getTotalSoldValue(previousMonthSales);
+  const growth = calculateVexGrowth(monthlySoldValue, previousMonthSoldValue);
+
+  setTextById("vexCleanMonthSales", currentMonthSales.length);
+  setTextById("vexCleanMonthValue", formatCurrencyToBrazil(monthlySoldValue));
+  setTextById("vexCleanInventoryCount", getVexInventoryAvailableCount());
+  setTextById("vexCleanGrowth", growth === null ? "Novo" : `${growth >= 0 ? "+" : ""}${growth.toFixed(0)}%`);
+
+  renderVexLatestVehicles();
+  renderVexMonthlyGrowthChart();
+}
+
+function injectVexVisualCleanStyles() {
+  if (document.getElementById("vexVisualCleanStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "vexVisualCleanStyles";
+  style.textContent = `
+    body {
+      background: #eef1f5 !important;
+      color: #151821 !important;
+    }
+
+    body::before {
+      opacity: 0 !important;
+    }
+
+    .workspace {
+      background: #eef1f5 !important;
+      color: #151821 !important;
+    }
+
+    .content-section {
+      color: #151821 !important;
+    }
+
+    .section-header,
+    .form-card,
+    .filters-card,
+    .reports-print-panel,
+    .reports-grid > div,
+    .empty-state,
+    .commission-box,
+    .inventory-item,
+    .vex-clean-panel,
+    .vex-clean-kpis article,
+    .vex-inventory-sale-lookup {
+      background: #ffffff !important;
+      border: 1px solid #dde3eb !important;
+      box-shadow: 0 12px 34px rgba(15, 23, 42, 0.08) !important;
+      color: #151821 !important;
+      backdrop-filter: none !important;
+    }
+
+    .section-header {
+      border-radius: 18px !important;
+      padding: 18px 20px !important;
+    }
+
+    .section-header h2,
+    .form-card h2,
+    .form-card h3,
+    .reports-print-panel h3,
+    .inventory-info strong,
+    .vex-clean-panel h3,
+    .vex-clean-kpis strong,
+    .vex-clean-latest-item strong {
+      color: #151821 !important;
+    }
+
+    .section-header p,
+    .form-card p,
+    .inventory-info small,
+    .inventory-info span,
+    .vex-inventory-sale-lookup small,
+    .vex-clean-panel small,
+    .vex-clean-kpis small,
+    .vex-clean-kpis span,
+    .vex-clean-latest-item small,
+    .reports-grid span {
+      color: #667085 !important;
+    }
+
+    label {
+      color: #303846 !important;
+    }
+
+    input,
+    select,
+    textarea {
+      background: #f8fafc !important;
+      border-color: #d7dee8 !important;
+      color: #151821 !important;
+      box-shadow: none !important;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #e10600 !important;
+      box-shadow: 0 0 0 4px rgba(225, 6, 0, 0.10) !important;
+    }
+
+    .sidebar {
+      background: #161a22 !important;
+      border-right: 1px solid rgba(255,255,255,0.08) !important;
+      box-shadow: 12px 0 30px rgba(15, 23, 42, 0.10) !important;
+    }
+
+    .sidebar-brand strong,
+    .sidebar-footer span {
+      color: #ffffff !important;
+    }
+
+    .nav-item {
+      background: transparent !important;
+      color: rgba(255,255,255,0.78) !important;
+      border-color: transparent !important;
+    }
+
+    .nav-item.active {
+      background: rgba(225, 6, 0, 0.16) !important;
+      color: #ffffff !important;
+      border-color: rgba(225, 6, 0, 0.30) !important;
+    }
+
+    .primary-button,
+    .vex-clean-action,
+    .vex-mini-button {
+      background: #e10600 !important;
+      color: #ffffff !important;
+      border: 0 !important;
+      box-shadow: 0 10px 24px rgba(225, 6, 0, 0.18) !important;
+    }
+
+    .secondary-button,
+    .ghost-button {
+      background: #f1f4f8 !important;
+      color: #202735 !important;
+      border: 1px solid #dde3eb !important;
+      box-shadow: none !important;
+    }
+
+    .eyebrow,
+    .counter-pill,
+    .vex-kicker {
+      background: #f3f6fa !important;
+      border-color: #dde3eb !important;
+      color: #667085 !important;
+    }
+
+    .vex-dashboard-minimal {
+      display: grid;
+      gap: 18px;
+    }
+
+    .vex-dashboard-minimal .vex-clean-kpis {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .vex-dashboard-minimal .vex-clean-kpis article {
+      min-height: 122px;
+      border-radius: 16px !important;
+      padding: 18px !important;
+    }
+
+    .vex-dashboard-minimal .vex-clean-kpis strong {
+      font-size: clamp(26px, 4vw, 38px) !important;
+      letter-spacing: 0 !important;
+    }
+
+    .vex-clean-grid {
+      gap: 16px !important;
+    }
+
+    .vex-clean-panel {
+      border-radius: 16px !important;
+      padding: 18px !important;
+    }
+
+    .vex-clean-latest-item,
+    .vex-clean-chart-item,
+    .inventory-thumb,
+    .inventory-photo-preview {
+      background: #f8fafc !important;
+      border: 1px solid #dde3eb !important;
+      color: #151821 !important;
+    }
+
+    .vex-clean-car-mark,
+    .inventory-thumb span {
+      background: #e10600 !important;
+      color: #ffffff !important;
+    }
+
+    .vex-clean-chart-bar-wrap {
+      background: #eef2f7 !important;
+    }
+
+    .vex-clean-chart-bar {
+      background: linear-gradient(180deg, #e10600, #f04438) !important;
+    }
+
+    #vexGreetingTitle,
+    #vexCurrentDate,
+    .vex-clean-hero {
+      display: none !important;
+    }
+
+    @media (max-width: 860px) {
+      .vex-dashboard-minimal .vex-clean-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      .workspace {
+        background: #f2f4f7 !important;
+      }
+
+      .content-section {
+        padding-bottom: 96px !important;
+      }
+
+      .vex-dashboard-minimal .vex-clean-kpis,
+      .vex-clean-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexVisualCleanStyles();
+
+/* =========================================================
    RC3.0.14 - Relatorios PDF de vendas e comissao
    ========================================================= */
 function getVexSalesReportDefinition(type) {
@@ -5524,6 +5990,18 @@ function getVexPaymentMethodsTotal(methods) {
   }, 0);
 }
 
+function hasVexTradeInPayment(methods) {
+  return (methods || []).some(function(method) {
+    const type = normalizeVexText(method.type || "").toUpperCase();
+    return type.includes("VEICULO TROCA") || type.includes("TROCA");
+  });
+}
+
+function getVexPaymentChangeValue(methodsTotal, vehicleTotal, methods) {
+  if (vehicleTotal <= 0 || methodsTotal <= vehicleTotal) return 0;
+  return hasVexTradeInPayment(methods) ? methodsTotal - vehicleTotal : 0;
+}
+
 function getVexPaymentCustomerExtrasTotal(payment) {
   let total = 0;
   if (payment.transferCharged === "Sim") {
@@ -5544,8 +6022,9 @@ function getVexPaymentCompletion(payment, sale) {
     return method.type && parseSaleCurrencyValue(method.value) > 0;
   });
   const methodsTotal = getVexPaymentMethodsTotal(payment.methods);
+  const changeValue = getVexPaymentChangeValue(methodsTotal, vehicleTotal, methods);
   const hasPayment = methods.length > 0;
-  const totalOk = vehicleTotal > 0 ? Math.abs(methodsTotal - vehicleTotal) < 0.01 : hasPayment;
+  const totalOk = vehicleTotal > 0 ? Math.abs((methodsTotal - changeValue) - vehicleTotal) < 0.01 : hasPayment;
   const transferOk = payment.transferCharged === "Não" || parseSaleCurrencyValue(payment.transferValue) > 0;
 
   const checks = [hasPayment, totalOk, transferOk, Boolean(payment.ipvaPaidBy), Boolean(payment.licensingPaidBy)];
@@ -5558,7 +6037,9 @@ function getVexPaymentCompletion(payment, sale) {
     complete: checks.every(Boolean),
     methodsTotal: methodsTotal,
     vehicleTotal: vehicleTotal,
-    customerTotal: methodsTotal + getVexPaymentCustomerExtrasTotal(payment),
+    changeValue: changeValue,
+    netVehiclePayment: methodsTotal - changeValue,
+    customerTotal: methodsTotal - changeValue + getVexPaymentCustomerExtrasTotal(payment),
     totalOk: totalOk
   };
 }
@@ -5637,6 +6118,9 @@ function openVexFormalizationPayment(saleId) {
   const statusLabel = completion.complete ? "Pagamento concluído" : "Pagamento pendente";
   const statusIcon = completion.complete ? "🟢" : "🟡";
   const diff = completion.vehicleTotal - completion.methodsTotal;
+  const paymentStatusText = completion.totalOk
+    ? (completion.changeValue > 0 ? "Conferido com troco de " + formatCurrencyToBrazil(completion.changeValue) : "Conferido")
+    : "Divergencia de " + formatCurrencyToBrazil(Math.abs(diff));
 
   drawer.innerHTML = `
     <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
@@ -5769,7 +6253,13 @@ async function saveVexFormalizationPayment(event, saleId) {
   };
 
   paymentPayload.methodsTotalNumber = getVexPaymentMethodsTotal(paymentPayload.methods);
-  paymentPayload.customerTotalNumber = paymentPayload.methodsTotalNumber + getVexPaymentCustomerExtrasTotal(paymentPayload);
+  paymentPayload.changeValueNumber = getVexPaymentChangeValue(
+    paymentPayload.methodsTotalNumber,
+    parseSaleCurrencyValue(getVexFormalizationPaymentData(sales.find(function(item) { return item.id === saleId; })).vehicleTotal),
+    paymentPayload.methods
+  );
+  paymentPayload.changeValue = paymentPayload.changeValueNumber > 0 ? formatCurrencyToBrazil(paymentPayload.changeValueNumber) : "";
+  paymentPayload.customerTotalNumber = paymentPayload.methodsTotalNumber - paymentPayload.changeValueNumber + getVexPaymentCustomerExtrasTotal(paymentPayload);
 
   const message = document.getElementById("formalPaymentMessage");
   if (message) {
@@ -5816,7 +6306,10 @@ function getVexFormalizationRepasseData(sale) {
   const repasse = sale && sale.formalization && sale.formalization.repasse ? sale.formalization.repasse : {};
   const saleTotal = sale && sale.saleValueNumber ? Number(sale.saleValueNumber) : parseSaleCurrencyValue(sale ? sale.saleValue : "");
   const fipeTotal = sale && sale.vehicleFipeValueNumber ? Number(sale.vehicleFipeValueNumber) : parseSaleCurrencyValue(sale ? sale.vehicleFipeValue : "");
-  const items = Array.isArray(repasse.items) ? repasse.items : [];
+  const savedItems = Array.isArray(repasse.items) ? repasse.items : [];
+  const inventoryMatch = !savedItems.length && sale ? getVexInventoryItemByPlate(sale.vehiclePlate || "") : null;
+  const inventoryItems = getVexInventoryRepasseItems(inventoryMatch);
+  const items = savedItems.length ? savedItems : inventoryItems;
 
   return {
     saleCondition: repasse.saleCondition || "Sem garantia",
@@ -5828,7 +6321,7 @@ function getVexFormalizationRepasseData(sale) {
         description: item.description || ""
       };
     }),
-    notes: repasse.notes || ""
+    notes: repasse.notes || (inventoryItems.length ? "Material importado automaticamente do estoque." : "")
   };
 }
 
@@ -5874,6 +6367,7 @@ function getVexRepasseCompletion(repasse) {
 
 function renderVexOperationalItemRow(item) {
   const categories = ["Histórico", "Estrutural", "Mecânica", "Estética", "Documentação", "Outros"];
+  if (!categories.includes("Material")) categories.unshift("Material");
   const safeItem = item || { category: "Outros", description: "" };
 
   return `
@@ -11216,3 +11710,102 @@ function updateVexDashboardExecutive() {
   renderVexLatestVehicles();
   renderVexMonthlyGrowthChart();
 }
+
+/* =========================================================
+   RC3.0.27 - Visual Clean Loja (override final real)
+   ========================================================= */
+function getVexInventoryAvailableCountClean() {
+  if (!Array.isArray(vexInventory)) return 0;
+  return vexInventory.filter((item) => String(item.status || "Disponivel").toLowerCase() !== "vendido").length;
+}
+
+function prepareVexDashboardLayout() {
+  const dashboardSection = document.getElementById("dashboardSection");
+  if (!dashboardSection) return;
+  if (dashboardSection.getAttribute("data-vex-dashboard-ready") === "rc3-0-27-clean-final") return;
+
+  dashboardSection.setAttribute("data-vex-dashboard-ready", "rc3-0-27-clean-final");
+  dashboardSection.innerHTML = `
+    <div class="vex-dashboard-minimal">
+      <section class="vex-clean-kpis" aria-label="Resumo da loja">
+        <article class="vex-clean-kpi">
+          <span>Vendidos no mes</span>
+          <strong id="vexCleanMonthSales">0</strong>
+          <small>veiculos</small>
+        </article>
+        <article class="vex-clean-kpi">
+          <span>Valor vendido</span>
+          <strong id="vexCleanMonthValue">R$ 0,00</strong>
+          <small>mes atual</small>
+        </article>
+        <article class="vex-clean-kpi">
+          <span>Estoque</span>
+          <strong id="vexCleanInventoryCount">0</strong>
+          <small>disponiveis</small>
+        </article>
+        <article class="vex-clean-kpi">
+          <span>Crescimento</span>
+          <strong id="vexCleanGrowth">0%</strong>
+          <small>vs. mes anterior</small>
+        </article>
+      </section>
+
+      <section class="vex-clean-grid">
+        <article class="vex-clean-panel vex-clean-panel-main">
+          <div class="vex-clean-panel-head">
+            <div>
+              <span>Ultimas vendas</span>
+              <h2>Carros vendidos recentemente</h2>
+            </div>
+            <button class="ghost-button vex-clean-action" type="button" data-section-target="saleSection">Nova venda</button>
+          </div>
+          <div id="vexLatestVehiclesList" class="vex-clean-list"></div>
+        </article>
+
+        <article class="vex-clean-panel">
+          <div class="vex-clean-panel-head">
+            <div>
+              <span>Evolucao</span>
+              <h2>Vendas por mes</h2>
+            </div>
+            <button class="ghost-button vex-clean-action" type="button" data-section-target="inventorySection">Estoque</button>
+          </div>
+          <div id="vexMonthlyGrowthChart" class="vex-clean-chart"></div>
+        </article>
+      </section>
+    </div>
+  `;
+
+  dashboardSection.querySelectorAll("[data-section-target]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = button.getAttribute("data-section-target");
+      if (target) navigateToSection(target);
+    });
+  });
+}
+
+function updateVexDashboardExecutive() {
+  prepareVexDashboardLayout();
+
+  const currentMonthSales = getCurrentMonthSales();
+  const previousMonthSales = getPreviousMonthSales();
+  const monthlySoldValue = getTotalSoldValue(currentMonthSales);
+  const previousMonthSoldValue = getTotalSoldValue(previousMonthSales);
+  const growth = calculateVexGrowth(monthlySoldValue, previousMonthSoldValue);
+
+  setTextById("vexCleanMonthSales", currentMonthSales.length);
+  setTextById("vexCleanMonthValue", formatCurrencyToBrazil(monthlySoldValue));
+  setTextById("vexCleanInventoryCount", getVexInventoryAvailableCountClean());
+  setTextById("vexCleanGrowth", growth === null ? "Novo mes" : `${growth >= 0 ? "+" : ""}${growth.toFixed(0)}%`);
+
+  renderVexLatestVehicles();
+  renderVexMonthlyGrowthChart();
+}
+
+injectVexVisualCleanStyles();
+
+setTimeout(() => {
+  const dashboardSection = document.getElementById("dashboardSection");
+  if (dashboardSection) dashboardSection.removeAttribute("data-vex-dashboard-ready");
+  if (typeof updateVexDashboardExecutive === "function") updateVexDashboardExecutive();
+}, 0);

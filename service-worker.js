@@ -1,4 +1,4 @@
-const CACHE_NAME = "vex-hub-rc3-0-26-estoque-autofill-combustivel";
+const CACHE_NAME = "vex-hub-rc3-0-29-troca-com-troco";
 
 const FILES_TO_CACHE = [
   "./",
