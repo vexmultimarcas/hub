@@ -1714,6 +1714,7 @@ function renderVexInventory() {
           <span>Chassi ${escapeHTML(item.chassis || "-")} | Renavam ${escapeHTML(item.renavam || "-")}</span>
         </div>
         <div class="inventory-item-actions">
+          <button class="secondary-button" type="button" onclick="openVexInventoryDetails('${escapeHTML(item.id)}')">Visualizar</button>
           <button class="secondary-button" type="button" onclick="fillSaleFromInventory('${escapeHTML(item.id)}')">Usar na venda</button>
           <button class="ghost-button" type="button" onclick="editVexInventoryItem('${escapeHTML(item.id)}')">Editar</button>
           <button class="ghost-button" type="button" onclick="deleteVexInventoryPhoto('${escapeHTML(item.id)}')">Excluir foto</button>
@@ -1722,6 +1723,68 @@ function renderVexInventory() {
       </article>
     `;
   }).join("");
+}
+
+function renderVexInventoryDetail(label, value) {
+  return `
+    <div class="vex-inventory-detail-row">
+      <span>${escapeHTML(label)}</span>
+      <strong>${escapeHTML(value || "-")}</strong>
+    </div>
+  `;
+}
+
+function openVexInventoryDetails(id) {
+  const item = vexInventory.find(function(vehicle) { return vehicle.id === id; });
+  const drawer = document.getElementById("vexVehicleDrawerRoot");
+  if (!item || !drawer) return;
+
+  drawer.innerHTML = `
+    <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
+    <aside class="vex-drawer-panel vex-inventory-details-panel">
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+
+      <section class="vex-inventory-details-head">
+        <span class="eyebrow">Estoque</span>
+        <h2>${escapeHTML(item.model || "Veiculo sem modelo")}</h2>
+        <p>${escapeHTML([item.year, item.version, item.color].filter(Boolean).join(" - ") || "Dados principais nao informados")}</p>
+      </section>
+
+      <section class="vex-inventory-details-photo ${item.photoUrl ? "has-image" : ""}">
+        ${item.photoUrl ? `<img src="${escapeHTML(item.photoUrl)}" alt="${escapeHTML(item.model || "Veiculo")}" />` : `<span>${escapeHTML(item.plate || "VEX")}</span>`}
+      </section>
+
+      <section class="vex-inventory-details-grid">
+        ${renderVexInventoryDetail("Placa", item.plate)}
+        ${renderVexInventoryDetail("KM", item.km)}
+        ${renderVexInventoryDetail("FIPE / tabela", item.fipeValue)}
+        ${renderVexInventoryDetail("Ano / modelo", item.year)}
+        ${renderVexInventoryDetail("Versao", item.version)}
+        ${renderVexInventoryDetail("Cambio", item.transmission)}
+        ${renderVexInventoryDetail("Cor", item.color)}
+        ${renderVexInventoryDetail("Tipo", item.type)}
+        ${renderVexInventoryDetail("Combustivel", item.fuel)}
+        ${renderVexInventoryDetail("Chassi", item.chassis)}
+        ${renderVexInventoryDetail("Renavam", item.renavam)}
+        ${renderVexInventoryDetail("Status", item.status || "Disponivel")}
+      </section>
+
+      ${item.notes ? `
+        <section class="vex-inventory-details-notes">
+          <span>Material / observacoes</span>
+          <p>${escapeHTML(item.notes)}</p>
+        </section>
+      ` : ""}
+
+      <div class="vex-drawer-actions vex-drawer-actions-safe">
+        <button class="primary-button" type="button" onclick="fillSaleFromInventory('${escapeHTML(item.id)}'); closeVexVehicleDrawer();">Usar na venda</button>
+        <button class="secondary-button" type="button" onclick="editVexInventoryItem('${escapeHTML(item.id)}'); closeVexVehicleDrawer();">Editar</button>
+        <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
+      </div>
+    </aside>
+  `;
+
+  drawer.classList.add("active");
 }
 
 function editVexInventoryItem(id) {
@@ -4473,9 +4536,10 @@ function prepareVexDashboardLayout() {
 function getVexMonthlySalesBuckets(monthsCount) {
   const months = [];
   const now = new Date();
+  const storeOpening = new Date(2026, 3, 1);
+  const firstMonth = new Date(Math.max(storeOpening.getTime(), new Date(now.getFullYear(), now.getMonth() - (monthsCount - 1), 1).getTime()));
 
-  for (let index = monthsCount - 1; index >= 0; index -= 1) {
-    const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
+  for (let date = new Date(firstMonth.getFullYear(), firstMonth.getMonth(), 1); date <= now; date.setMonth(date.getMonth() + 1)) {
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     months.push({
       key,
@@ -4664,13 +4728,641 @@ function updateVexDashboardExecutive() {
   renderVexMonthlyGrowthChart();
 }
 
-injectVexVisualCleanStyles();
+// Tema claro pausado na RC3.0.31 para restaurar o visual escuro aprovado.
 
 setTimeout(() => {
   const dashboardSection = document.getElementById("dashboardSection");
   if (dashboardSection) dashboardSection.removeAttribute("data-vex-dashboard-ready");
   if (typeof updateVexDashboardExecutive === "function") updateVexDashboardExecutive();
+  const inventoryCardFix = document.getElementById("vexRC332InventoryCardFix");
+  if (inventoryCardFix) inventoryCardFix.remove();
+  if (typeof injectVexRC332InventoryCardFix === "function") injectVexRC332InventoryCardFix();
 }, 0);
+
+/* =========================================================
+   RC3.0.32 - Ajuste final do card de visualizacao do estoque
+   ========================================================= */
+function injectVexRC332InventoryCardFix() {
+  if (document.getElementById("vexRC332InventoryCardFix")) return;
+
+  const style = document.createElement("style");
+  style.id = "vexRC332InventoryCardFix";
+  style.textContent = `
+    .vex-inventory-details-panel {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 16px !important;
+      overflow-y: auto !important;
+    }
+
+    .vex-inventory-details-head,
+    .vex-inventory-details-photo,
+    .vex-inventory-details-grid,
+    .vex-inventory-details-notes,
+    .vex-inventory-details-panel .vex-drawer-actions {
+      position: relative !important;
+      z-index: auto !important;
+      transform: none !important;
+      inset: auto !important;
+    }
+
+    .vex-inventory-details-head {
+      order: 1 !important;
+      flex: 0 0 auto !important;
+    }
+
+    .vex-inventory-details-photo {
+      order: 2 !important;
+      flex: 0 0 auto !important;
+      width: 100% !important;
+      min-height: 210px !important;
+      max-height: 360px !important;
+      margin: 0 !important;
+      overflow: hidden !important;
+      background-image: none !important;
+    }
+
+    .vex-inventory-details-photo img {
+      position: static !important;
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 210px !important;
+      object-fit: cover !important;
+      display: block !important;
+    }
+
+    .vex-inventory-details-grid {
+      order: 3 !important;
+      flex: 0 0 auto !important;
+      margin-top: 0 !important;
+      clear: both !important;
+    }
+
+    .vex-inventory-details-notes {
+      order: 4 !important;
+      flex: 0 0 auto !important;
+    }
+
+    .vex-inventory-details-panel .vex-drawer-actions {
+      order: 5 !important;
+      flex: 0 0 auto !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexRC332InventoryCardFix();
+
+/* =========================================================
+   RC3.0.30 - Contraste clean + visualizacao do estoque
+   ========================================================= */
+function injectVexRC330ContrastStyles() {
+  if (document.getElementById("vexRC330ContrastStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "vexRC330ContrastStyles";
+  style.textContent = `
+    .workspace,
+    .content-section {
+      color: #111827 !important;
+    }
+
+    .form-card,
+    .filters-card,
+    .reports-print-panel,
+    .inventory-item,
+    .vex-clean-panel,
+    .vex-clean-kpi,
+    .vex-formalization-form-card,
+    .vex-formalization-summary-item,
+    .vex-inventory-sale-lookup,
+    .empty-state {
+      background: #ffffff !important;
+      color: #111827 !important;
+      border-color: #d4dbe7 !important;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08) !important;
+    }
+
+    .section-header h2,
+    .form-card h3,
+    .inventory-info strong,
+    .vex-clean-panel h2,
+    .vex-clean-kpi strong,
+    .vex-formalization-form-card h3,
+    .vex-formalization-summary-item strong,
+    .vex-inventory-sale-lookup strong,
+    .reports-print-panel h3 {
+      color: #111827 !important;
+    }
+
+    .section-header p,
+    .form-card p,
+    .inventory-info small,
+    .inventory-info span,
+    .vex-clean-panel span,
+    .vex-clean-panel small,
+    .vex-clean-kpi span,
+    .vex-clean-kpi small,
+    .vex-formalization-form-card p,
+    .vex-formalization-summary-item span,
+    .vex-inventory-sale-lookup small,
+    #saleInventoryLookupMessage {
+      color: #475467 !important;
+    }
+
+    input,
+    select,
+    textarea {
+      background: #ffffff !important;
+      color: #111827 !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: #667085 !important;
+      opacity: 1 !important;
+    }
+
+    .secondary-button,
+    .ghost-button {
+      background: #f8fafc !important;
+      color: #111827 !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    .secondary-button:hover,
+    .ghost-button:hover {
+      background: #eef2f7 !important;
+      color: #0f172a !important;
+    }
+
+    .vex-drawer-panel,
+    .vex-inventory-details-panel {
+      background: #f8fafc !important;
+      color: #111827 !important;
+    }
+
+    .vex-inventory-details-panel {
+      display: grid;
+      gap: 16px;
+      max-width: 680px;
+    }
+
+    .vex-inventory-details-photo {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      border-radius: 18px;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      background: #111827;
+      color: #ffffff;
+      font-size: 32px;
+      font-weight: 950;
+      border: 1px solid #d4dbe7;
+    }
+
+    .vex-inventory-details-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .vex-inventory-details-head h2 {
+      margin: 8px 0 4px;
+      color: #111827 !important;
+      font-size: clamp(24px, 4vw, 36px);
+      line-height: 1.05;
+    }
+
+    .vex-inventory-details-head p {
+      margin: 0;
+      color: #475467 !important;
+    }
+
+    .vex-inventory-details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .vex-inventory-detail-row,
+    .vex-inventory-details-notes {
+      background: #ffffff;
+      border: 1px solid #d4dbe7;
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .vex-inventory-detail-row span,
+    .vex-inventory-details-notes span {
+      display: block;
+      color: #667085;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .vex-inventory-detail-row strong,
+    .vex-inventory-details-notes p {
+      color: #111827 !important;
+      font-size: 14px;
+      line-height: 1.35;
+      margin: 0;
+      word-break: break-word;
+    }
+
+    @media (max-width: 640px) {
+      .vex-inventory-details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function injectVexRC331InventoryViewStyles() {
+  if (document.getElementById("vexRC331InventoryViewStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "vexRC331InventoryViewStyles";
+  style.textContent = `
+    .vex-inventory-details-panel {
+      display: grid;
+      gap: 16px;
+      max-width: 680px;
+      background: #10151f !important;
+      color: #ffffff !important;
+    }
+
+    .vex-inventory-details-head {
+      padding-right: 38px;
+    }
+
+    .vex-inventory-details-head h2 {
+      margin: 10px 0 6px;
+      color: #ffffff !important;
+      font-size: clamp(24px, 4vw, 34px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .vex-inventory-details-head p {
+      margin: 0;
+      color: #aeb7c7 !important;
+      font-weight: 700;
+    }
+
+    .vex-inventory-details-photo {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      border-radius: 18px;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      background: #090c12;
+      color: #ffffff;
+      font-size: 34px;
+      font-weight: 950;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .vex-inventory-details-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .vex-inventory-details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .vex-inventory-detail-row,
+    .vex-inventory-details-notes {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .vex-inventory-detail-row span,
+    .vex-inventory-details-notes span {
+      display: block;
+      color: #aeb7c7;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .vex-inventory-detail-row strong,
+    .vex-inventory-details-notes p {
+      color: #ffffff !important;
+      font-size: 14px;
+      line-height: 1.35;
+      margin: 0;
+      word-break: break-word;
+    }
+
+    @media (max-width: 640px) {
+      .vex-inventory-details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexRC331InventoryViewStyles();
+
+/* =========================================================
+   RC3.0.32 - Tema claro VEX com contraste controlado
+   ========================================================= */
+function injectVexRC332LightPremiumTheme() {
+  if (document.getElementById("vexRC332LightPremiumTheme")) return;
+
+  const oldLight = document.getElementById("vexVisualCleanStyles");
+  const oldContrast = document.getElementById("vexRC330ContrastStyles");
+  if (oldLight) oldLight.remove();
+  if (oldContrast) oldContrast.remove();
+
+  const style = document.createElement("style");
+  style.id = "vexRC332LightPremiumTheme";
+  style.textContent = `
+    :root {
+      --vex-red: #d90404;
+      --vex-red-dark: #9f0000;
+      --vex-ink: #111827;
+      --vex-soft-ink: #475467;
+      --vex-border: #d8e0ea;
+      --vex-paper: #ffffff;
+      --vex-page: #eef2f7;
+      --vex-sidebar: #111820;
+      --vex-sidebar-2: #202a33;
+    }
+
+    body,
+    .screen.active#dashboardScreen,
+    #dashboardScreen.screen.active {
+      background: var(--vex-page) !important;
+      color: var(--vex-ink) !important;
+    }
+
+    .workspace {
+      background: linear-gradient(180deg, #f6f8fb 0%, #eef2f7 100%) !important;
+      color: var(--vex-ink) !important;
+    }
+
+    .content-section {
+      color: var(--vex-ink) !important;
+    }
+
+    .content-section.active {
+      background: transparent !important;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, var(--vex-sidebar), var(--vex-sidebar-2)) !important;
+      border-right: 1px solid rgba(15, 23, 42, 0.18) !important;
+      box-shadow: 16px 0 34px rgba(15, 23, 42, 0.18) !important;
+    }
+
+    .sidebar-brand strong,
+    .sidebar-footer strong,
+    .sidebar-footer span {
+      color: #ffffff !important;
+    }
+
+    .sidebar-brand span {
+      color: #cbd5e1 !important;
+    }
+
+    .nav-item {
+      background: rgba(255, 255, 255, 0.05) !important;
+      color: #e5e7eb !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      box-shadow: none !important;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: var(--vex-red) !important;
+      color: #ffffff !important;
+      border-color: rgba(255, 255, 255, 0.16) !important;
+    }
+
+    .section-header,
+    .form-card,
+    .filters-card,
+    .reports-print-panel,
+    .reports-grid > div,
+    .inventory-item,
+    .inventory-photo-box,
+    .vex-inventory-sale-lookup,
+    .vex-clean-kpi,
+    .vex-clean-panel,
+    .vex-clean-latest-item,
+    .vex-clean-chart-item,
+    .vex-formalization-form-card,
+    .vex-formalization-summary-item,
+    .empty-state,
+    .commission-box,
+    .admin-info-card,
+    .admin-create-user-card,
+    .users-list > *,
+    .profile-card {
+      background: var(--vex-paper) !important;
+      color: var(--vex-ink) !important;
+      border: 1px solid var(--vex-border) !important;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08) !important;
+      backdrop-filter: none !important;
+    }
+
+    .section-header {
+      border-top: 4px solid var(--vex-red) !important;
+    }
+
+    h1, h2, h3, h4,
+    .section-header h2,
+    .form-card h3,
+    .inventory-info strong,
+    .reports-grid strong,
+    .reports-print-panel h3,
+    .vex-clean-kpi strong,
+    .vex-clean-panel h2,
+    .vex-formalization-form-card h3,
+    .vex-formalization-summary-item strong,
+    .vex-inventory-sale-lookup strong,
+    label {
+      color: var(--vex-ink) !important;
+    }
+
+    p,
+    small,
+    span,
+    .section-header p,
+    .form-card p,
+    .inventory-info small,
+    .inventory-info span,
+    .reports-grid span,
+    .reports-print-panel p,
+    .vex-clean-kpi span,
+    .vex-clean-kpi small,
+    .vex-clean-panel span,
+    .vex-clean-panel small,
+    .vex-formalization-form-card p,
+    .vex-formalization-summary-item span,
+    .vex-inventory-sale-lookup small,
+    #saleInventoryLookupMessage {
+      color: var(--vex-soft-ink) !important;
+    }
+
+    input,
+    select,
+    textarea {
+      background: #f8fafc !important;
+      color: var(--vex-ink) !important;
+      border: 1px solid #cbd5e1 !important;
+      box-shadow: none !important;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: #667085 !important;
+      opacity: 1 !important;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--vex-red) !important;
+      box-shadow: 0 0 0 4px rgba(217, 4, 4, 0.10) !important;
+    }
+
+    .primary-button,
+    .vex-clean-action,
+    .vex-mini-button {
+      background: linear-gradient(135deg, var(--vex-red), var(--vex-red-dark)) !important;
+      color: #ffffff !important;
+      border: 0 !important;
+      box-shadow: 0 10px 22px rgba(217, 4, 4, 0.18) !important;
+    }
+
+    .secondary-button,
+    .ghost-button {
+      background: #f8fafc !important;
+      color: var(--vex-ink) !important;
+      border: 1px solid #cbd5e1 !important;
+      box-shadow: none !important;
+    }
+
+    .secondary-button:hover,
+    .ghost-button:hover {
+      background: #eef2f7 !important;
+      color: #0f172a !important;
+    }
+
+    .eyebrow,
+    .counter-pill,
+    .vex-kicker {
+      background: #f1f5f9 !important;
+      color: #475467 !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+
+    .inventory-thumb,
+    .inventory-photo-preview,
+    .vex-clean-car-mark {
+      background: #111820 !important;
+      color: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+
+    .inventory-thumb span {
+      background: var(--vex-red) !important;
+      color: #ffffff !important;
+    }
+
+    .vex-drawer-panel {
+      background: #f8fafc !important;
+      color: var(--vex-ink) !important;
+      border-left: 1px solid var(--vex-border) !important;
+    }
+
+    .vex-drawer-panel h2,
+    .vex-drawer-panel h3,
+    .vex-drawer-panel strong,
+    .vex-inventory-details-head h2 {
+      color: var(--vex-ink) !important;
+    }
+
+    .vex-drawer-panel p,
+    .vex-drawer-panel span,
+    .vex-inventory-details-head p {
+      color: var(--vex-soft-ink) !important;
+    }
+
+    .vex-inventory-details-panel {
+      background: #f8fafc !important;
+      color: var(--vex-ink) !important;
+    }
+
+    .vex-inventory-details-photo {
+      background: #111820 !important;
+      border: 1px solid var(--vex-border) !important;
+      color: #ffffff !important;
+    }
+
+    .vex-inventory-detail-row,
+    .vex-inventory-details-notes {
+      background: #ffffff !important;
+      border: 1px solid var(--vex-border) !important;
+    }
+
+    .vex-inventory-detail-row strong,
+    .vex-inventory-details-notes p {
+      color: var(--vex-ink) !important;
+    }
+
+    .vex-inventory-detail-row span,
+    .vex-inventory-details-notes span {
+      color: #667085 !important;
+    }
+
+    .vex-drawer-close {
+      background: rgba(17, 24, 39, 0.08) !important;
+      color: var(--vex-ink) !important;
+    }
+
+    .vex-formalization-progress {
+      background: #e5e7eb !important;
+    }
+
+    .vex-formalization-progress-bar,
+    .vex-clean-chart-bar {
+      background: linear-gradient(90deg, var(--vex-red), var(--vex-red-dark)) !important;
+    }
+
+    @media (max-width: 760px) {
+      .sidebar {
+        background: var(--vex-sidebar) !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+// Tema claro experimental pausado. A base visual atual permanece preservada.
 
 /* =========================================================
    RC3.0.27 - Visual Clean Loja
@@ -4983,7 +5675,7 @@ function injectVexVisualCleanStyles() {
   document.head.appendChild(style);
 }
 
-injectVexVisualCleanStyles();
+// Tema claro pausado na RC3.0.31 para restaurar o visual escuro aprovado.
 
 /* =========================================================
    RC3.0.14 - Relatorios PDF de vendas e comissao
@@ -5219,6 +5911,7 @@ window.openSaleDetails = openSaleDetails;
 window.closeSaleDetails = closeSaleDetails;
 window.fillSaleFromInventoryLookup = fillSaleFromInventoryLookup;
 window.fillSaleFromInventory = fillSaleFromInventory;
+window.openVexInventoryDetails = openVexInventoryDetails;
 window.editVexInventoryItem = editVexInventoryItem;
 window.deleteVexInventoryPhoto = deleteVexInventoryPhoto;
 window.deleteVexInventoryItem = deleteVexInventoryItem;
@@ -11802,7 +12495,7 @@ function updateVexDashboardExecutive() {
   renderVexMonthlyGrowthChart();
 }
 
-injectVexVisualCleanStyles();
+// Tema claro pausado na RC3.0.31 para restaurar o visual escuro aprovado.
 
 setTimeout(() => {
   const dashboardSection = document.getElementById("dashboardSection");
