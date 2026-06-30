@@ -1,4 +1,4 @@
-const CACHE_NAME = "vex-hub-rc3-0-20-estoque-nuvem-fallback";
+const CACHE_NAME = "vex-hub-rc3-0-23-icone-cache-bust";
 
 const FILES_TO_CACHE = [
   "./",
@@ -14,6 +14,12 @@ const FILES_TO_CACHE = [
   "./assets/icons/icon-512.png",
   "./assets/icons/maskable-icon-192.png",
   "./assets/icons/maskable-icon-512.png",
+  "./assets/icons/favicon-hub.png",
+  "./assets/icons/apple-touch-icon-hub.png",
+  "./assets/icons/icon-hub-192.png",
+  "./assets/icons/icon-hub-512.png",
+  "./assets/icons/maskable-hub-192.png",
+  "./assets/icons/maskable-hub-512.png",
   "./assets/splash/splash.png"
 ];
 

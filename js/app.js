@@ -1390,6 +1390,7 @@ async function removeVexInventoryItemFromCloud(id) {
 function bindVexInventoryForm() {
   const form = document.getElementById("inventoryForm");
   const photoInput = document.getElementById("inventoryPhotoInput");
+  const galleryInput = document.getElementById("inventoryGalleryInput");
   const removePhotoButton = document.getElementById("inventoryRemovePhotoButton");
   const parseButton = document.getElementById("inventoryParseButton");
   const clearButton = document.getElementById("inventoryClearButton");
@@ -1403,6 +1404,11 @@ function bindVexInventoryForm() {
   if (photoInput && photoInput.dataset.vexInventoryReady !== "true") {
     photoInput.dataset.vexInventoryReady = "true";
     photoInput.addEventListener("change", handleVexInventoryPhotoInput);
+  }
+
+  if (galleryInput && galleryInput.dataset.vexInventoryReady !== "true") {
+    galleryInput.dataset.vexInventoryReady = "true";
+    galleryInput.addEventListener("change", handleVexInventoryPhotoInput);
   }
 
   if (removePhotoButton && removePhotoButton.dataset.vexInventoryReady !== "true") {
