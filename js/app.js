@@ -4685,7 +4685,7 @@ function prepareVexDashboardLayout() {
             </div>
             <button class="ghost-button vex-clean-action" type="button" data-section-target="saleSection">Nova venda</button>
           </div>
-          <div id="vexLatestVehiclesList" class="vex-clean-list"></div>
+          <div id="vexLatestVehicles" class="vex-clean-latest-list"></div>
         </article>
 
         <article class="vex-clean-panel">
@@ -5737,6 +5737,13 @@ function getVexReportPeriodTitle() {
     return "Todos os periodos";
   }
 
+  if (/^\d{4}-\d{2}$/.test(String(period || ""))) {
+    const parts = String(period).split("-");
+    const date = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+    const label = date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+
   const now = new Date();
   const monthDate = period === "previous"
     ? new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -5785,13 +5792,26 @@ function buildVexSalesReportHtml(type) {
         .report-badge span { color: #ffcf42; font-weight: 800; font-size: 20px; }
         .report-title { padding: 12px 18px; color: #fff; background: #d40000; font-size: 22px; font-weight: 900; text-align: center; letter-spacing: .03em; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; background: #fff; }
+        col.photo-col { width: 82px; }
+        col.model-col { width: 126px; }
+        col.year-col { width: 58px; }
+        col.version-col { width: 74px; }
+        col.transmission-col { width: 66px; }
+        col.fuel-col { width: 68px; }
+        col.color-col { width: 58px; }
+        col.plate-col { width: 70px; }
+        col.km-col { width: 74px; }
+        col.date-col { width: 78px; }
+        col.money-col { width: 98px; }
+        col.commission-col { width: 88px; }
         th { padding: 8px 5px; color: #fff; background: #c80000; border: 1px solid rgba(255,255,255,.34); font-size: 10px; line-height: 1.15; }
-        td { padding: 7px 5px; border: 1px solid #d2d2d2; font-size: 10px; font-weight: 700; text-align: center; vertical-align: middle; }
+        td { height: 64px; padding: 6px 4px; border: 1px solid #d2d2d2; font-size: 9.4px; font-weight: 700; text-align: center; vertical-align: middle; }
         td.model { text-align: left; font-size: 10px; }
-        td.number { width: 26px; color: #fff; background: #d40000; font-size: 17px; font-weight: 900; }
-        td.photo-cell { width: 58px; padding: 3px; background: #f8f8f8; }
-        td.photo-cell img { width: 54px; height: 38px; object-fit: cover; border-radius: 6px; display: block; }
-        td.money { color: #b80000; font-size: 12px; font-weight: 900; white-space: nowrap; }
+        td.number { color: #fff; background: #d40000; font-size: 17px; font-weight: 900; }
+        td.photo-cell { padding: 4px; background: #f8f8f8; }
+        .vehicle-photo-card { width: 72px; height: 52px; margin: 0 auto; display: grid; place-items: center; overflow: hidden; border: 1px solid #cfd4dc; border-radius: 8px; background: #fff; box-shadow: 0 4px 10px rgba(17,24,39,.10); }
+        .vehicle-photo-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        td.money { color: #b80000; font-size: 10.4px; font-weight: 900; white-space: nowrap; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: clip; }
         .summary { display: grid; grid-template-columns: repeat(${definition.showCommission ? 4 : 3}, 1fr); gap: 0; color: #fff; background: #080808; border-top: 2px solid #d40000; }
         .summary div { padding: 14px 16px; border-right: 1px solid rgba(255,255,255,.22); text-align: center; }
         .summary span { display: block; color: #ddd; font-size: 12px; font-weight: 800; letter-spacing: .06em; }
@@ -5825,6 +5845,21 @@ function buildVexSalesReportHtml(type) {
           <div class="report-title">${escapeHTML(reportTitle)}</div>
           ${rows.length ? `
             <table>
+              <colgroup>
+                <col class="photo-col">
+                <col class="model-col">
+                <col class="year-col">
+                <col class="version-col">
+                <col class="transmission-col">
+                <col class="fuel-col">
+                <col class="color-col">
+                <col class="plate-col">
+                <col class="km-col">
+                <col class="date-col">
+                <col class="money-col">
+                <col class="money-col">
+                ${definition.showCommission ? `<col class="commission-col">` : ""}
+              </colgroup>
               <thead>
                 <tr>
                   <th>FOTO</th>
@@ -5846,7 +5881,7 @@ function buildVexSalesReportHtml(type) {
                 ${rows.map(function(row) {
                   return `
                     <tr>
-                      ${row.photoUrl ? `<td class="photo-cell"><img src="${escapeHTML(row.photoUrl)}" alt="${escapeHTML(row.model)}" /></td>` : `<td class="number">${row.index}</td>`}
+                      ${row.photoUrl ? `<td class="photo-cell"><div class="vehicle-photo-card"><img src="${escapeHTML(row.photoUrl)}" alt="${escapeHTML(row.model)}" /></div></td>` : `<td class="number">${row.index}</td>`}
                       <td class="model">${escapeHTML(row.model)}</td>
                       <td>${escapeHTML(row.year)}</td>
                       <td>${escapeHTML(row.version || "-")}</td>
@@ -11985,6 +12020,11 @@ setTimeout(initializeVexRC201MobileSafe, 1200);
 
 /* RC2.02 - Relatórios com filtro por mês e comissão detalhada */
 function getHistoryMonthFilterValue() {
+  const reportsField = document.getElementById("reportsMonthFilter");
+  if (reportsField && document.getElementById("reportsSection")?.classList.contains("active")) {
+    return reportsField.value || "current";
+  }
+
   const field = document.getElementById("historyMonthFilter");
   return field ? field.value || "current" : "current";
 }
@@ -12016,6 +12056,80 @@ function getSalesBySelectedPeriod() {
   return sales.filter(function (sale) {
     return saleMatchesPeriod(sale, period);
   });
+}
+
+function getPeriodLabelByValue(value) {
+  if (value === "previous") return "mes passado";
+  if (value === "all") return "todos os periodos";
+  if (/^\d{4}-\d{2}$/.test(String(value || ""))) {
+    const parts = String(value).split("-");
+    const date = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+    const label = date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  return "mes atual";
+}
+
+function saleMatchesPeriod(sale, period) {
+  if (period === "all") return true;
+
+  const date = createDateFromSaleDate(sale.saleDate);
+  if (!date) return false;
+
+  const now = new Date();
+  let target = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  if (period === "previous") {
+    target = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  } else if (/^\d{4}-\d{2}$/.test(String(period || ""))) {
+    const parts = String(period).split("-");
+    target = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+  }
+
+  return date.getMonth() === target.getMonth() && date.getFullYear() === target.getFullYear();
+}
+
+function getVexSalesMonthOptions() {
+  const months = new Map();
+
+  (sales || []).forEach(function(sale) {
+    const date = createDateFromSaleDate(sale.saleDate);
+    if (!date) return;
+    const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const label = date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    months.set(value, label.charAt(0).toUpperCase() + label.slice(1));
+  });
+
+  return Array.from(months.entries())
+    .sort(function(a, b) { return b[0].localeCompare(a[0]); })
+    .map(function(entry) {
+      return { value: entry[0], label: entry[1] };
+    });
+}
+
+function syncReportsMonthFilterOptions() {
+  const field = document.getElementById("reportsMonthFilter");
+  if (!field) return;
+
+  const currentValue = field.value || "current";
+  const monthOptions = getVexSalesMonthOptions().map(function(option) {
+    return `<option value="${escapeHTML(option.value)}">${escapeHTML(option.label)}</option>`;
+  }).join("");
+
+  field.innerHTML = `
+    <option value="current">Mes atual</option>
+    <option value="previous">Mes passado</option>
+    ${monthOptions}
+    <option value="all">Todos</option>
+  `;
+
+  const values = Array.from(field.options).map(function(option) { return option.value; });
+  field.value = values.includes(currentValue) ? currentValue : "current";
+
+  if (field.dataset.vexReportsReady !== "true") {
+    field.dataset.vexReportsReady = "true";
+    field.addEventListener("change", updateReports);
+  }
 }
 
 function getFilteredSales() {
@@ -12054,6 +12168,8 @@ function getFilteredSales() {
 
 function updateReports() {
   if (!reportTotalSales) return;
+
+  syncReportsMonthFilterOptions();
 
   const periodSales = getSalesBySelectedPeriod();
   const totalSales = periodSales.length;
@@ -12452,7 +12568,7 @@ function prepareVexDashboardLayout() {
             </div>
             <button class="ghost-button vex-clean-action" type="button" data-section-target="saleSection">Nova venda</button>
           </div>
-          <div id="vexLatestVehiclesList" class="vex-clean-list"></div>
+          <div id="vexLatestVehicles" class="vex-clean-latest-list"></div>
         </article>
 
         <article class="vex-clean-panel">

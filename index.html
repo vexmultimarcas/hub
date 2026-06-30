@@ -467,6 +467,14 @@
               <h3>Baixar relatorios em PDF</h3>
               <p>Gere o PDF mensal de veiculos vendidos com ou sem comissao.</p>
             </div>
+            <label class="reports-period-field">
+              Mes do relatorio
+              <select id="reportsMonthFilter" aria-label="Mes do relatorio">
+                <option value="current" selected>Mes atual</option>
+                <option value="previous">Mes passado</option>
+                <option value="all">Todos</option>
+              </select>
+            </label>
             <div class="reports-print-actions">
               <button class="secondary-button" type="button" onclick="printVexSalesReport('frank')">Baixar PDF Frank</button>
               <button class="secondary-button" type="button" onclick="printVexSalesReport('lucas')">Baixar PDF Lucas</button>

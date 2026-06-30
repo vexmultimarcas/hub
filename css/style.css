@@ -3184,3 +3184,1265 @@ button,
     width: 100%;
   }
 }
+
+/* =========================================================
+   RC3.0.34 - Tema claro premium VEX
+   Somente camada visual: fundo claro, textos escuros,
+   menu grafite e destaques vermelhos.
+   ========================================================= */
+html body #dashboardScreen.screen.active {
+  background: #eef2f7 !important;
+  color: #111827 !important;
+}
+
+html body #dashboardScreen.screen.active .workspace {
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%) !important;
+  color: #111827 !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar {
+  background: linear-gradient(180deg, #121820 0%, #202933 100%) !important;
+  border-right: 1px solid rgba(15, 23, 42, 0.22) !important;
+  box-shadow: 16px 0 36px rgba(15, 23, 42, 0.20) !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-brand strong,
+html body #dashboardScreen.screen.active .sidebar-footer strong,
+html body #dashboardScreen.screen.active .sidebar-footer span {
+  color: #ffffff !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-brand span {
+  color: #cbd5e1 !important;
+}
+
+html body #dashboardScreen.screen.active .nav-item {
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: #e5e7eb !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  box-shadow: none !important;
+}
+
+html body #dashboardScreen.screen.active .nav-item:hover,
+html body #dashboardScreen.screen.active .nav-item.active {
+  background: #d90404 !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+html body #dashboardScreen.screen.active .content-section {
+  color: #111827 !important;
+}
+
+html body #dashboardScreen.screen.active .section-header,
+html body #dashboardScreen.screen.active .form-card,
+html body #dashboardScreen.screen.active .filters-card,
+html body #dashboardScreen.screen.active .reports-print-panel,
+html body #dashboardScreen.screen.active .reports-grid > div,
+html body #dashboardScreen.screen.active .inventory-item,
+html body #dashboardScreen.screen.active .inventory-photo-box,
+html body #dashboardScreen.screen.active .vex-inventory-sale-lookup,
+html body #dashboardScreen.screen.active .vex-clean-kpi,
+html body #dashboardScreen.screen.active .vex-clean-panel,
+html body #dashboardScreen.screen.active .vex-clean-latest-item,
+html body #dashboardScreen.screen.active .vex-clean-chart-item,
+html body #dashboardScreen.screen.active .empty-state,
+html body #dashboardScreen.screen.active .commission-box,
+html body #dashboardScreen.screen.active .admin-info-card,
+html body #dashboardScreen.screen.active .admin-create-user-card,
+html body #dashboardScreen.screen.active .profile-card,
+html body #dashboardScreen.screen.active .users-list > * {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #d8e0ea !important;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08) !important;
+  backdrop-filter: none !important;
+}
+
+html body #dashboardScreen.screen.active .section-header {
+  border-top: 4px solid #d90404 !important;
+}
+
+html body #dashboardScreen.screen.active h1,
+html body #dashboardScreen.screen.active h2,
+html body #dashboardScreen.screen.active h3,
+html body #dashboardScreen.screen.active h4,
+html body #dashboardScreen.screen.active label,
+html body #dashboardScreen.screen.active .section-header h2,
+html body #dashboardScreen.screen.active .form-card h3,
+html body #dashboardScreen.screen.active .inventory-info strong,
+html body #dashboardScreen.screen.active .reports-grid strong,
+html body #dashboardScreen.screen.active .reports-print-panel h3,
+html body #dashboardScreen.screen.active .vex-clean-kpi strong,
+html body #dashboardScreen.screen.active .vex-clean-panel h2,
+html body #dashboardScreen.screen.active .vex-clean-chart-item strong,
+html body #dashboardScreen.screen.active .vex-clean-latest-item strong,
+html body #dashboardScreen.screen.active .vex-inventory-sale-lookup strong {
+  color: #111827 !important;
+}
+
+html body #dashboardScreen.screen.active p,
+html body #dashboardScreen.screen.active small,
+html body #dashboardScreen.screen.active .section-header p,
+html body #dashboardScreen.screen.active .form-card p,
+html body #dashboardScreen.screen.active .inventory-info small,
+html body #dashboardScreen.screen.active .inventory-info span,
+html body #dashboardScreen.screen.active .reports-grid span,
+html body #dashboardScreen.screen.active .reports-print-panel p,
+html body #dashboardScreen.screen.active .vex-clean-kpi span,
+html body #dashboardScreen.screen.active .vex-clean-kpi small,
+html body #dashboardScreen.screen.active .vex-clean-panel span,
+html body #dashboardScreen.screen.active .vex-clean-panel small,
+html body #dashboardScreen.screen.active .vex-clean-chart-item small,
+html body #dashboardScreen.screen.active .vex-clean-latest-item small,
+html body #dashboardScreen.screen.active .vex-inventory-sale-lookup small,
+html body #dashboardScreen.screen.active #saleInventoryLookupMessage {
+  color: #475467 !important;
+}
+
+html body #dashboardScreen.screen.active input,
+html body #dashboardScreen.screen.active select,
+html body #dashboardScreen.screen.active textarea {
+  background: #f8fafc !important;
+  color: #111827 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+html body #dashboardScreen.screen.active input::placeholder,
+html body #dashboardScreen.screen.active textarea::placeholder {
+  color: #667085 !important;
+  opacity: 1 !important;
+}
+
+html body #dashboardScreen.screen.active input:focus,
+html body #dashboardScreen.screen.active select:focus,
+html body #dashboardScreen.screen.active textarea:focus {
+  border-color: #d90404 !important;
+  box-shadow: 0 0 0 4px rgba(217, 4, 4, 0.10) !important;
+}
+
+html body #dashboardScreen.screen.active .primary-button,
+html body #dashboardScreen.screen.active .vex-clean-action,
+html body #dashboardScreen.screen.active .vex-mini-button {
+  background: linear-gradient(135deg, #d90404, #970000) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  box-shadow: 0 10px 22px rgba(217, 4, 4, 0.18) !important;
+}
+
+html body #dashboardScreen.screen.active .secondary-button,
+html body #dashboardScreen.screen.active .ghost-button {
+  background: #f8fafc !important;
+  color: #111827 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+html body #dashboardScreen.screen.active .secondary-button:hover,
+html body #dashboardScreen.screen.active .ghost-button:hover {
+  background: #eef2f7 !important;
+  color: #0f172a !important;
+}
+
+html body #dashboardScreen.screen.active .eyebrow,
+html body #dashboardScreen.screen.active .counter-pill,
+html body #dashboardScreen.screen.active .vex-kicker {
+  background: #f1f5f9 !important;
+  color: #475467 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html body #dashboardScreen.screen.active .inventory-thumb,
+html body #dashboardScreen.screen.active .inventory-photo-preview,
+html body #dashboardScreen.screen.active .vex-clean-car-mark {
+  background: #111820 !important;
+  color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html body #dashboardScreen.screen.active .inventory-thumb span {
+  background: #d90404 !important;
+  color: #ffffff !important;
+}
+
+html body .vex-drawer-root .vex-drawer-panel {
+  background: #f8fafc !important;
+  color: #111827 !important;
+  border-left: 1px solid #d8e0ea !important;
+}
+
+html body .vex-drawer-root .vex-drawer-panel h2,
+html body .vex-drawer-root .vex-drawer-panel h3,
+html body .vex-drawer-root .vex-drawer-panel strong {
+  color: #111827 !important;
+}
+
+html body .vex-drawer-root .vex-drawer-panel p,
+html body .vex-drawer-root .vex-drawer-panel span {
+  color: #475467 !important;
+}
+
+html body .vex-drawer-root .vex-drawer-panel .vex-drawer-hero,
+html body .vex-drawer-root .vex-drawer-panel .vex-formalization-form-card,
+html body .vex-drawer-root .vex-drawer-panel .vex-formalization-summary-item,
+html body .vex-drawer-root .vex-drawer-panel .vex-inventory-detail-row,
+html body .vex-drawer-root .vex-drawer-panel .vex-inventory-details-notes {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #d8e0ea !important;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08) !important;
+}
+
+html body .vex-drawer-root .vex-drawer-panel .vex-inventory-details-photo {
+  background: #111820 !important;
+  border: 1px solid #d8e0ea !important;
+  color: #ffffff !important;
+}
+
+html body .vex-drawer-root .vex-drawer-close {
+  background: rgba(17, 24, 39, 0.08) !important;
+  color: #111827 !important;
+}
+
+html body .vex-drawer-root .vex-formalization-progress {
+  background: #e5e7eb !important;
+}
+
+html body .vex-drawer-root .vex-formalization-progress-bar,
+html body #dashboardScreen.screen.active .vex-clean-chart-bar {
+  background: linear-gradient(90deg, #d90404, #970000) !important;
+}
+
+@media (max-width: 760px) {
+  html body #dashboardScreen.screen.active .sidebar {
+    background: #111820 !important;
+  }
+}
+
+/* RC3.0.35 - Correção de contraste da faixa superior */
+html body #dashboardScreen.screen.active .workspace .vex-s11-command-strip {
+  background: linear-gradient(135deg, #111820, #202933) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.18) !important;
+  backdrop-filter: none !important;
+}
+
+html body #dashboardScreen.screen.active .workspace .vex-s11-command-strip strong,
+html body #dashboardScreen.screen.active .workspace .vex-s11-command-strip #vexS11CurrentSection {
+  color: #ffffff !important;
+}
+
+html body #dashboardScreen.screen.active .workspace .vex-s11-command-strip span,
+html body #dashboardScreen.screen.active .workspace .vex-s11-command-strip #vexS11ConnectionLabel {
+  color: #d7dee8 !important;
+}
+
+html body #dashboardScreen.screen.active .workspace .vex-s11-command-strip .vex-s11-status-dot {
+  background: #34d399 !important;
+  box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.18) !important;
+}
+
+html body #dashboardScreen.screen.active .workspace .vex-s11-sale-progress {
+  background: #ffffff !important;
+  border: 1px solid #d8e0ea !important;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08) !important;
+}
+
+html body #dashboardScreen.screen.active .workspace .vex-s11-sale-progress-row,
+html body #dashboardScreen.screen.active .workspace .vex-s11-sale-progress-row span {
+  color: #475467 !important;
+}
+
+html body #dashboardScreen.screen.active .workspace .vex-s11-sale-progress-row strong {
+  color: #111827 !important;
+}
+
+html body #dashboardScreen.screen.active .workspace .vex-s11-sale-progress-track {
+  background: #e5e7eb !important;
+}
+
+/* =========================================================
+   RC3.0.36 - Revisao visual premium global do app
+   Somente interface. Nao altera contratos/documentos.
+   ========================================================= */
+html body #dashboardScreen.screen.active {
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+html body #dashboardScreen.screen.active .workspace {
+  padding: 28px 32px !important;
+}
+
+html body #dashboardScreen.screen.active .content-section.active {
+  max-width: 1440px !important;
+  margin: 0 auto !important;
+  animation-duration: 120ms !important;
+}
+
+html body #dashboardScreen.screen.active .section-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
+  min-height: 118px !important;
+  margin: 0 0 24px !important;
+  padding: 26px 28px !important;
+  border-radius: 22px !important;
+  border-top: 0 !important;
+  border-left: 5px solid #d90404 !important;
+}
+
+html body #dashboardScreen.screen.active .section-header > div {
+  display: grid !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+html body #dashboardScreen.screen.active .section-header h2 {
+  margin: 0 !important;
+  font-size: clamp(26px, 2.6vw, 38px) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.035em !important;
+  font-weight: 900 !important;
+}
+
+html body #dashboardScreen.screen.active .section-header p {
+  margin: 0 !important;
+  max-width: 720px !important;
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+  font-weight: 500 !important;
+}
+
+html body #dashboardScreen.screen.active .eyebrow,
+html body #dashboardScreen.screen.active .counter-pill {
+  width: fit-content !important;
+  min-height: 30px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 7px 12px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+}
+
+html body #dashboardScreen.screen.active .form-card,
+html body #dashboardScreen.screen.active .filters-card,
+html body #dashboardScreen.screen.active .reports-print-panel,
+html body #dashboardScreen.screen.active .inventory-card,
+html body #dashboardScreen.screen.active .profile-card,
+html body #dashboardScreen.screen.active .admin-create-user-card,
+html body #dashboardScreen.screen.active .admin-info-card {
+  border-radius: 22px !important;
+  padding: 24px !important;
+}
+
+html body #dashboardScreen.screen.active .form-grid,
+html body #dashboardScreen.screen.active .admin-create-user-grid,
+html body #dashboardScreen.screen.active .vex-formalization-form-grid {
+  gap: 18px !important;
+}
+
+html body #dashboardScreen.screen.active label {
+  gap: 8px !important;
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+  font-weight: 850 !important;
+}
+
+html body #dashboardScreen.screen.active input,
+html body #dashboardScreen.screen.active select,
+html body #dashboardScreen.screen.active textarea {
+  min-height: 48px !important;
+  border-radius: 14px !important;
+  padding: 12px 14px !important;
+  font-size: 14px !important;
+  font-weight: 650 !important;
+}
+
+html body #dashboardScreen.screen.active textarea {
+  min-height: 112px !important;
+  line-height: 1.5 !important;
+}
+
+html body #dashboardScreen.screen.active .primary-button,
+html body #dashboardScreen.screen.active .secondary-button,
+html body #dashboardScreen.screen.active .ghost-button,
+html body #dashboardScreen.screen.active button {
+  min-height: 44px;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  font-weight: 850 !important;
+  letter-spacing: 0 !important;
+}
+
+html body #dashboardScreen.screen.active .vex-inventory-sale-lookup,
+html body #dashboardScreen.screen.active .vex-s11-sale-progress {
+  border-radius: 18px !important;
+  margin-bottom: 18px !important;
+  padding: 18px !important;
+}
+
+html body #dashboardScreen.screen.active .vex-inventory-sale-lookup {
+  border-left: 5px solid #d90404 !important;
+}
+
+html body #dashboardScreen.screen.active .vex-inventory-sale-lookup strong,
+html body #dashboardScreen.screen.active .vex-s11-sale-progress-row strong {
+  font-size: 15px !important;
+  letter-spacing: -0.01em !important;
+}
+
+html body #dashboardScreen.screen.active .inventory-photo-box {
+  grid-template-columns: 200px minmax(160px, 1fr) minmax(160px, 1fr) !important;
+  align-items: center !important;
+  gap: 16px !important;
+  border-radius: 20px !important;
+}
+
+html body #dashboardScreen.screen.active .inventory-photo-preview {
+  width: 200px !important;
+  border-radius: 16px !important;
+}
+
+html body #dashboardScreen.screen.active .inventory-list {
+  gap: 14px !important;
+}
+
+html body #dashboardScreen.screen.active .inventory-item {
+  grid-template-columns: 132px minmax(0, 1fr) auto !important;
+  gap: 16px !important;
+  align-items: center !important;
+  border-radius: 18px !important;
+  padding: 14px !important;
+}
+
+html body #dashboardScreen.screen.active .inventory-info {
+  gap: 5px !important;
+}
+
+html body #dashboardScreen.screen.active .inventory-info strong {
+  font-size: 18px !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.02em !important;
+}
+
+html body #dashboardScreen.screen.active .inventory-info small,
+html body #dashboardScreen.screen.active .inventory-info span {
+  font-size: 12px !important;
+  line-height: 1.38 !important;
+}
+
+html body #dashboardScreen.screen.active .inventory-item-actions {
+  justify-content: flex-end !important;
+  gap: 8px !important;
+}
+
+html body #dashboardScreen.screen.active .inventory-item-actions button {
+  min-height: 38px !important;
+  padding: 9px 12px !important;
+  white-space: nowrap !important;
+}
+
+html body #dashboardScreen.screen.active .reports-grid {
+  gap: 14px !important;
+}
+
+html body #dashboardScreen.screen.active .reports-grid > div,
+html body #dashboardScreen.screen.active .vex-clean-kpi {
+  min-height: 112px !important;
+  border-radius: 18px !important;
+  padding: 18px !important;
+}
+
+html body #dashboardScreen.screen.active .reports-grid strong,
+html body #dashboardScreen.screen.active .vex-clean-kpi strong {
+  font-size: clamp(24px, 2.6vw, 34px) !important;
+  line-height: 1 !important;
+  letter-spacing: -0.035em !important;
+}
+
+html body #dashboardScreen.screen.active .vex-clean-grid {
+  gap: 18px !important;
+}
+
+html body #dashboardScreen.screen.active .vex-clean-panel {
+  border-radius: 20px !important;
+  padding: 20px !important;
+}
+
+html body #dashboardScreen.screen.active .vex-clean-panel-head,
+html body #dashboardScreen.screen.active .reports-print-panel {
+  align-items: center !important;
+}
+
+html body #dashboardScreen.screen.active .vex-clean-panel h2,
+html body #dashboardScreen.screen.active .reports-print-panel h3 {
+  margin: 4px 0 0 !important;
+  font-size: 20px !important;
+  line-height: 1.15 !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.02em !important;
+}
+
+html body #dashboardScreen.screen.active .vex-clean-latest-item {
+  border-radius: 16px !important;
+  padding: 14px !important;
+}
+
+html body #dashboardScreen.screen.active .vex-s9-toast-layer {
+  top: 18px !important;
+  right: 18px !important;
+  width: min(360px, calc(100vw - 32px)) !important;
+  z-index: 9999 !important;
+}
+
+html body #dashboardScreen.screen.active .vex-s9-toast {
+  background: #111820 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 16px !important;
+  min-height: 52px !important;
+  padding: 14px 16px 14px 38px !important;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.24) !important;
+}
+
+html body #dashboardScreen.screen.active .vex-s9-toast::before {
+  left: 16px !important;
+}
+
+html body .vex-drawer-root .vex-drawer-panel {
+  border-radius: 0 !important;
+  padding: 24px !important;
+}
+
+html body .vex-drawer-root .vex-drawer-hero,
+html body .vex-drawer-root .vex-formalization-form-card,
+html body .vex-drawer-root .vex-formalization-summary-item,
+html body .vex-drawer-root .vex-inventory-detail-row,
+html body .vex-drawer-root .vex-inventory-details-notes {
+  border-radius: 18px !important;
+}
+
+html body .vex-drawer-root .vex-drawer-hero h2,
+html body .vex-drawer-root .vex-inventory-details-head h2 {
+  font-size: clamp(24px, 4vw, 34px) !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.03em !important;
+}
+
+html body .vex-drawer-root .vex-inventory-details-grid {
+  gap: 12px !important;
+}
+
+html body .vex-drawer-root .vex-inventory-details-photo {
+  border-radius: 18px !important;
+}
+
+@media (max-width: 920px) {
+  html body #dashboardScreen.screen.active .workspace {
+    padding: 18px 14px !important;
+  }
+
+  html body #dashboardScreen.screen.active .section-header {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    min-height: auto !important;
+    padding: 20px !important;
+  }
+
+  html body #dashboardScreen.screen.active .inventory-photo-box,
+  html body #dashboardScreen.screen.active .inventory-item {
+    grid-template-columns: 1fr !important;
+  }
+
+  html body #dashboardScreen.screen.active .inventory-photo-preview,
+  html body #dashboardScreen.screen.active .inventory-thumb {
+    width: 100% !important;
+  }
+
+  html body #dashboardScreen.screen.active .inventory-item-actions {
+    justify-content: stretch !important;
+  }
+
+html body #dashboardScreen.screen.active .inventory-item-actions button {
+    width: 100% !important;
+  }
+}
+
+/* RC3.0.37 - Dashboard alinhado sem card Estoque */
+html body #dashboardScreen.screen.active .vex-clean-kpis {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+}
+
+html body #dashboardScreen.screen.active .vex-clean-kpis article:has(#vexCleanInventoryCount) {
+  display: none !important;
+}
+
+html body #dashboardScreen.screen.active .vex-clean-kpi {
+  min-height: 116px !important;
+}
+
+html body #dashboardScreen.screen.active .vex-clean-kpi span,
+html body #dashboardScreen.screen.active .vex-clean-kpi small,
+html body #dashboardScreen.screen.active .section-header p,
+html body #dashboardScreen.screen.active .form-card p,
+html body #dashboardScreen.screen.active .inventory-info small,
+html body #dashboardScreen.screen.active .inventory-info span,
+html body #dashboardScreen.screen.active .vex-clean-panel small,
+html body #dashboardScreen.screen.active .vex-clean-latest-item small,
+html body #dashboardScreen.screen.active .reports-print-panel p,
+html body #dashboardScreen.screen.active .vex-inventory-sale-lookup small {
+  color: #334155 !important;
+}
+
+html body #dashboardScreen.screen.active .vex-clean-kpi span,
+html body #dashboardScreen.screen.active .reports-grid span,
+html body #dashboardScreen.screen.active .vex-formalization-summary-item span {
+  font-weight: 850 !important;
+}
+
+/* RC3.0.38 - Contraste forte na lista de veículos */
+html body #dashboardScreen.screen.active #historyList.vex-premium-list-shell,
+html body #dashboardScreen.screen.active #historyList .vex-s6-vehicle-list {
+  color: #f8fafc !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-list-toolbar {
+  background: linear-gradient(135deg, #111820, #202933) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18) !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-list-toolbar span,
+html body #dashboardScreen.screen.active #historyList .vex-s6-list-toolbar small {
+  color: #d7dee8 !important;
+  opacity: 1 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-list-toolbar strong {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-vehicle-row {
+  background: linear-gradient(135deg, #161b23 0%, #252b33 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18) !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-vehicle-row:hover {
+  background: linear-gradient(135deg, #1e252f 0%, #303844 100%) !important;
+  border-color: rgba(217, 4, 4, 0.45) !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-main strong {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-weight: 850 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-main small,
+html body #dashboardScreen.screen.active #historyList .vex-vehicle-compact-subline {
+  color: #cbd5e1 !important;
+  opacity: 1 !important;
+  font-weight: 650 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-value {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-weight: 900 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-arrow {
+  color: #e2e8f0 !important;
+  opacity: 1 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-icon {
+  background: rgba(217, 4, 4, 0.24) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(217, 4, 4, 0.35) !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-status {
+  opacity: 1 !important;
+  font-weight: 900 !important;
+}
+
+@media (max-width: 920px) {
+  html body #dashboardScreen.screen.active .vex-clean-kpis {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* =========================================================
+   RC3.0.39 - Identidade visual VEX site oficial
+   Lista e componentes claros, texto preto forte e vermelho VEX.
+   ========================================================= */
+html body #dashboardScreen.screen.active #historyList.vex-premium-list-shell {
+  display: grid !important;
+  gap: 14px !important;
+  color: #111111 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-list-toolbar {
+  min-height: 64px !important;
+  padding: 16px 18px !important;
+  border-radius: 2px !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: 5px solid #d90404 !important;
+  box-shadow: 0 10px 26px rgba(17, 24, 39, 0.06) !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-list-toolbar span,
+html body #dashboardScreen.screen.active #historyList .vex-s6-list-toolbar small {
+  color: #475467 !important;
+  font-weight: 850 !important;
+  opacity: 1 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-list-toolbar strong {
+  color: #111111 !important;
+  font-weight: 950 !important;
+  opacity: 1 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-vehicle-list {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-vehicle-row {
+  min-height: 76px !important;
+  padding: 14px 18px !important;
+  border-radius: 2px !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: 5px solid #d90404 !important;
+  color: #111111 !important;
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.06) !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-vehicle-row:hover {
+  background: #fafafa !important;
+  border-left-color: #ff1b12 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 14px 30px rgba(17, 24, 39, 0.10) !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-icon {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 2px !important;
+  background: #111820 !important;
+  color: #ffffff !important;
+  border: 0 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-main strong {
+  color: #111111 !important;
+  font-size: 16px !important;
+  line-height: 1.18 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.018em !important;
+  opacity: 1 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-main small,
+html body #dashboardScreen.screen.active #historyList .vex-vehicle-compact-subline {
+  color: #475467 !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  font-weight: 750 !important;
+  opacity: 1 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-value {
+  color: #111111 !important;
+  font-size: 16px !important;
+  font-weight: 950 !important;
+  opacity: 1 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-arrow {
+  color: #111111 !important;
+  opacity: 0.55 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-status {
+  border-radius: 999px !important;
+  padding: 9px 14px !important;
+  font-weight: 950 !important;
+  opacity: 1 !important;
+  color: #111111 !important;
+  background: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-status.vex-status-finalizado,
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-status.vex-status-transferido {
+  color: #166534 !important;
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-status.vex-status-pendente,
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-status.vex-status-aguardando {
+  color: #854d0e !important;
+  background: #fef3c7 !important;
+  border-color: #facc15 !important;
+}
+
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-status.vex-status-andamento,
+html body #dashboardScreen.screen.active #historyList .vex-s6-row-status.vex-status-transferencia {
+  color: #991b1b !important;
+  background: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+}
+
+html body #dashboardScreen.screen.active .section-header,
+html body #dashboardScreen.screen.active .form-card,
+html body #dashboardScreen.screen.active .filters-card,
+html body #dashboardScreen.screen.active .reports-print-panel,
+html body #dashboardScreen.screen.active .inventory-item,
+html body #dashboardScreen.screen.active .vex-clean-kpi,
+html body #dashboardScreen.screen.active .vex-clean-panel {
+  border-radius: 2px !important;
+}
+
+html body #dashboardScreen.screen.active .section-header {
+  border-left: 5px solid #d90404 !important;
+}
+
+/* =========================================================
+   RC3.0.40 - Aba Usuarios premium compacta
+   Somente visual. Mantem permissoes e funcionamento intactos.
+   ========================================================= */
+html body #dashboardScreen.screen.active #usersSection.content-section.active {
+  display: grid !important;
+  gap: 18px !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .section-header {
+  min-height: 112px !important;
+  margin-bottom: 2px !important;
+  padding: 24px 28px !important;
+  border-radius: 2px !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: 5px solid #d90404 !important;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.06) !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .section-header h2 {
+  font-size: clamp(26px, 2.2vw, 34px) !important;
+  color: #111111 !important;
+  letter-spacing: -0.02em !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .section-header p {
+  max-width: 760px !important;
+  color: #334155 !important;
+  font-weight: 750 !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .admin-info-card,
+html body #dashboardScreen.screen.active #usersSection .admin-create-user-card {
+  margin: 0 !important;
+  padding: 18px 20px !important;
+  border-radius: 2px !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: 5px solid #d90404 !important;
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.06) !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .admin-info-card p,
+html body #dashboardScreen.screen.active #usersSection .admin-create-user-card p {
+  color: #334155 !important;
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+  font-weight: 700 !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .admin-create-user-card {
+  gap: 14px !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .admin-create-user-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+  align-items: end !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .admin-create-user-card .primary-button {
+  min-height: 48px !important;
+  border-radius: 2px !important;
+  font-weight: 950 !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .users-list {
+  display: grid !important;
+  gap: 10px !important;
+  margin-top: 0 !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .user-card {
+  min-height: 86px !important;
+  padding: 14px 16px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 18px !important;
+  border-radius: 2px !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: 5px solid #d90404 !important;
+  box-shadow: 0 10px 22px rgba(17, 24, 39, 0.06) !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .user-card:hover {
+  border-left-color: #ff1b12 !important;
+  box-shadow: 0 14px 28px rgba(17, 24, 39, 0.10) !important;
+  transform: translateY(-1px) !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .user-card-main {
+  display: grid !important;
+  grid-template-columns: 44px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-width: 0 !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .user-card-main > div:last-child {
+  display: grid !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .user-mini-avatar {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 2px !important;
+  background: linear-gradient(135deg, #d90404, #ff8a8a) !important;
+  border: 0 !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 950 !important;
+  box-shadow: 0 10px 20px rgba(217, 4, 4, 0.18) !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .user-card strong {
+  color: #111111 !important;
+  font-size: 16px !important;
+  line-height: 1.15 !important;
+  font-weight: 950 !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .user-card span,
+html body #dashboardScreen.screen.active #usersSection .user-card small {
+  color: #475467 !important;
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .user-card small:empty {
+  display: none !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .user-card-actions {
+  display: grid !important;
+  grid-template-columns: auto auto minmax(150px, 180px) auto !important;
+  align-items: center !important;
+  justify-items: end !important;
+  gap: 10px !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .role-badge,
+html body #dashboardScreen.screen.active #usersSection .access-badge {
+  min-height: 28px !important;
+  padding: 7px 11px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .role-badge.admin {
+  color: #991b1b !important;
+  background: #fee2e2 !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .role-badge.user {
+  color: #334155 !important;
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .access-badge.active {
+  color: #166534 !important;
+  background: #dcfce7 !important;
+  border: 1px solid #86efac !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .access-badge.blocked {
+  color: #991b1b !important;
+  background: #fee2e2 !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .role-select {
+  width: 100% !important;
+  min-height: 40px !important;
+  border-radius: 2px !important;
+  background: #f8fafc !important;
+  color: #111111 !important;
+  border: 1px solid #cbd5e1 !important;
+  font-size: 13px !important;
+  font-weight: 850 !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .user-access-button {
+  min-height: 40px !important;
+  padding: 0 14px !important;
+  border-radius: 2px !important;
+  white-space: nowrap !important;
+  color: #111111 !important;
+  font-weight: 900 !important;
+}
+
+html body #dashboardScreen.screen.active #usersSection .empty-state {
+  border-radius: 2px !important;
+  color: #334155 !important;
+  font-weight: 750 !important;
+}
+
+@media (max-width: 980px) {
+  html body #dashboardScreen.screen.active #usersSection .admin-create-user-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  html body #dashboardScreen.screen.active #usersSection .user-card {
+    grid-template-columns: 1fr !important;
+    align-items: stretch !important;
+  }
+
+  html body #dashboardScreen.screen.active #usersSection .user-card-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    justify-items: stretch !important;
+  }
+
+  html body #dashboardScreen.screen.active #usersSection .role-badge,
+  html body #dashboardScreen.screen.active #usersSection .access-badge {
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 560px) {
+  html body #dashboardScreen.screen.active #usersSection .section-header {
+    min-height: 0 !important;
+    padding: 20px !important;
+  }
+
+  html body #dashboardScreen.screen.active #usersSection .user-card-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* =========================================================
+   RC3.0.41 - Correção visual Ultimas Vendas
+   Religa a lista e remove area vazia no dashboard.
+   ========================================================= */
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr) !important;
+  gap: 18px !important;
+  align-items: start !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel-main {
+  min-height: 0 !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: 5px solid #d90404 !important;
+  border-radius: 2px !important;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.06) !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
+  margin-bottom: 16px !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel-head > div {
+  display: grid !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel-head span {
+  color: #475467 !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel-head h2 {
+  color: #111111 !important;
+  margin: 0 !important;
+  font-size: clamp(24px, 2.2vw, 32px) !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel-head .vex-clean-action {
+  width: auto !important;
+  min-width: 150px !important;
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 2px !important;
+  flex: 0 0 auto !important;
+  background: #111820 !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  font-weight: 950 !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-latest-list {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-latest-item {
+  width: 100% !important;
+  min-height: 70px !important;
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 14px !important;
+  border-radius: 2px !important;
+  background: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #e5e7eb !important;
+  border-left: 4px solid #d90404 !important;
+  box-shadow: 0 8px 18px rgba(17, 24, 39, 0.05) !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-latest-item:hover {
+  background: #fafafa !important;
+  border-left-color: #ff1b12 !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-latest-item strong {
+  color: #111111 !important;
+  font-size: 15px !important;
+  font-weight: 950 !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-latest-item small {
+  color: #475467 !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  opacity: 1 !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-latest-item em {
+  color: #111111 !important;
+  font-size: 14px !important;
+  font-style: normal !important;
+  font-weight: 950 !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-clean-car-mark {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 2px !important;
+  background: #111820 !important;
+  color: #ffffff !important;
+  border: 0 !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-dashboard-empty {
+  padding: 18px !important;
+  border-radius: 2px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e5e7eb !important;
+  color: #334155 !important;
+  font-weight: 800 !important;
+}
+
+@media (max-width: 980px) {
+  html body #dashboardScreen.screen.active #dashboardSection .vex-clean-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel-head {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel-head .vex-clean-action {
+    width: 100% !important;
+  }
+}
+
+/* RC3.0.42 - Relatorios com periodo e area de foto alinhada */
+html body #dashboardScreen.screen.active #reportsSection .reports-print-panel {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px) auto !important;
+  align-items: end !important;
+  gap: 18px !important;
+}
+
+html body #dashboardScreen.screen.active #reportsSection .reports-period-field {
+  display: grid !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  color: #111111 !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+
+html body #dashboardScreen.screen.active #reportsSection .reports-period-field select {
+  min-height: 46px !important;
+  border-radius: 2px !important;
+  background: #f8fafc !important;
+  color: #111111 !important;
+  border: 1px solid #cbd5e1 !important;
+  font-weight: 850 !important;
+}
+
+html body #dashboardScreen.screen.active #reportsSection .reports-print-actions {
+  justify-content: end !important;
+}
+
+@media (max-width: 980px) {
+  html body #dashboardScreen.screen.active #reportsSection .reports-print-panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  html body #dashboardScreen.screen.active #reportsSection .reports-print-actions {
+    justify-content: stretch !important;
+  }
+}
