@@ -4898,3 +4898,210 @@ html body #dashboardScreen.screen.active #inventorySection .inventory-item-actio
     width: 100% !important;
   }
 }
+
+/* =========================================================
+   RC3.0.49 - Estoque premium em formato vitrine limpa
+   ========================================================= */
+html body #dashboardScreen.screen.active #inventorySection .section-header {
+  border-radius: 2px !important;
+  background:
+    linear-gradient(90deg, #ffffff 0%, #ffffff 74%, #fff1f1 100%) !important;
+  border-top: 4px solid #d90404 !important;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.08) !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .section-header h2 {
+  color: #0f172a !important;
+  font-size: clamp(28px, 3vw, 42px) !important;
+  line-height: 1 !important;
+  letter-spacing: -0.02em !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .section-header p {
+  color: #475467 !important;
+  font-weight: 800 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .counter-pill {
+  border-radius: 2px !important;
+  background: #111820 !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  min-height: 42px !important;
+  padding: 0 16px !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-filters {
+  padding: 16px !important;
+  border-radius: 2px !important;
+  background: #ffffff !important;
+  border: 1px solid #dbe3ee !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06) !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-filters input {
+  min-height: 48px !important;
+  border-radius: 2px !important;
+  background: #f8fafc !important;
+  border: 1px solid #dbe3ee !important;
+  color: #0f172a !important;
+  font-weight: 850 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-list {
+  gap: 14px !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-item {
+  display: grid !important;
+  grid-template-columns: 214px minmax(0, 1fr) auto !important;
+  gap: 20px !important;
+  align-items: center !important;
+  min-height: 172px !important;
+  padding: 16px !important;
+  border-radius: 2px !important;
+  background: #ffffff !important;
+  border: 1px solid #dbe3ee !important;
+  border-left: 4px solid #d90404 !important;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08) !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-item.is-sold {
+  border-left-color: #111820 !important;
+  background: linear-gradient(90deg, #f8fafc, #ffffff) !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-thumb {
+  width: 214px !important;
+  height: 138px !important;
+  border-radius: 2px !important;
+  background: #111820 !important;
+  border: 1px solid #cfd7e3 !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18) !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-thumb img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  filter: saturate(1.04) contrast(1.03) !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-thumb span {
+  color: #ffffff !important;
+  font-size: 18px !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.06em !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-sold-ribbon {
+  inset: auto -42px 24px auto !important;
+  width: 170px !important;
+  line-height: 30px !important;
+  background: #d90404 !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-info {
+  display: grid !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-info strong {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  color: #0f172a !important;
+  font-size: clamp(20px, 2vw, 28px) !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.015em !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-info small,
+html body #dashboardScreen.screen.active #inventorySection .inventory-info span {
+  color: #475467 !important;
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+  font-weight: 800 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-info span:nth-of-type(2) {
+  color: #111820 !important;
+  font-weight: 950 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-status-pill {
+  margin-left: 0 !important;
+  padding: 6px 10px !important;
+  border-radius: 2px !important;
+  font-size: 10px !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-item-actions {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  min-width: 168px !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-item-actions button {
+  min-height: 38px !important;
+  border-radius: 2px !important;
+  padding: 0 14px !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-item-actions .secondary-button {
+  background: #111820 !important;
+  color: #ffffff !important;
+  border: 1px solid #111820 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-item-actions .ghost-button {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid #dbe3ee !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-card {
+  border-radius: 2px !important;
+  border: 1px solid #dbe3ee !important;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.10) !important;
+}
+
+@media (max-width: 980px) {
+  html body #dashboardScreen.screen.active #inventorySection .inventory-item {
+    grid-template-columns: 150px minmax(0, 1fr) !important;
+    gap: 14px !important;
+  }
+
+  html body #dashboardScreen.screen.active #inventorySection .inventory-thumb {
+    width: 150px !important;
+    height: 112px !important;
+  }
+
+  html body #dashboardScreen.screen.active #inventorySection .inventory-item-actions {
+    grid-column: 1 / -1 !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  html body #dashboardScreen.screen.active #inventorySection .inventory-item {
+    grid-template-columns: 1fr !important;
+  }
+
+  html body #dashboardScreen.screen.active #inventorySection .inventory-thumb {
+    width: 100% !important;
+    height: 190px !important;
+  }
+
+  html body #dashboardScreen.screen.active #inventorySection .inventory-item-actions {
+    grid-template-columns: 1fr !important;
+  }
+}

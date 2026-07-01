@@ -13057,11 +13057,20 @@ function getVexInventoryAvailableCountClean() {
 function prepareVexDashboardLayout() {
   const dashboardSection = document.getElementById("dashboardSection");
   if (!dashboardSection) return;
-  if (dashboardSection.getAttribute("data-vex-dashboard-ready") === "rc3-0-27-clean-final") return;
+  if (dashboardSection.getAttribute("data-vex-dashboard-ready") === "rc3-0-49-premium") return;
 
-  dashboardSection.setAttribute("data-vex-dashboard-ready", "rc3-0-27-clean-final");
+  dashboardSection.setAttribute("data-vex-dashboard-ready", "rc3-0-49-premium");
   dashboardSection.innerHTML = `
-    <div class="vex-dashboard-minimal">
+    <div class="vex-dashboard-minimal vex-dashboard-premium">
+      <section class="vex-executive-head" aria-label="Resumo executivo">
+        <div>
+          <span>VEX HUB PRO</span>
+          <h2>Visao executiva da loja</h2>
+          <p>Resumo limpo para acompanhar vendas, estoque e evolucao mensal.</p>
+        </div>
+        <button class="primary-button vex-clean-action" type="button" data-section-target="newSaleSection">Nova venda</button>
+      </section>
+
       <section class="vex-clean-kpis" aria-label="Resumo da loja">
         <article class="vex-clean-kpi">
           <span>Vendidos no mes</span>
@@ -13092,7 +13101,7 @@ function prepareVexDashboardLayout() {
               <span>Ultimas vendas</span>
               <h2>Carros vendidos recentemente</h2>
             </div>
-            <button class="ghost-button vex-clean-action" type="button" data-section-target="saleSection">Nova venda</button>
+            <button class="ghost-button vex-clean-action" type="button" data-section-target="historySection">Ver todos</button>
           </div>
           <div id="vexLatestVehicles" class="vex-clean-latest-list"></div>
         </article>
@@ -13138,6 +13147,312 @@ function updateVexDashboardExecutive() {
 }
 
 // Tema claro pausado na RC3.0.31 para restaurar o visual escuro aprovado.
+
+/* =========================================================
+   RC3.0.49 - Acabamento premium visual
+   Estoque, dashboard executivo e menu lateral.
+   ========================================================= */
+function injectVexRC49PremiumStyles() {
+  if (document.getElementById("vex-rc49-premium-styles")) return;
+
+  const style = document.createElement("style");
+  style.id = "vex-rc49-premium-styles";
+  style.textContent = `
+    html body #dashboardScreen.screen.active .workspace {
+      background: #eef2f7 !important;
+    }
+
+    html body #dashboardScreen.screen.active .content-section {
+      max-width: 1240px !important;
+      margin: 0 auto !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-dashboard-premium {
+      display: grid !important;
+      gap: 18px !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-executive-head {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 18px !important;
+      padding: 24px 28px !important;
+      border-radius: 2px !important;
+      background:
+        linear-gradient(90deg, #0a0d12 0%, #17202b 76%, #240202 100%) !important;
+      border: 1px solid rgba(217, 4, 4, 0.24) !important;
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14) !important;
+      color: #ffffff !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-executive-head span {
+      display: block !important;
+      margin-bottom: 8px !important;
+      color: #ef4444 !important;
+      font-size: 11px !important;
+      font-weight: 950 !important;
+      letter-spacing: 0.16em !important;
+      text-transform: uppercase !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-executive-head h2 {
+      margin: 0 !important;
+      color: #ffffff !important;
+      font-size: clamp(28px, 3vw, 44px) !important;
+      line-height: 0.98 !important;
+      font-weight: 950 !important;
+      letter-spacing: -0.02em !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-executive-head p {
+      max-width: 620px !important;
+      margin: 10px 0 0 !important;
+      color: #cbd5e1 !important;
+      font-size: 14px !important;
+      font-weight: 750 !important;
+      line-height: 1.45 !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-kpis {
+      display: grid !important;
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      gap: 12px !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-kpi,
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel {
+      border-radius: 2px !important;
+      background: #ffffff !important;
+      border: 1px solid #dbe3ee !important;
+      box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08) !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-kpi {
+      min-height: 126px !important;
+      padding: 20px 22px !important;
+      align-content: space-between !important;
+      border-top: 4px solid #d90404 !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-kpi span,
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel-head span {
+      color: #667085 !important;
+      font-size: 11px !important;
+      font-weight: 950 !important;
+      letter-spacing: 0.12em !important;
+      text-transform: uppercase !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-kpi strong {
+      margin-top: 10px !important;
+      color: #0f172a !important;
+      font-size: clamp(25px, 2.4vw, 38px) !important;
+      line-height: 1 !important;
+      font-weight: 950 !important;
+      letter-spacing: -0.02em !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-kpi small {
+      color: #475467 !important;
+      font-weight: 800 !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-grid {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr) !important;
+      gap: 14px !important;
+      align-items: stretch !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel {
+      padding: 22px !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel-head {
+      display: flex !important;
+      align-items: flex-start !important;
+      justify-content: space-between !important;
+      gap: 14px !important;
+      margin-bottom: 18px !important;
+      padding-bottom: 14px !important;
+      border-bottom: 1px solid #e5e7eb !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-panel-head h2 {
+      margin: 5px 0 0 !important;
+      color: #0f172a !important;
+      font-size: 24px !important;
+      line-height: 1.05 !important;
+      font-weight: 950 !important;
+      letter-spacing: -0.01em !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-latest-item {
+      display: grid !important;
+      grid-template-columns: 52px minmax(0, 1fr) auto !important;
+      align-items: center !important;
+      gap: 14px !important;
+      min-height: 76px !important;
+      padding: 12px 14px !important;
+      border-radius: 2px !important;
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #0f172a !important;
+      box-shadow: none !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-latest-item:hover {
+      background: #ffffff !important;
+      border-color: rgba(217, 4, 4, 0.34) !important;
+      transform: translateY(-1px) !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-car-mark {
+      width: 52px !important;
+      height: 52px !important;
+      border-radius: 2px !important;
+      background: #111820 !important;
+      color: #ef4444 !important;
+      font-size: 16px !important;
+      font-weight: 950 !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-latest-item strong {
+      color: #0f172a !important;
+      font-size: 16px !important;
+      line-height: 1.15 !important;
+      font-weight: 950 !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-latest-item small {
+      margin-top: 4px !important;
+      color: #475467 !important;
+      font-size: 12px !important;
+      font-weight: 800 !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-latest-item em {
+      color: #d90404 !important;
+      font-size: 15px !important;
+      font-style: normal !important;
+      font-weight: 950 !important;
+      white-space: nowrap !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-chart {
+      min-height: 270px !important;
+      align-items: end !important;
+      gap: 10px !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-chart-item {
+      min-height: 248px !important;
+      padding: 10px 8px !important;
+      border-radius: 2px !important;
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-chart-bar-wrap {
+      height: 166px !important;
+      background: #e5e7eb !important;
+      border-radius: 2px !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-chart-bar {
+      background: linear-gradient(180deg, #ef4444, #990000) !important;
+      border-radius: 2px !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-chart-item strong {
+      margin-top: 10px !important;
+      color: #0f172a !important;
+      font-size: 18px !important;
+      font-weight: 950 !important;
+    }
+
+    html body #dashboardScreen.screen.active #dashboardSection .vex-clean-chart-item small {
+      color: #475467 !important;
+      font-weight: 900 !important;
+      text-transform: uppercase !important;
+    }
+
+    @media (min-width: 761px) {
+      html body #dashboardScreen.screen.active .sidebar {
+        width: 292px !important;
+        padding: 24px 18px !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-brand {
+        grid-template-columns: 86px minmax(0, 1fr) !important;
+        min-height: 108px !important;
+        padding: 18px 12px 20px !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small {
+        position: relative !important;
+        width: 86px !important;
+        height: 54px !important;
+        display: grid !important;
+        place-items: center !important;
+        color: transparent !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small::before {
+        content: "vex" !important;
+        color: #ff170f !important;
+        font-size: 36px !important;
+        line-height: 1 !important;
+        font-weight: 950 !important;
+        letter-spacing: -0.12em !important;
+        text-transform: lowercase !important;
+        filter: drop-shadow(0 8px 16px rgba(217, 4, 4, 0.24)) !important;
+      }
+
+      html body #dashboardScreen.screen.active .nav-item {
+        min-height: 50px !important;
+        padding-left: 54px !important;
+        font-size: 14px !important;
+      }
+
+      html body #dashboardScreen.screen.active .nav-item::before {
+        left: 15px !important;
+        width: 28px !important;
+        height: 28px !important;
+        border-radius: 2px !important;
+        background: rgba(255, 255, 255, 0.07) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        color: #cbd5e1 !important;
+        font-size: 10px !important;
+      }
+
+      html body #dashboardScreen.screen.active .nav-item[data-section="dashboardSection"]::before { content: "IN" !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="newSaleSection"]::before { content: "+" !important; font-size: 17px !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="inventorySection"]::before { content: "ES" !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="historySection"]::before { content: "VE" !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="reportsSection"]::before { content: "RE" !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="profileSection"]::before { content: "PF" !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="usersSection"]::before { content: "AD" !important; }
+    }
+
+    @media (max-width: 980px) {
+      html body #dashboardScreen.screen.active #dashboardSection .vex-clean-kpis,
+      html body #dashboardScreen.screen.active #dashboardSection .vex-clean-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      html body #dashboardScreen.screen.active #dashboardSection .vex-executive-head {
+        align-items: stretch !important;
+        flex-direction: column !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexRC49PremiumStyles();
 
 setTimeout(() => {
   const dashboardSection = document.getElementById("dashboardSection");
