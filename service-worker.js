@@ -1,4 +1,4 @@
-const CACHE_NAME = "vex-hub-rc3-0-49-premium-visual";
+const CACHE_NAME = "vex-hub-rc3-0-52-relatorios-pdf-premium";
 
 const FILES_TO_CACHE = [
   "./",

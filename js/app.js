@@ -153,6 +153,10 @@ function initializeNavigation() {
       if (targetSection) {
         targetSection.classList.add("active");
       }
+
+      if (targetSectionId === "historySection") {
+        renderHistory();
+      }
     });
   });
 }
@@ -496,7 +500,7 @@ function initializeHistoryFilters() {
       if (historyStatusFilter) historyStatusFilter.value = "";
       if (historyTransferFilter) historyTransferFilter.value = "";
       const historyMonthFilter = document.getElementById("historyMonthFilter");
-      if (historyMonthFilter) historyMonthFilter.value = "current";
+      if (historyMonthFilter) historyMonthFilter.value = "all";
       renderHistory();
       updateReports();
     });
@@ -6208,14 +6212,14 @@ function injectVexVisualCleanStyles() {
    ========================================================= */
 function getVexSalesReportDefinition(type) {
   if (type === "frank") {
-    return { type: "frank", title: "COMISSAO FRANK LUIZ", seller: "Frank Luiz", field: "frankCommission", defaultValue: 125, showCommission: true };
+    return { type: "frank", title: "COMISSAO FRANK LUIZ", fileTitle: "Relatorio de Comissao - Frank Luiz", seller: "Frank Luiz", field: "frankCommission", defaultValue: 125, showCommission: true };
   }
 
   if (type === "lucas") {
-    return { type: "lucas", title: "COMISSAO LUCAS LUIZ", seller: "Lucas Luiz", field: "lucasCommission", defaultValue: 125, showCommission: true };
+    return { type: "lucas", title: "COMISSAO LUCAS LUIZ", fileTitle: "Relatorio de Comissao - Lucas Luiz", seller: "Lucas Luiz", field: "lucasCommission", defaultValue: 125, showCommission: true };
   }
 
-  return { type: "partner", title: "RELATORIO DE VENDAS", seller: "Socio", field: "", defaultValue: 0, showCommission: false };
+  return { type: "partner", title: "RELATORIO DE VENDAS", fileTitle: "Relatorio de Vendas", seller: "Socio", field: "", defaultValue: 0, showCommission: false };
 }
 
 function getVexReportCommissionValue(sale, definition) {
@@ -6256,6 +6260,30 @@ function getVexReportSaleRows(definition) {
   });
 }
 
+function getVexReportSafeMoney(value) {
+  return formatCurrencyToBrazil(Number(value || 0));
+}
+
+function getVexReportPhotoCell(row) {
+  if (row.photoUrl) {
+    return `
+      <td class="photo-cell">
+        <div class="vehicle-photo-card">
+          <img src="${escapeHTML(row.photoUrl)}" alt="${escapeHTML(row.model)}" />
+        </div>
+      </td>
+    `;
+  }
+
+  return `
+    <td class="photo-cell">
+      <div class="vehicle-photo-card vehicle-photo-card-empty">
+        <span>${String(row.index).padStart(2, "0")}</span>
+      </div>
+    </td>
+  `;
+}
+
 function getVexReportPeriodTitle() {
   const period = getHistoryMonthFilterValue();
 
@@ -6283,15 +6311,17 @@ function buildVexSalesReportHtml(type) {
   const definition = getVexSalesReportDefinition(type);
   const rows = getVexReportSaleRows(definition);
   const periodLabel = getVexReportPeriodTitle();
-  const reportTitle = `${definition.title} - ${periodLabel.toUpperCase()}`;
+  const reportTitle = `${definition.fileTitle} - ${periodLabel}`;
   const logoSrc = new URL("assets/logo/vex-logo.png", window.location.href).href;
   const totalTable = rows.reduce(function(total, row) { return total + row.tableValue; }, 0);
   const totalSales = rows.reduce(function(total, row) { return total + row.saleValue; }, 0);
   const totalCommission = rows.reduce(function(total, row) { return total + row.commission; }, 0);
   const commissionHeader = definition.showCommission ? `<th>COMISSAO</th>` : "";
   const commissionCells = function(row) {
-    return definition.showCommission ? `<td class="money">${formatCurrencyToBrazil(row.commission)}</td>` : "";
+    return definition.showCommission ? `<td class="money">${getVexReportSafeMoney(row.commission)}</td>` : "";
   };
+  const commissionCol = definition.showCommission ? `<col class="commission-col">` : "";
+  const rowClass = definition.showCommission ? "with-commission" : "partner-report";
 
   return `
     <!DOCTYPE html>
@@ -6300,51 +6330,68 @@ function buildVexSalesReportHtml(type) {
       <meta charset="UTF-8">
       <title>${escapeHTML(reportTitle)}</title>
       <style>
-        @page { size: A4 landscape; margin: 8mm; }
+        @page { size: A4 landscape; margin: 7mm; }
         * { box-sizing: border-box; }
-        body { margin: 0; background: #111; color: #111; font-family: Arial, Helvetica, sans-serif; }
+        body { margin: 0; background: #e5e7eb; color: #111827; font-family: Arial, Helvetica, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .report-toolbar { position: sticky; top: 0; z-index: 5; display: flex; justify-content: center; gap: 12px; padding: 12px; background: rgba(5,5,5,.94); box-shadow: 0 8px 22px rgba(0,0,0,.22); }
-        .report-toolbar button { border: 0; border-radius: 999px; padding: 11px 20px; color: #fff; background: #d40000; font-size: 13px; font-weight: 900; cursor: pointer; }
-        .report-toolbar button.secondary { background: #252525; }
-        .report-page { min-height: 100vh; padding: 14px; background: linear-gradient(145deg, #050505, #1a0504); }
-        .report-shell { overflow: hidden; border: 2px solid #d40000; border-radius: 18px; background: #f4f4f4; }
-        .report-hero { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: center; padding: 18px 22px; color: #fff; background: linear-gradient(135deg, #090909, #240303); }
+        .report-toolbar button { border: 0; border-radius: 2px; padding: 11px 20px; color: #fff; background: #d90404; font-size: 13px; font-weight: 900; cursor: pointer; }
+        .report-toolbar button.secondary { background: #111820; }
+        .report-page { min-height: 100vh; padding: 14px; background: #e5e7eb; }
+        .report-shell { overflow: hidden; border: 1.5px solid #d90404; border-radius: 2px; background: #fff; box-shadow: 0 16px 38px rgba(15,23,42,.16); }
+        .report-hero { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; padding: 16px 20px; color: #fff; background: linear-gradient(135deg, #090b10, #250302); }
         .report-brand { display: flex; align-items: center; gap: 16px; }
-        .report-brand img { width: 148px; height: auto; display: block; }
-        .report-brand h1 { margin: 0; font-size: 28px; line-height: 1; letter-spacing: .02em; }
-        .report-brand p { margin: 8px 0 0; color: #d8d8d8; font-size: 13px; }
+        .report-brand img { width: 118px; height: 62px; object-fit: contain; display: block; }
+        .report-brand h1 { margin: 0; font-size: 24px; line-height: 1; letter-spacing: .02em; }
+        .report-brand p { margin: 6px 0 0; color: #d8d8d8; font-size: 11px; font-weight: 700; }
         .report-badge { text-align: right; }
-        .report-badge strong { display: block; color: #fff; font-size: 28px; }
-        .report-badge span { color: #ffcf42; font-weight: 800; font-size: 20px; }
-        .report-title { padding: 12px 18px; color: #fff; background: #d40000; font-size: 22px; font-weight: 900; text-align: center; letter-spacing: .03em; }
+        .report-badge strong { display: block; color: #fff; font-size: 24px; white-space: nowrap; }
+        .report-badge span { display: block; margin-top: 6px; color: #ffcf42; font-weight: 900; font-size: 17px; white-space: nowrap; }
+        .report-title { padding: 10px 16px; color: #fff; background: #d90404; font-size: 18px; font-weight: 900; text-align: center; letter-spacing: .03em; text-transform: uppercase; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; background: #fff; }
-        col.photo-col { width: 82px; }
-        col.model-col { width: 126px; }
-        col.year-col { width: 58px; }
-        col.version-col { width: 74px; }
-        col.transmission-col { width: 66px; }
-        col.fuel-col { width: 68px; }
-        col.color-col { width: 58px; }
-        col.plate-col { width: 70px; }
-        col.km-col { width: 74px; }
-        col.date-col { width: 78px; }
-        col.money-col { width: 98px; }
-        col.commission-col { width: 88px; }
-        th { padding: 8px 5px; color: #fff; background: #c80000; border: 1px solid rgba(255,255,255,.34); font-size: 10px; line-height: 1.15; }
-        td { height: 64px; padding: 6px 4px; border: 1px solid #d2d2d2; font-size: 9.4px; font-weight: 700; text-align: center; vertical-align: middle; }
-        td.model { text-align: left; font-size: 10px; }
-        td.number { color: #fff; background: #d40000; font-size: 17px; font-weight: 900; }
-        td.photo-cell { padding: 4px; background: #f8f8f8; }
-        .vehicle-photo-card { width: 72px; height: 52px; margin: 0 auto; display: grid; place-items: center; overflow: hidden; border: 1px solid #cfd4dc; border-radius: 8px; background: #fff; box-shadow: 0 4px 10px rgba(17,24,39,.10); }
+        .partner-report col.photo-col { width: 8%; }
+        .partner-report col.model-col { width: 16%; }
+        .partner-report col.year-col { width: 7%; }
+        .partner-report col.version-col { width: 8%; }
+        .partner-report col.transmission-col { width: 7%; }
+        .partner-report col.fuel-col { width: 7%; }
+        .partner-report col.color-col { width: 6%; }
+        .partner-report col.plate-col { width: 7%; }
+        .partner-report col.km-col { width: 7%; }
+        .partner-report col.date-col { width: 8%; }
+        .partner-report col.money-col { width: 9.5%; }
+        .with-commission col.photo-col { width: 7%; }
+        .with-commission col.model-col { width: 13.5%; }
+        .with-commission col.year-col { width: 6%; }
+        .with-commission col.version-col { width: 7%; }
+        .with-commission col.transmission-col { width: 6%; }
+        .with-commission col.fuel-col { width: 6%; }
+        .with-commission col.color-col { width: 5.5%; }
+        .with-commission col.plate-col { width: 6.5%; }
+        .with-commission col.km-col { width: 6.5%; }
+        .with-commission col.date-col { width: 7%; }
+        .with-commission col.money-col { width: 8.5%; }
+        .with-commission col.commission-col { width: 8.5%; }
+        th { padding: 7px 4px; color: #fff; background: #d90404; border: 1px solid rgba(255,255,255,.42); font-size: 8.3px; line-height: 1.08; font-weight: 950; text-transform: uppercase; }
+        td { height: 58px; padding: 5px 4px; border: 1px solid #d1d5db; font-size: 8.4px; line-height: 1.12; font-weight: 800; text-align: center; vertical-align: middle; overflow-wrap: anywhere; }
+        td.model { text-align: left; font-size: 8.8px; font-weight: 900; color: #111827; }
+        td.photo-cell { padding: 4px; background: #f8fafc; }
+        .vehicle-photo-card { width: 58px; height: 42px; margin: 0 auto; display: grid; place-items: center; overflow: hidden; border: 1px solid #cfd4dc; border-radius: 2px; background: #fff; box-shadow: 0 4px 10px rgba(17,24,39,.10); }
         .vehicle-photo-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        td.money { color: #b80000; font-size: 10.4px; font-weight: 900; white-space: nowrap; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: clip; }
-        .summary { display: grid; grid-template-columns: repeat(${definition.showCommission ? 4 : 3}, 1fr); gap: 0; color: #fff; background: #080808; border-top: 2px solid #d40000; }
-        .summary div { padding: 14px 16px; border-right: 1px solid rgba(255,255,255,.22); text-align: center; }
-        .summary span { display: block; color: #ddd; font-size: 12px; font-weight: 800; letter-spacing: .06em; }
-        .summary strong { display: block; margin-top: 6px; font-size: 26px; font-weight: 950; }
-        .summary .commission strong { color: #ffcf42; font-size: 30px; }
+        .vehicle-photo-card-empty { background: #111820; color: #fff; }
+        .vehicle-photo-card-empty span { color: #fff; font-size: 15px; font-weight: 950; }
+        td.money { color: #b00000; font-size: 8.2px; font-weight: 950; white-space: nowrap; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: clip; }
+        .summary { display: grid; grid-template-columns: repeat(${definition.showCommission ? 4 : 3}, minmax(0, 1fr)); gap: 0; color: #fff; background: #080808; border-top: 2px solid #d90404; }
+        .summary div { padding: 12px 12px; border-right: 1px solid rgba(255,255,255,.20); text-align: center; }
+        .summary span { display: block; color: #ddd; font-size: 10px; font-weight: 900; letter-spacing: .06em; }
+        .summary strong { display: block; margin-top: 6px; font-size: 20px; font-weight: 950; white-space: nowrap; }
+        .summary .commission strong { color: #ffcf42; font-size: 23px; }
         .empty { padding: 48px; text-align: center; font-size: 18px; font-weight: 800; }
-        @media print { body { background: #fff; } .report-toolbar { display: none; } .report-page { padding: 0; min-height: auto; } }
+        @media print {
+          body { background: #fff; }
+          .report-toolbar { display: none; }
+          .report-page { padding: 0; min-height: auto; }
+          .report-shell { box-shadow: none; }
+        }
       </style>
     </head>
     <body>
@@ -6358,7 +6405,7 @@ function buildVexSalesReportHtml(type) {
             <div class="report-brand">
               <img src="${escapeHTML(logoSrc)}" alt="VEX Multimarcas">
               <div>
-                <h1>VEX MULTIMARCAS</h1>
+                <h1>${escapeHTML(definition.showCommission ? definition.title : "VEX MULTIMARCAS")}</h1>
                 <p>Av. Presidente Medice, 212 - Alianca - Osasco-SP</p>
                 <p>Relatorio gerado pelo VEX HUB PRO</p>
               </div>
@@ -6370,7 +6417,7 @@ function buildVexSalesReportHtml(type) {
           </header>
           <div class="report-title">${escapeHTML(reportTitle)}</div>
           ${rows.length ? `
-            <table>
+            <table class="${rowClass}">
               <colgroup>
                 <col class="photo-col">
                 <col class="model-col">
@@ -6384,7 +6431,7 @@ function buildVexSalesReportHtml(type) {
                 <col class="date-col">
                 <col class="money-col">
                 <col class="money-col">
-                ${definition.showCommission ? `<col class="commission-col">` : ""}
+                ${commissionCol}
               </colgroup>
               <thead>
                 <tr>
@@ -6407,7 +6454,7 @@ function buildVexSalesReportHtml(type) {
                 ${rows.map(function(row) {
                   return `
                     <tr>
-                      ${row.photoUrl ? `<td class="photo-cell"><div class="vehicle-photo-card"><img src="${escapeHTML(row.photoUrl)}" alt="${escapeHTML(row.model)}" /></div></td>` : `<td class="number">${row.index}</td>`}
+                      ${getVexReportPhotoCell(row)}
                       <td class="model">${escapeHTML(row.model)}</td>
                       <td>${escapeHTML(row.year)}</td>
                       <td>${escapeHTML(row.version || "-")}</td>
@@ -6417,8 +6464,8 @@ function buildVexSalesReportHtml(type) {
                       <td>${escapeHTML(row.plate || "-")}</td>
                       <td>${escapeHTML(row.km || "-")}</td>
                       <td>${escapeHTML(formatDateToBrazil(row.saleDate))}</td>
-                      <td class="money">${formatCurrencyToBrazil(row.tableValue)}</td>
-                      <td class="money">${formatCurrencyToBrazil(row.saleValue)}</td>
+                      <td class="money">${getVexReportSafeMoney(row.tableValue)}</td>
+                      <td class="money">${getVexReportSafeMoney(row.saleValue)}</td>
                       ${commissionCells(row)}
                     </tr>
                   `;
@@ -6427,9 +6474,9 @@ function buildVexSalesReportHtml(type) {
             </table>
             <footer class="summary">
               <div><span>TOTAL DE VEICULOS</span><strong>${String(rows.length).padStart(2, "0")}</strong></div>
-              <div><span>TOTAL FIPE</span><strong>${formatCurrencyToBrazil(totalTable)}</strong></div>
-              <div><span>TOTAL VENDAS</span><strong>${formatCurrencyToBrazil(totalSales)}</strong></div>
-              ${definition.showCommission ? `<div class="commission"><span>${escapeHTML(definition.title)}</span><strong>${formatCurrencyToBrazil(totalCommission)}</strong></div>` : ""}
+              <div><span>TOTAL FIPE</span><strong>${getVexReportSafeMoney(totalTable)}</strong></div>
+              <div><span>TOTAL VENDAS</span><strong>${getVexReportSafeMoney(totalSales)}</strong></div>
+              ${definition.showCommission ? `<div class="commission"><span>${escapeHTML(definition.title)}</span><strong>${getVexReportSafeMoney(totalCommission)}</strong></div>` : ""}
             </footer>
           ` : `<div class="empty">Nenhuma venda encontrada para ${escapeHTML(periodLabel)}.</div>`}
         </section>
@@ -12552,7 +12599,7 @@ function getHistoryMonthFilterValue() {
   }
 
   const field = document.getElementById("historyMonthFilter");
-  return field ? field.value || "current" : "current";
+  return field ? field.value || "all" : "all";
 }
 
 function getPeriodLabelByValue(value) {
@@ -13453,6 +13500,87 @@ function injectVexRC49PremiumStyles() {
 }
 
 injectVexRC49PremiumStyles();
+
+/* =========================================================
+   RC3.0.51 - Header do menu sem logo duplicada
+   ========================================================= */
+function applyVexSidebarSingleBrand() {
+  const title = document.querySelector(".sidebar-brand strong");
+  const subtitle = document.querySelector(".sidebar-brand span");
+
+  if (title) {
+    title.textContent = "HUB PRO";
+  }
+
+  if (subtitle) {
+    subtitle.textContent = "Sistema interno";
+  }
+}
+
+function injectVexSidebarSingleBrandStyles() {
+  if (document.getElementById("vex-sidebar-single-brand-styles")) return;
+
+  const style = document.createElement("style");
+  style.id = "vex-sidebar-single-brand-styles";
+  style.textContent = `
+    @media (min-width: 761px) {
+      html body #dashboardScreen.screen.active .sidebar-brand {
+        grid-template-columns: 92px minmax(0, 1fr) !important;
+        min-height: 92px !important;
+        padding: 18px 12px !important;
+        align-items: center !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small {
+        width: 92px !important;
+        height: 58px !important;
+        color: transparent !important;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small::before,
+      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small::after {
+        content: none !important;
+        display: none !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small img {
+        display: block !important;
+        width: 92px !important;
+        height: 58px !important;
+        object-fit: contain !important;
+        filter: drop-shadow(0 10px 18px rgba(217, 4, 4, 0.18)) !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-brand strong {
+        color: #ffffff !important;
+        font-size: 18px !important;
+        line-height: 1 !important;
+        font-weight: 950 !important;
+        letter-spacing: 0.04em !important;
+      }
+
+      html body #dashboardScreen.screen.active .sidebar-brand span {
+        margin-top: 8px !important;
+        color: #b8c2d1 !important;
+        font-size: 12px !important;
+        line-height: 1.2 !important;
+        font-weight: 850 !important;
+        letter-spacing: 0.08em !important;
+        text-transform: uppercase !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexSidebarSingleBrandStyles();
+applyVexSidebarSingleBrand();
+setTimeout(applyVexSidebarSingleBrand, 300);
 
 setTimeout(() => {
   const dashboardSection = document.getElementById("dashboardSection");
