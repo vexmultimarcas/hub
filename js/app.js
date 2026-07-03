@@ -431,7 +431,7 @@ function initializeSaleForm() {
         repasse: {
           ...currentRepasse,
           items: inventoryRepasseItems,
-          notes: currentRepasse.notes || "Material importado automaticamente do estoque."
+          notes: currentRepasse.notes || ""
         }
       };
     }
@@ -6330,7 +6330,7 @@ function buildVexSalesReportHtml(type) {
       <meta charset="UTF-8">
       <title>${escapeHTML(reportTitle)}</title>
       <style>
-        @page { size: A4 landscape; margin: 7mm; }
+        @page { size: A4 landscape; margin: 5mm; }
         * { box-sizing: border-box; }
         body { margin: 0; background: #e5e7eb; color: #111827; font-family: Arial, Helvetica, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .report-toolbar { position: sticky; top: 0; z-index: 5; display: flex; justify-content: center; gap: 12px; padding: 12px; background: rgba(5,5,5,.94); box-shadow: 0 8px 22px rgba(0,0,0,.22); }
@@ -6346,7 +6346,7 @@ function buildVexSalesReportHtml(type) {
         .report-badge { text-align: right; }
         .report-badge strong { display: block; color: #fff; font-size: 24px; white-space: nowrap; }
         .report-badge span { display: block; margin-top: 6px; color: #ffcf42; font-weight: 900; font-size: 17px; white-space: nowrap; }
-        .report-title { padding: 10px 16px; color: #fff; background: #d90404; font-size: 18px; font-weight: 900; text-align: center; letter-spacing: .03em; text-transform: uppercase; }
+        .report-title { padding: 11px 16px; color: #fff; background: #d90404; font-size: 20px; font-weight: 900; text-align: center; letter-spacing: .03em; text-transform: uppercase; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; background: #fff; }
         .partner-report col.photo-col { width: 8%; }
         .partner-report col.model-col { width: 16%; }
@@ -6371,20 +6371,20 @@ function buildVexSalesReportHtml(type) {
         .with-commission col.date-col { width: 7%; }
         .with-commission col.money-col { width: 8.5%; }
         .with-commission col.commission-col { width: 8.5%; }
-        th { padding: 7px 4px; color: #fff; background: #d90404; border: 1px solid rgba(255,255,255,.42); font-size: 8.3px; line-height: 1.08; font-weight: 950; text-transform: uppercase; }
-        td { height: 58px; padding: 5px 4px; border: 1px solid #d1d5db; font-size: 8.4px; line-height: 1.12; font-weight: 800; text-align: center; vertical-align: middle; overflow-wrap: anywhere; }
-        td.model { text-align: left; font-size: 8.8px; font-weight: 900; color: #111827; }
+        th { padding: 8px 4px; color: #fff; background: #d90404; border: 1px solid rgba(255,255,255,.42); font-size: 9.4px; line-height: 1.1; font-weight: 950; text-transform: uppercase; }
+        td { height: 66px; padding: 6px 4px; border: 1px solid #d1d5db; font-size: 9.7px; line-height: 1.16; font-weight: 850; text-align: center; vertical-align: middle; overflow-wrap: anywhere; }
+        td.model { text-align: left; font-size: 10px; line-height: 1.16; font-weight: 950; color: #111827; }
         td.photo-cell { padding: 4px; background: #f8fafc; }
-        .vehicle-photo-card { width: 58px; height: 42px; margin: 0 auto; display: grid; place-items: center; overflow: hidden; border: 1px solid #cfd4dc; border-radius: 2px; background: #fff; box-shadow: 0 4px 10px rgba(17,24,39,.10); }
+        .vehicle-photo-card { width: 66px; height: 48px; margin: 0 auto; display: grid; place-items: center; overflow: hidden; border: 1px solid #cfd4dc; border-radius: 2px; background: #fff; box-shadow: 0 4px 10px rgba(17,24,39,.10); }
         .vehicle-photo-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .vehicle-photo-card-empty { background: #111820; color: #fff; }
-        .vehicle-photo-card-empty span { color: #fff; font-size: 15px; font-weight: 950; }
-        td.money { color: #b00000; font-size: 8.2px; font-weight: 950; white-space: nowrap; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: clip; }
+        .vehicle-photo-card-empty span { color: #fff; font-size: 17px; font-weight: 950; }
+        td.money { color: #b00000; font-size: 9.5px; font-weight: 950; white-space: nowrap; letter-spacing: -0.055em; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: clip; }
         .summary { display: grid; grid-template-columns: repeat(${definition.showCommission ? 4 : 3}, minmax(0, 1fr)); gap: 0; color: #fff; background: #080808; border-top: 2px solid #d90404; }
         .summary div { padding: 12px 12px; border-right: 1px solid rgba(255,255,255,.20); text-align: center; }
-        .summary span { display: block; color: #ddd; font-size: 10px; font-weight: 900; letter-spacing: .06em; }
-        .summary strong { display: block; margin-top: 6px; font-size: 20px; font-weight: 950; white-space: nowrap; }
-        .summary .commission strong { color: #ffcf42; font-size: 23px; }
+        .summary span { display: block; color: #ddd; font-size: 11px; font-weight: 900; letter-spacing: .06em; }
+        .summary strong { display: block; margin-top: 6px; font-size: 23px; font-weight: 950; white-space: nowrap; }
+        .summary .commission strong { color: #ffcf42; font-size: 26px; }
         .empty { padding: 48px; text-align: center; font-size: 18px; font-weight: 800; }
         @media print {
           body { background: #fff; }
@@ -7485,7 +7485,7 @@ function openVexFormalizationPayment(saleId) {
           </div>
           <label class="vex-formalization-field full">
             <span>Observações da negociação</span>
-            <textarea id="formalPaymentNotes" rows="3" placeholder="Ex: IPVA e licenciamento pagos pela loja. Condição autorizada pela gerência.">${escapeHTML(payment.notes || "")}</textarea>
+            <textarea id="formalPaymentNotes" rows="3" placeholder="Digite apenas observações reais da negociação. Deixe em branco se não houver.">${escapeHTML(payment.notes || "")}</textarea>
           </label>
         </div>
 
@@ -7505,10 +7505,12 @@ function openVexFormalizationPayment(saleId) {
 
 function getVexPaymentResponsibilityText(payment) {
   const parts = [];
-  if (payment.ipvaPaidBy && payment.ipvaPaidBy !== "Não se aplica" && parseSaleCurrencyValue(payment.ipvaValue) > 0) {
+  const ipvaPaidBy = normalizeVexText(payment.ipvaPaidBy || "");
+  const licensingPaidBy = normalizeVexText(payment.licensingPaidBy || "");
+  if (payment.ipvaPaidBy && !ipvaPaidBy.includes("NAO SE APLICA") && parseSaleCurrencyValue(payment.ipvaValue) > 0) {
     parts.push("IPVA pago " + (payment.ipvaPaidBy === "Loja" ? "pela loja" : "pelo cliente"));
   }
-  if (payment.licensingPaidBy && payment.licensingPaidBy !== "Não se aplica" && parseSaleCurrencyValue(payment.licensingValue) > 0) {
+  if (payment.licensingPaidBy && !licensingPaidBy.includes("NAO SE APLICA") && parseSaleCurrencyValue(payment.licensingValue) > 0) {
     parts.push("Licenciamento pago " + (payment.licensingPaidBy === "Loja" ? "pela loja" : "pelo cliente"));
   }
   return parts.length ? parts.join(". ") + "." : "Sem observação automática.";
@@ -7622,7 +7624,7 @@ function getVexFormalizationRepasseData(sale) {
         description: item.description || ""
       };
     }),
-    notes: repasse.notes || (inventoryItems.length ? "Material importado automaticamente do estoque." : "")
+    notes: repasse.notes || ""
   };
 }
 
@@ -7889,9 +7891,11 @@ async function saveVexFormalizationRepasse(event, saleId) {
 
 function getVexFormalizationTransferData(sale) {
   const transfer = sale && sale.formalization && sale.formalization.transfer ? sale.formalization.transfer : {};
+  const saleResponsible = sale && sale.transferType ? normalizeVexTransferResponsible(sale.transferType) : "";
+  const storedResponsible = transfer.responsible ? normalizeVexTransferResponsible(transfer.responsible) : "";
 
   return {
-    responsible: transfer.responsible || sale.transferType || "Cliente",
+    responsible: saleResponsible || storedResponsible || "Cliente",
     recognitionDate: transfer.recognitionDate || "",
     protocol: transfer.protocol || "",
     notes: transfer.notes || ""
@@ -8057,6 +8061,9 @@ function openVexFormalizationTransfer(saleId) {
   const dueDateLabel = status.dueDate ? formatDateToBrazil(status.dueDate) : "Calculado após informar a data";
   const recognitionDateLabel = transfer.recognitionDate ? formatDateToBrazil(transfer.recognitionDate) : "Não informado";
   const showLojaFields = transfer.responsible === "Loja";
+  const transferNotesPlaceholder = showLojaFields
+    ? "Ex.: Loja ficou responsavel pela transferencia. Acompanhar reconhecimento, prazo e protocolo."
+    : "Ex.: Cliente ficou responsavel pela transferencia. Loja entregou os documentos necessarios.";
 
   drawer.innerHTML = `
     <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
@@ -8131,7 +8138,7 @@ function openVexFormalizationTransfer(saleId) {
           <h3>Observações internas</h3>
           <label class="vex-formalization-field full">
             <span>Observações</span>
-            <textarea id="formalTransferNotes" rows="3" placeholder="Ex.: Cliente fará a transferência por conta própria, loja apenas entregou documentos.">${escapeHTML(transfer.notes || "")}</textarea>
+            <textarea id="formalTransferNotes" rows="3" placeholder="${escapeHTML(transferNotesPlaceholder)}">${escapeHTML(transfer.notes || "")}</textarea>
           </label>
         </div>
 
@@ -8206,6 +8213,7 @@ async function saveVexFormalizationTransfer(event, saleId) {
     await saleRef.update({
       "formalization.transfer": transferPayload,
       "formalization.updatedAtLocal": new Date().toISOString(),
+      transferType: responsible === "Loja" ? "Pela loja" : "Pelo cliente",
       updatedAtLocal: new Date().toISOString()
     });
 
@@ -13581,6 +13589,1171 @@ function injectVexSidebarSingleBrandStyles() {
 injectVexSidebarSingleBrandStyles();
 applyVexSidebarSingleBrand();
 setTimeout(applyVexSidebarSingleBrand, 300);
+
+/* =========================================================
+   RC3.0.55 - Correcao de contraste da Formalizacao
+   ========================================================= */
+function injectVexFormalizationContrastFix() {
+  if (document.getElementById("vex-formalization-contrast-fix")) return;
+
+  const style = document.createElement("style");
+  style.id = "vex-formalization-contrast-fix";
+  style.textContent = `
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero,
+    html body .vex-drawer-root .vex-formalization-panel .vex-drawer-hero.vex-formalization-hero {
+      background: linear-gradient(135deg, #090b10 0%, #151e28 72%, #280202 100%) !important;
+      border: 1px solid rgba(217, 4, 4, 0.28) !important;
+      color: #ffffff !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero h1,
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero h2,
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero h3,
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero strong {
+      color: #ffffff !important;
+      opacity: 1 !important;
+      text-shadow: none !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero p {
+      color: #d7dee8 !important;
+      opacity: 1 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero .eyebrow {
+      background: rgba(255, 255, 255, 0.10) !important;
+      border-color: rgba(255, 255, 255, 0.18) !important;
+      color: #ffffff !important;
+      opacity: 1 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero .vex-vehicle-icon {
+      background: rgba(217, 4, 4, 0.20) !important;
+      border-color: rgba(217, 4, 4, 0.42) !important;
+      color: #ffffff !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-progress {
+      background: rgba(255, 255, 255, 0.18) !important;
+      border-color: rgba(255, 255, 255, 0.16) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-progress-bar {
+      background: linear-gradient(90deg, #ef4444, #d90404) !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexFormalizationContrastFix();
+
+/* =========================================================
+   RC3.0.56 - Cards premium da Formalizacao
+   ========================================================= */
+function injectVexFormalizationPremiumCards() {
+  if (document.getElementById("vex-formalization-premium-cards")) return;
+
+  const style = document.createElement("style");
+  style.id = "vex-formalization-premium-cards";
+  style.textContent = `
+    html body .vex-drawer-root .vex-formalization-panel {
+      background:
+        linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%) !important;
+      color: #0f172a !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero {
+      min-height: 224px !important;
+      padding: 24px !important;
+      border-radius: 8px !important;
+      overflow: hidden !important;
+      position: relative !important;
+      background:
+        radial-gradient(circle at 90% 12%, rgba(217, 4, 4, 0.26), transparent 28%),
+        linear-gradient(135deg, #07090d 0%, #151d28 62%, #330403 100%) !important;
+      box-shadow: 0 18px 44px rgba(15, 23, 42, 0.22) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero::after {
+      content: "" !important;
+      position: absolute !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      height: 4px !important;
+      background: linear-gradient(90deg, #ef4444, #d90404, #7f0000) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero > * {
+      position: relative !important;
+      z-index: 1 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero h2 {
+      color: #ffffff !important;
+      font-size: clamp(28px, 4.6vw, 42px) !important;
+      line-height: 1 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero p,
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero > strong {
+      color: #dbe4ef !important;
+      font-size: 14px !important;
+      font-weight: 850 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary {
+      gap: 12px !important;
+      margin: 16px 0 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary-item {
+      min-height: 92px !important;
+      padding: 16px !important;
+      border-radius: 8px !important;
+      background:
+        linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+      border: 1px solid #dbe3ee !important;
+      border-top: 3px solid #d90404 !important;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.09) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary-item span {
+      color: #64748b !important;
+      font-size: 10.5px !important;
+      font-weight: 950 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary-item strong {
+      color: #06101f !important;
+      font-size: 15px !important;
+      line-height: 1.25 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-grid {
+      gap: 12px !important;
+      margin: 16px 0 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step {
+      min-height: 166px !important;
+      padding: 16px !important;
+      border-radius: 8px !important;
+      background:
+        linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+      border: 1px solid #dbe3ee !important;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.09) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step.done {
+      background:
+        linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%) !important;
+      border-color: #86efac !important;
+      border-top: 3px solid #22c55e !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step.pending {
+      background:
+        linear-gradient(180deg, #fffbeb 0%, #ffffff 100%) !important;
+      border-color: #facc15 !important;
+      border-top: 3px solid #f59e0b !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step span {
+      width: 38px !important;
+      height: 38px !important;
+      border-radius: 8px !important;
+      background: linear-gradient(135deg, #111820, #263241) !important;
+      color: #ffffff !important;
+      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.16) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step strong {
+      color: #06101f !important;
+      font-size: 16px !important;
+      line-height: 1.12 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step small {
+      color: #334155 !important;
+      font-size: 12.5px !important;
+      line-height: 1.35 !important;
+      font-weight: 800 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step em {
+      border-radius: 999px !important;
+      padding: 7px 10px !important;
+      font-size: 10px !important;
+      font-weight: 950 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-note {
+      border-radius: 8px !important;
+      border-left: 4px solid #d90404 !important;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08) !important;
+    }
+
+    @media (max-width: 760px) {
+      html body .vex-drawer-root .vex-formalization-panel {
+        padding: 16px !important;
+      }
+
+      html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero {
+        min-height: auto !important;
+        padding: 20px !important;
+      }
+
+      html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary,
+      html body .vex-drawer-root .vex-formalization-panel .vex-formalization-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step {
+        min-height: auto !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexFormalizationPremiumCards();
+
+/* =========================================================
+   RC3.0.57 - Formalizacao alinhada ao padrao premium do app
+   ========================================================= */
+function injectVexFormalizationAppStandard() {
+  if (document.getElementById("vex-formalization-app-standard")) return;
+
+  const style = document.createElement("style");
+  style.id = "vex-formalization-app-standard";
+  style.textContent = `
+    html body .vex-drawer-root .vex-formalization-panel {
+      width: min(620px, 100vw) !important;
+      padding: 10px !important;
+      background: #f3f6fa !important;
+      color: #06101f !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero,
+    html body .vex-drawer-root .vex-formalization-panel .vex-drawer-hero.vex-formalization-hero {
+      min-height: auto !important;
+      padding: 18px !important;
+      border-radius: 8px !important;
+      background: #ffffff !important;
+      border: 1px solid #d5deea !important;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.10) !important;
+      color: #06101f !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero::after {
+      content: none !important;
+      display: none !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero .vex-vehicle-icon {
+      width: 48px !important;
+      height: 48px !important;
+      border-radius: 8px !important;
+      background: linear-gradient(135deg, #240405, #111820) !important;
+      border: 1px solid rgba(217, 4, 4, 0.28) !important;
+      color: #ffffff !important;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.14) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero .eyebrow {
+      width: fit-content !important;
+      min-height: 24px !important;
+      padding: 5px 9px !important;
+      border-radius: 999px !important;
+      background: #f8fafc !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #334155 !important;
+      font-size: 10px !important;
+      font-weight: 950 !important;
+      letter-spacing: 0.08em !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero h2 {
+      margin: 8px 0 0 !important;
+      color: #06101f !important;
+      font-size: clamp(22px, 5vw, 32px) !important;
+      line-height: 1.04 !important;
+      font-weight: 950 !important;
+      letter-spacing: -0.02em !important;
+      text-transform: uppercase !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero p {
+      color: #334155 !important;
+      font-size: 12px !important;
+      font-weight: 800 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-status-pill {
+      margin-top: 8px !important;
+      border-radius: 8px !important;
+      background: #fff7ed !important;
+      border: 1px solid #fdba74 !important;
+      color: #7c2d12 !important;
+      font-size: 12px !important;
+      font-weight: 950 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-progress {
+      height: 8px !important;
+      margin-top: 10px !important;
+      background: #e5e7eb !important;
+      border: 0 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-progress-bar {
+      background: linear-gradient(90deg, #d90404, #970000) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero > strong {
+      color: #64748b !important;
+      font-size: 12px !important;
+      font-weight: 950 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 10px !important;
+      margin: 10px 0 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary-item,
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step,
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-form-card,
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-note {
+      border-radius: 8px !important;
+      background: #ffffff !important;
+      border: 1px solid #d5deea !important;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08) !important;
+      color: #06101f !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary-item {
+      min-height: 70px !important;
+      padding: 12px !important;
+      border-top: 2px solid #d90404 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary-item span,
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-field span {
+      color: #475569 !important;
+      font-size: 10px !important;
+      font-weight: 950 !important;
+      letter-spacing: 0.08em !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary-item strong {
+      color: #06101f !important;
+      font-size: 13px !important;
+      line-height: 1.22 !important;
+      font-weight: 950 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-grid {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 10px !important;
+      margin: 10px 0 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step {
+      min-height: 142px !important;
+      padding: 12px !important;
+      align-content: start !important;
+      border-top: 2px solid #d90404 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step.done {
+      background: #ffffff !important;
+      border-color: #d5deea !important;
+      border-top-color: #22c55e !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step.pending {
+      background: #ffffff !important;
+      border-color: #d5deea !important;
+      border-top-color: #f59e0b !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step span {
+      width: 34px !important;
+      height: 34px !important;
+      border-radius: 7px !important;
+      background: linear-gradient(135deg, #111820, #273241) !important;
+      color: #ffffff !important;
+      font-size: 15px !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step strong {
+      color: #06101f !important;
+      font-size: 13px !important;
+      line-height: 1.16 !important;
+      font-weight: 950 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step small {
+      color: #334155 !important;
+      font-size: 11.5px !important;
+      line-height: 1.25 !important;
+      font-weight: 800 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step em {
+      margin-top: auto !important;
+      border-radius: 999px !important;
+      padding: 6px 9px !important;
+      background: #dcfce7 !important;
+      color: #166534 !important;
+      font-size: 9px !important;
+      font-weight: 950 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step.pending em {
+      background: #fef3c7 !important;
+      color: #854d0e !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-note {
+      padding: 12px !important;
+      border-left: 4px solid #d90404 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-note span {
+      color: #475569 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-note strong {
+      color: #06101f !important;
+      font-size: 12px !important;
+      line-height: 1.25 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-drawer-actions-safe {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 8px !important;
+      padding: 10px 0 0 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-drawer-actions-safe button {
+      min-height: 42px !important;
+      border-radius: 8px !important;
+    }
+
+    @media (max-width: 420px) {
+      html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary,
+      html body .vex-drawer-root .vex-formalization-panel .vex-formalization-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+
+      html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step {
+        min-height: 136px !important;
+        padding: 10px !important;
+      }
+
+      html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step small {
+        display: none !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexFormalizationAppStandard();
+
+/* =========================================================
+   RC3.0.58 - Formalizacao no padrao premium dark
+   ========================================================= */
+function injectVexFormalizationDarkPremium() {
+  if (document.getElementById("vex-formalization-dark-premium")) return;
+
+  const style = document.createElement("style");
+  style.id = "vex-formalization-dark-premium";
+  style.textContent = `
+    html body .vex-drawer-root .vex-formalization-panel {
+      width: min(720px, 100vw) !important;
+      padding: 18px !important;
+      background:
+        radial-gradient(circle at 82% 7%, rgba(217, 4, 4, 0.18), transparent 30%),
+        linear-gradient(180deg, #05090f 0%, #071019 100%) !important;
+      color: #ffffff !important;
+      border-left: 1px solid rgba(255, 255, 255, 0.10) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-drawer-close {
+      width: 54px !important;
+      height: 54px !important;
+      border-radius: 999px !important;
+      background: #111820 !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(217, 4, 4, 0.45) !important;
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero,
+    html body .vex-drawer-root .vex-formalization-panel .vex-drawer-hero.vex-formalization-hero {
+      min-height: 300px !important;
+      padding: 28px !important;
+      display: grid !important;
+      align-content: start !important;
+      gap: 14px !important;
+      position: relative !important;
+      overflow: hidden !important;
+      border-radius: 18px !important;
+      background:
+        radial-gradient(circle at 78% 35%, rgba(239, 68, 68, 0.24), transparent 24%),
+        radial-gradient(circle at 18% 0%, rgba(217, 4, 4, 0.20), transparent 28%),
+        linear-gradient(135deg, #05080d 0%, #111923 62%, #1f0304 100%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      box-shadow: 0 24px 56px rgba(0, 0, 0, 0.34) !important;
+      color: #ffffff !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero::before {
+      content: "" !important;
+      position: absolute !important;
+      right: -32px !important;
+      bottom: -24px !important;
+      width: 290px !important;
+      height: 170px !important;
+      opacity: 0.12 !important;
+      background:
+        linear-gradient(135deg, transparent 12%, rgba(255,255,255,.18) 13%, transparent 14%),
+        radial-gradient(ellipse at center, #ffffff 0%, transparent 62%) !important;
+      transform: skewX(-12deg) !important;
+      pointer-events: none !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero::after {
+      content: "" !important;
+      position: absolute !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      height: 1px !important;
+      background: rgba(255, 255, 255, 0.16) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero > * {
+      position: relative !important;
+      z-index: 1 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero .vex-vehicle-icon {
+      width: 86px !important;
+      height: 86px !important;
+      border-radius: 22px !important;
+      background:
+        radial-gradient(circle at 25% 12%, rgba(239, 68, 68, 0.46), transparent 34%),
+        linear-gradient(135deg, #1a0608, #121923) !important;
+      border: 1px solid rgba(217, 4, 4, 0.42) !important;
+      color: #ffffff !important;
+      box-shadow: 0 18px 34px rgba(0, 0, 0, 0.30) !important;
+      font-size: 30px !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero .eyebrow {
+      width: fit-content !important;
+      min-height: 36px !important;
+      padding: 8px 16px !important;
+      border-radius: 999px !important;
+      background: rgba(217, 4, 4, 0.12) !important;
+      border: 1px solid rgba(239, 68, 68, 0.48) !important;
+      color: #ffffff !important;
+      font-size: 12px !important;
+      font-weight: 950 !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero h2 {
+      max-width: 520px !important;
+      margin: 4px 0 0 !important;
+      color: #ffffff !important;
+      font-size: clamp(32px, 7vw, 48px) !important;
+      line-height: 0.98 !important;
+      font-weight: 950 !important;
+      letter-spacing: -0.03em !important;
+      text-transform: uppercase !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero p {
+      margin: 0 !important;
+      color: #aeb8c7 !important;
+      font-size: 16px !important;
+      line-height: 1.35 !important;
+      font-weight: 800 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-status-pill {
+      width: fit-content !important;
+      min-height: 42px !important;
+      margin-top: 6px !important;
+      padding: 10px 16px !important;
+      border-radius: 10px !important;
+      background: linear-gradient(135deg, #d90404, #8f0000) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      box-shadow: 0 16px 28px rgba(217, 4, 4, 0.20) !important;
+      font-size: 13px !important;
+      font-weight: 950 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-progress {
+      height: 8px !important;
+      margin-top: 6px !important;
+      border-radius: 999px !important;
+      background: rgba(255, 255, 255, 0.15) !important;
+      border: 0 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-progress-bar {
+      background: linear-gradient(90deg, #ff3b35, #d90404) !important;
+      box-shadow: 0 0 20px rgba(217, 4, 4, 0.34) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero > strong {
+      color: #dbe4ef !important;
+      font-size: 13px !important;
+      font-weight: 950 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary,
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-grid {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 12px !important;
+      margin: 14px 0 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary-item,
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step,
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-form-card,
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-note {
+      border-radius: 14px !important;
+      background:
+        linear-gradient(145deg, rgba(18, 27, 38, 0.96), rgba(8, 15, 24, 0.98)) !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 16px 34px rgba(0, 0, 0, 0.22) !important;
+      color: #ffffff !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary-item {
+      min-height: 92px !important;
+      padding: 16px !important;
+      border-left: 2px solid rgba(239, 68, 68, 0.70) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary-item span,
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-field span {
+      color: #9ca8b8 !important;
+      font-size: 11px !important;
+      font-weight: 950 !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary-item strong {
+      color: #ffffff !important;
+      font-size: 16px !important;
+      line-height: 1.25 !important;
+      font-weight: 950 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step {
+      min-height: 178px !important;
+      padding: 16px !important;
+      align-content: start !important;
+      gap: 8px !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step.done {
+      border-color: rgba(34, 197, 94, 0.42) !important;
+      background:
+        linear-gradient(145deg, rgba(12, 36, 29, 0.96), rgba(8, 16, 24, 0.98)) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step.pending {
+      border-color: rgba(245, 158, 11, 0.42) !important;
+      background:
+        linear-gradient(145deg, rgba(42, 27, 8, 0.96), rgba(8, 16, 24, 0.98)) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step span {
+      width: 40px !important;
+      height: 40px !important;
+      border-radius: 8px !important;
+      background: linear-gradient(135deg, #171f2b, #080d14) !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      color: #ffffff !important;
+      font-size: 17px !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step strong {
+      color: #ffffff !important;
+      font-size: 16px !important;
+      line-height: 1.14 !important;
+      font-weight: 950 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step small {
+      color: #c6cfda !important;
+      font-size: 12.5px !important;
+      line-height: 1.35 !important;
+      font-weight: 800 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step em {
+      width: fit-content !important;
+      margin-top: auto !important;
+      padding: 7px 10px !important;
+      border-radius: 999px !important;
+      background: rgba(34, 197, 94, 0.16) !important;
+      color: #bbf7d0 !important;
+      border: 1px solid rgba(34, 197, 94, 0.26) !important;
+      font-size: 10px !important;
+      font-style: normal !important;
+      font-weight: 950 !important;
+      letter-spacing: 0.04em !important;
+      text-transform: uppercase !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step.pending em {
+      background: rgba(245, 158, 11, 0.16) !important;
+      color: #fde68a !important;
+      border-color: rgba(245, 158, 11, 0.28) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-note {
+      padding: 16px !important;
+      border-left: 3px solid #d90404 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-note span {
+      color: #9ca8b8 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-formalization-note strong {
+      color: #ffffff !important;
+      font-size: 13px !important;
+      line-height: 1.35 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-drawer-actions-safe {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 12px !important;
+      padding: 14px 0 0 !important;
+      background: linear-gradient(180deg, rgba(5, 9, 15, 0), #05090f 30%) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-drawer-actions-safe button {
+      min-height: 52px !important;
+      border-radius: 10px !important;
+      font-size: 14px !important;
+      font-weight: 950 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-drawer-actions-safe .primary-button {
+      background: linear-gradient(135deg, #ff0707, #990000) !important;
+      color: #ffffff !important;
+      box-shadow: 0 16px 30px rgba(217, 4, 4, 0.20) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel .vex-drawer-actions-safe .secondary-button {
+      background: rgba(18, 27, 38, 0.96) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel select,
+    html body .vex-drawer-root .vex-formalization-panel .formalPaymentMethodType,
+    html body .vex-drawer-root .vex-formalization-panel .formalPaymentMethodValue {
+      background-color: #08111b !important;
+      background-image: linear-gradient(135deg, #08111b, #0c1724) !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      border-color: rgba(255, 255, 255, 0.16) !important;
+      text-shadow: 0 0 0 #ffffff !important;
+      opacity: 1 !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel select option {
+      background: #08111b !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+    }
+
+    @media (max-width: 520px) {
+      html body .vex-drawer-root .vex-formalization-panel {
+        width: 100vw !important;
+        padding: 12px !important;
+      }
+
+      html body .vex-drawer-root .vex-formalization-panel .vex-formalization-hero {
+        min-height: auto !important;
+        padding: 20px !important;
+      }
+
+      html body .vex-drawer-root .vex-formalization-panel .vex-formalization-summary,
+      html body .vex-drawer-root .vex-formalization-panel .vex-formalization-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      html body .vex-drawer-root .vex-formalization-panel .vex-formalization-step {
+        min-height: 138px !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexFormalizationDarkPremium();
+
+/* =========================================================
+   RC3.0.58 - Detalhes da venda no estilo premium dark
+   ========================================================= */
+function injectVexVehicleDrawerDarkPremium() {
+  if (document.getElementById("vex-vehicle-drawer-dark-premium")) return;
+
+  const style = document.createElement("style");
+  style.id = "vex-vehicle-drawer-dark-premium";
+  style.textContent = `
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) {
+      width: min(720px, 100vw) !important;
+      max-width: 720px !important;
+      padding: 18px !important;
+      background:
+        radial-gradient(circle at 85% 10%, rgba(217, 4, 4, 0.18), transparent 30%),
+        linear-gradient(180deg, #05090f 0%, #071019 100%) !important;
+      color: #ffffff !important;
+      border-left: 1px solid rgba(255, 255, 255, 0.10) !important;
+      box-shadow: -32px 0 72px rgba(0, 0, 0, 0.46) !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-close {
+      width: 56px !important;
+      height: 56px !important;
+      border-radius: 999px !important;
+      background: #111820 !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(217, 4, 4, 0.48) !important;
+      font-size: 28px !important;
+      line-height: 1 !important;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.32) !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-hero {
+      min-height: 410px !important;
+      padding: 28px !important;
+      display: grid !important;
+      align-content: start !important;
+      gap: 14px !important;
+      position: relative !important;
+      overflow: hidden !important;
+      border-radius: 20px !important;
+      background:
+        radial-gradient(circle at 76% 42%, rgba(239, 68, 68, 0.38), transparent 24%),
+        radial-gradient(circle at 17% 0%, rgba(217, 4, 4, 0.20), transparent 28%),
+        linear-gradient(90deg, rgba(5, 8, 13, 0.98) 0%, rgba(7, 12, 19, 0.92) 45%, rgba(15, 20, 27, 0.72) 100%),
+        linear-gradient(135deg, #05080d 0%, #101821 62%, #210304 100%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.13) !important;
+      box-shadow: 0 24px 58px rgba(0, 0, 0, 0.34) !important;
+      color: #ffffff !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-hero::before {
+      content: "" !important;
+      position: absolute !important;
+      right: -56px !important;
+      bottom: 34px !important;
+      width: 430px !important;
+      height: 220px !important;
+      opacity: 0.44 !important;
+      background:
+        radial-gradient(circle at 20% 82%, rgba(0,0,0,.98) 0 9%, transparent 10%),
+        radial-gradient(circle at 78% 82%, rgba(0,0,0,.98) 0 10%, transparent 11%),
+        radial-gradient(ellipse at 78% 64%, rgba(255,255,255,.88) 0 5%, transparent 6%),
+        radial-gradient(ellipse at 34% 61%, rgba(255,255,255,.34) 0 6%, transparent 7%),
+        linear-gradient(167deg, transparent 0 16%, rgba(255,255,255,.70) 17% 18%, transparent 19%),
+        linear-gradient(8deg, transparent 0 28%, rgba(255,255,255,.76) 29% 31%, transparent 32%),
+        radial-gradient(ellipse at 52% 60%, rgba(8, 10, 13, .98) 0 56%, transparent 57%) !important;
+      filter: drop-shadow(0 18px 22px rgba(0,0,0,.72)) !important;
+      transform: skewX(-8deg) !important;
+      pointer-events: none !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-hero::after {
+      content: "" !important;
+      position: absolute !important;
+      inset: auto 0 0 0 !important;
+      height: 46% !important;
+      background:
+        linear-gradient(180deg, transparent 0%, rgba(255,255,255,.055) 44%, transparent 45%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.045) 0 1px, transparent 1px 78px),
+        linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, .38) 100%) !important;
+      opacity: .55 !important;
+      pointer-events: none !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-hero > * {
+      position: relative !important;
+      z-index: 2 !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-vehicle-icon {
+      width: 98px !important;
+      height: 98px !important;
+      border-radius: 24px !important;
+      display: grid !important;
+      place-items: center !important;
+      background:
+        radial-gradient(circle at 25% 12%, rgba(239, 68, 68, 0.48), transparent 34%),
+        linear-gradient(135deg, #210609, #101923) !important;
+      border: 1px solid rgba(217, 4, 4, 0.44) !important;
+      color: #ffffff !important;
+      box-shadow: 0 18px 36px rgba(0, 0, 0, 0.34) !important;
+      font-size: 34px !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .eyebrow {
+      width: fit-content !important;
+      min-height: 38px !important;
+      padding: 9px 17px !important;
+      border-radius: 999px !important;
+      background: rgba(217, 4, 4, 0.13) !important;
+      border: 1px solid rgba(239, 68, 68, 0.55) !important;
+      color: #ffffff !important;
+      font-size: 12px !important;
+      font-weight: 950 !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-hero h2 {
+      max-width: 560px !important;
+      margin: 8px 0 0 !important;
+      color: #ffffff !important;
+      font-size: clamp(34px, 7vw, 52px) !important;
+      line-height: 0.98 !important;
+      font-weight: 950 !important;
+      letter-spacing: -0.035em !important;
+      text-transform: uppercase !important;
+      overflow-wrap: anywhere !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-hero p {
+      margin: 0 !important;
+      color: #aeb8c7 !important;
+      font-size: 16px !important;
+      line-height: 1.35 !important;
+      font-weight: 800 !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-price {
+      width: min(380px, 100%) !important;
+      min-height: 86px !important;
+      margin-top: 12px !important;
+      padding: 18px 22px !important;
+      display: grid !important;
+      align-content: center !important;
+      border-radius: 14px !important;
+      background:
+        radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.10), transparent 30%),
+        linear-gradient(135deg, #d90404, #7c0000) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.16) !important;
+      box-shadow: 0 20px 34px rgba(217, 4, 4, 0.24) !important;
+      font-size: 31px !important;
+      line-height: 1 !important;
+      font-weight: 950 !important;
+      letter-spacing: -0.02em !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-price::before {
+      content: "PRECO DE VENDA" !important;
+      margin-bottom: 8px !important;
+      color: rgba(255, 255, 255, 0.72) !important;
+      font-size: 11px !important;
+      font-weight: 950 !important;
+      letter-spacing: 0.10em !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-detail-grid {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 12px !important;
+      margin: 16px 0 !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-detail-item {
+      min-height: 84px !important;
+      padding: 17px 18px !important;
+      display: grid !important;
+      align-content: center !important;
+      gap: 8px !important;
+      border-radius: 14px !important;
+      background:
+        linear-gradient(145deg, rgba(18, 27, 38, 0.96), rgba(8, 15, 24, 0.98)) !important;
+      border: 1px solid rgba(255, 255, 255, 0.13) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 16px 34px rgba(0, 0, 0, 0.20) !important;
+      color: #ffffff !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-detail-item.full {
+      grid-column: 1 / -1 !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-detail-item span {
+      color: #9ca8b8 !important;
+      font-size: 11px !important;
+      font-weight: 950 !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-detail-item strong {
+      color: #ffffff !important;
+      font-size: 17px !important;
+      line-height: 1.22 !important;
+      font-weight: 950 !important;
+      overflow-wrap: anywhere !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .history-inline-select {
+      min-height: 48px !important;
+      width: 100% !important;
+      border-radius: 12px !important;
+      background-color: #08111b !important;
+      background-image: linear-gradient(135deg, #08111b, #0c1724) !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.16) !important;
+      padding: 0 14px !important;
+      font-size: 15px !important;
+      font-weight: 850 !important;
+      text-shadow: 0 0 0 #ffffff !important;
+      opacity: 1 !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .history-inline-select option {
+      background: #08111b !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      font-weight: 850 !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-actions-safe {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 12px !important;
+      padding: 14px 0 0 !important;
+      background: linear-gradient(180deg, rgba(5, 9, 15, 0), #05090f 30%) !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-actions-safe button {
+      min-height: 54px !important;
+      border-radius: 11px !important;
+      font-size: 15px !important;
+      font-weight: 950 !important;
+      border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-actions-safe .primary-button {
+      background: linear-gradient(135deg, #ff0707, #990000) !important;
+      color: #ffffff !important;
+      box-shadow: 0 16px 30px rgba(217, 4, 4, 0.20) !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-actions-safe .secondary-button {
+      background: rgba(18, 27, 38, 0.96) !important;
+      color: #ffffff !important;
+    }
+
+    html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-actions-safe .danger-button {
+      background: rgba(217, 4, 4, 0.10) !important;
+      color: #ff4a4a !important;
+      border-color: rgba(239, 68, 68, 0.50) !important;
+    }
+
+    @media (max-width: 520px) {
+      html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) {
+        padding: 12px !important;
+      }
+
+      html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-hero {
+        min-height: auto !important;
+        padding: 20px !important;
+      }
+
+      html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-detail-grid,
+      html body #vexVehicleDrawerRoot .vex-drawer-panel:not(.vex-formalization-panel):not(.vex-inventory-details-panel) .vex-drawer-actions-safe {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexVehicleDrawerDarkPremium();
+
+/* =========================================================
+   RC3.0.61 - Campos da formalizacao sempre legiveis/editaveis
+   ========================================================= */
+function injectVexFormalizationEditableFieldsFix() {
+  if (document.getElementById("vex-formalization-editable-fields-fix")) return;
+
+  const style = document.createElement("style");
+  style.id = "vex-formalization-editable-fields-fix";
+  style.textContent = `
+    html body .vex-drawer-root .vex-formalization-panel input,
+    html body .vex-drawer-root .vex-formalization-panel textarea,
+    html body .vex-drawer-root .vex-formalization-panel select {
+      pointer-events: auto !important;
+      opacity: 1 !important;
+      background-color: #08111b !important;
+      background-image: linear-gradient(135deg, #08111b, #0c1724) !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel input::placeholder,
+    html body .vex-drawer-root .vex-formalization-panel textarea::placeholder {
+      color: rgba(255, 255, 255, 0.48) !important;
+      -webkit-text-fill-color: rgba(255, 255, 255, 0.48) !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel select option {
+      background: #08111b !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel input,
+    html body .vex-drawer-root .vex-formalization-panel textarea {
+      cursor: text !important;
+    }
+
+    html body .vex-drawer-root .vex-formalization-panel select {
+      cursor: pointer !important;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+injectVexFormalizationEditableFieldsFix();
 
 setTimeout(() => {
   const dashboardSection = document.getElementById("dashboardSection");
