@@ -322,6 +322,26 @@
               <button id="inventoryRemovePhotoButton" class="ghost-button" type="button">Excluir foto</button>
             </div>
 
+            <div class="inventory-crlv-box">
+              <div>
+                <span class="eyebrow">Documento</span>
+                <h4>CRLV do veiculo</h4>
+                <p>Anexe PDF, JPG ou PNG leve para consultar, baixar ou imprimir dentro do estoque.</p>
+              </div>
+
+              <div id="inventoryCrlvPreview" class="inventory-crlv-preview">
+                <strong>CRLV nao anexado</strong>
+                <small>Limite recomendado: ate 650 KB para manter sincronizado em nuvem.</small>
+              </div>
+
+              <label class="secondary-button inventory-crlv-button">
+                Anexar CRLV
+                <input id="inventoryCrlvInput" type="file" accept="application/pdf,image/*" />
+              </label>
+
+              <button id="inventoryRemoveCrlvButton" class="ghost-button" type="button">Excluir CRLV</button>
+            </div>
+
             <div class="form-grid">
               <label>
                 Placa
@@ -392,7 +412,33 @@
                 <select id="inventoryStatus">
                   <option value="Disponivel">Disponivel</option>
                   <option value="Reservado">Reservado</option>
-                  <option value="Vendido">Vendido</option>
+                  <option value="Vendido">Vendido VEX</option>
+                  <option value="Vendido Repasse CDA">Vendido Repasse CDA</option>
+                  <option value="Vendido CDA Loja">Vendido CDA Loja</option>
+                </select>
+              </label>
+
+              <label>
+                Vendido por CDA
+                <select id="inventoryCdaSeller">
+                  <option value="">Nao se aplica</option>
+                  <option value="Ricardinho">Ricardinho</option>
+                  <option value="Hansel">Hansel</option>
+                  <option value="Outro">Outro</option>
+                </select>
+              </label>
+
+              <label>
+                Data do repasse CDA
+                <input id="inventoryCdaSaleDate" type="date" />
+              </label>
+
+              <label>
+                Tratativa CDA Loja
+                <select id="inventoryCdaSaleMode">
+                  <option value="">Nao se aplica</option>
+                  <option value="Apenas marcar vendido">Apenas marcar vendido</option>
+                  <option value="Gerar venda no VEX HUB">Gerar venda no VEX HUB</option>
                 </select>
               </label>
             </div>

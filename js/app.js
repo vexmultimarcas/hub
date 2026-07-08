@@ -72,6 +72,7 @@ let editingSaleId = null;
 let adminSecondaryFirebaseApp = null;
 let vexInventory = [];
 let vexInventoryPhotoDraft = "";
+let vexInventoryCrlvDraft = null;
 let vexInventoryCollection = null;
 let unsubscribeVexInventory = null;
 let vexInventoryEditingId = "";
@@ -414,6 +415,7 @@ function initializeSaleForm() {
       saleDate: saleDate,
       transferType: transferType,
       afterSaleStatus: afterSaleStatus,
+      transferStage: currentEditingSale && currentEditingSale.transferStage ? currentEditingSale.transferStage : getDefaultVexTransferStage(transferType, afterSaleStatus),
       saleNotes: saleNotes,
       totalCommission: 250,
       frankCommission: 125,
@@ -913,7 +915,7 @@ function updateSaleEditModeUI(sale) {
   if (saleMessage) {
     saleMessage.innerHTML = `
       <div class="empty-state vex-edit-mode-message">
-        Editando: <strong>${escapeHTML(sale.vehicleModel || "Veículo")}</strong> • ${escapeHTML(sale.clientName || "Cliente")}
+        Editando: <strong>${escapeHTML(sale.vehicleModel || "Veículo")}</strong> �?${escapeHTML(sale.clientName || "Cliente")}
         <br>
         <button class="secondary-button" type="button" onclick="cancelSaleEditMode()">Cancelar edição</button>
       </div>
@@ -1034,6 +1036,107 @@ async function updateSaleStatus(saleId, newStatus) {
   }
 }
 
+const VEX_TRANSFER_STAGES = [
+  "Pendente",
+  "Aguardando cliente",
+  "Aguardando contratos reconhecidos",
+  "Aguardando laudo ECV",
+  "Enviar ao despachante",
+  "Aguardando ATPV / despachante",
+  "Documentos entregues ao cliente",
+  "Transferido"
+];
+
+function normalizeVexTransferStage(stage) {
+  return String(stage || "").trim();
+}
+
+function getDefaultVexTransferStage(transferType, afterSaleStatus) {
+  const status = String(afterSaleStatus || "").toLowerCase();
+  if (status.includes("transferido") || status.includes("finalizado")) return "Transferido";
+  if (String(transferType || "") === "Pelo cliente") return "Aguardando cliente";
+  return "Pendente";
+}
+
+function getVexTransferStage(sale) {
+  const stored = normalizeVexTransferStage(sale && sale.transferStage);
+  return stored || getDefaultVexTransferStage(sale && sale.transferType, sale && sale.afterSaleStatus);
+}
+
+function getVexTransferStageTone(stage) {
+  const value = normalizeVexTransferStage(stage).toLowerCase();
+  if (value === "transferido") return "done";
+  if (value === "documentos entregues ao cliente" || value.includes("atpv") || value.includes("despachante") || value.includes("enviar")) return "progress";
+  return "pending";
+}
+
+function getVexTransferStageDescription(stage, transferType) {
+  const value = normalizeVexTransferStage(stage);
+  if (value === "Aguardando contratos reconhecidos") return String(transferType || "") === "Pela loja" ? "Contrato, termo e procuracao no cartorio." : "Contrato e termo no cartorio.";
+  if (value === "Aguardando laudo ECV") return "Laudo ECV pendente no vistoriador.";
+  if (value === "Enviar ao despachante") return "Enviar documentos, laudo e comprovantes.";
+  if (value === "Aguardando ATPV / despachante") return "Processo em andamento com despachante.";
+  if (value === "Documentos entregues ao cliente") return "Parte da loja concluida; cliente precisa finalizar.";
+  if (value === "Transferido") return "Transferencia concluida.";
+  if (value === "Aguardando cliente") return "Aguardando acao ou retorno do cliente.";
+  return "Etapa inicial da transferencia.";
+}
+
+function getVexTransferStageOptions(selectedStage) {
+  const selected = normalizeVexTransferStage(selectedStage);
+  return VEX_TRANSFER_STAGES.map(function(stage) {
+    return `<option value="${escapeHTML(stage)}" ${stage === selected ? "selected" : ""}>${escapeHTML(stage)}</option>`;
+  }).join("");
+}
+
+function renderVexTransferStageChip(sale, extraClass) {
+  const stage = getVexTransferStage(sale);
+  const tone = getVexTransferStageTone(stage);
+  return `<span class="vex-transfer-stage-chip vex-transfer-stage-${tone}${extraClass ? " " + extraClass : ""}">${escapeHTML(stage)}</span>`;
+}
+
+async function updateSaleTransferStage(saleId, newStage) {
+  if (!canManageContent()) {
+    alert("Apenas administradores podem alterar a etapa da transferencia.");
+    refreshApplication();
+    return;
+  }
+
+  if (!saleId || !newStage) return;
+
+  try {
+    const saleRef = getSaleDocumentRef(saleId);
+    if (!saleRef) return;
+
+    const payload = {
+      transferStage: newStage,
+      updatedAtLocal: new Date().toISOString()
+    };
+
+    if (newStage === "Transferido") {
+      payload.afterSaleStatus = "Transferido";
+    } else if (newStage === "Aguardando ATPV / despachante" || newStage === "Enviar ao despachante") {
+      payload.afterSaleStatus = "Transferencia em andamento";
+    } else if (newStage === "Aguardando cliente" || newStage === "Documentos entregues ao cliente") {
+      payload.afterSaleStatus = "Aguardando Cliente";
+    }
+
+    await saleRef.update(payload);
+
+    sales = sales.map(function(sale) {
+      if (sale.id !== saleId) return sale;
+      return {
+        ...sale,
+        ...payload
+      };
+    });
+
+    refreshApplication();
+  } catch (error) {
+    console.error("Erro ao atualizar etapa da transferencia:", error);
+    alert("Erro ao atualizar etapa da transferencia.");
+  }
+}
 async function updateSaleTransfer(saleId, newTransfer) {
   if (!canManageContent()) {
     alert("Apenas administradores podem alterar a transferência.");
@@ -1458,6 +1561,8 @@ function bindVexInventoryForm() {
   const photoInput = document.getElementById("inventoryPhotoInput");
   const galleryInput = document.getElementById("inventoryGalleryInput");
   const removePhotoButton = document.getElementById("inventoryRemovePhotoButton");
+  const crlvInput = document.getElementById("inventoryCrlvInput");
+  const removeCrlvButton = document.getElementById("inventoryRemoveCrlvButton");
   const parseButton = document.getElementById("inventoryParseButton");
   const clearButton = document.getElementById("inventoryClearButton");
   const search = document.getElementById("inventorySearch");
@@ -1497,6 +1602,19 @@ function bindVexInventoryForm() {
     removePhotoButton.addEventListener("click", function() {
       vexInventoryPhotoDraft = "";
       updateVexInventoryPhotoPreview("");
+    });
+  }
+
+  if (crlvInput && crlvInput.dataset.vexInventoryReady !== "true") {
+    crlvInput.dataset.vexInventoryReady = "true";
+    crlvInput.addEventListener("change", handleVexInventoryCrlvInput);
+  }
+
+  if (removeCrlvButton && removeCrlvButton.dataset.vexInventoryReady !== "true") {
+    removeCrlvButton.dataset.vexInventoryReady = "true";
+    removeCrlvButton.addEventListener("click", function() {
+      vexInventoryCrlvDraft = null;
+      updateVexInventoryCrlvPreview(null);
     });
   }
 
@@ -1621,6 +1739,236 @@ function updateVexInventoryPhotoPreview(photoUrl) {
     : `<span>Foto do veiculo</span>`;
 }
 
+function getVexInventoryCrlvSizeKb(crlv) {
+  return crlv && crlv.sizeKb ? crlv.sizeKb : 0;
+}
+
+function updateVexInventoryCrlvPreview(crlv) {
+  const preview = document.getElementById("inventoryCrlvPreview");
+  if (!preview) return;
+
+  if (!crlv || !crlv.dataUrl) {
+    preview.innerHTML = `
+      <strong>CRLV nao anexado</strong>
+      <small>Limite recomendado: ate 650 KB para manter sincronizado em nuvem.</small>
+    `;
+    return;
+  }
+
+  preview.innerHTML = `
+    <strong>${escapeHTML(crlv.fileName || "CRLV anexado")}</strong>
+    <small>${escapeHTML(crlv.mimeType || "arquivo")} | ${getVexInventoryCrlvSizeKb(crlv)} KB</small>
+  `;
+}
+
+async function handleVexInventoryCrlvInput(event) {
+  const file = event.target && event.target.files ? event.target.files[0] : null;
+  if (!file) return;
+
+  try {
+    showVexInventoryMessage("Preparando CRLV para anexar...");
+    vexInventoryCrlvDraft = await readVexInventoryCrlvFile(file);
+    updateVexInventoryCrlvPreview(vexInventoryCrlvDraft);
+    showVexInventoryMessage("CRLV anexado. Confira e salve o veiculo.");
+  } catch (error) {
+    console.error("Erro ao anexar CRLV:", error);
+    showVexInventoryMessage(error && error.message ? error.message : "Nao foi possivel anexar o CRLV.", "error");
+  } finally {
+    if (event.target) event.target.value = "";
+  }
+}
+
+function readVexInventoryCrlvFile(file) {
+  const mimeType = String(file.type || "");
+  const fileName = String(file.name || "crlv");
+
+  if (mimeType.indexOf("image/") === 0) {
+    return compressVexInventoryCrlvImage(file).then(function(dataUrl) {
+      return {
+        fileName: fileName,
+        mimeType: "image/jpeg",
+        dataUrl: dataUrl,
+        sizeKb: Math.ceil(dataUrl.length * 0.75 / 1024),
+        uploadedAtLocal: new Date().toISOString(),
+        uploadedBy: currentUser ? currentUser.email || currentUser.uid || "" : ""
+      };
+    });
+  }
+
+  if (mimeType !== "application/pdf" && !/\.pdf$/i.test(fileName)) {
+    return Promise.reject(new Error("Formato invalido. Anexe PDF, JPG ou PNG."));
+  }
+
+  if (file.size > 650 * 1024) {
+    return Promise.reject(new Error("PDF grande demais para salvar em nuvem. Use um PDF menor que 650 KB ou uma foto do CRLV."));
+  }
+
+  return readVexFileAsDataUrl(file).then(function(dataUrl) {
+    return {
+      fileName: fileName,
+      mimeType: "application/pdf",
+      dataUrl: dataUrl,
+      sizeKb: Math.ceil(file.size / 1024),
+      uploadedAtLocal: new Date().toISOString(),
+      uploadedBy: currentUser ? currentUser.email || currentUser.uid || "" : ""
+    };
+  });
+}
+
+function readVexFileAsDataUrl(file) {
+  return new Promise(function(resolve, reject) {
+    const reader = new FileReader();
+    reader.onload = function() { resolve(reader.result); };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function compressVexInventoryCrlvImage(file) {
+  return new Promise(function(resolve, reject) {
+    const reader = new FileReader();
+
+    reader.onload = function() {
+      const image = new Image();
+
+      image.onload = function() {
+        const maxWidth = 1100;
+        const scale = Math.min(1, maxWidth / image.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.62);
+        if (dataUrl.length > 850000) {
+          reject(new Error("Imagem do CRLV ainda ficou pesada. Tente recortar a foto ou usar uma imagem menor."));
+          return;
+        }
+        resolve(dataUrl);
+      };
+
+      image.onerror = reject;
+      image.src = reader.result;
+    };
+
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function getVexInventoryCrlvHtml(item) {
+  const crlv = item && item.crlv;
+  if (!crlv || !crlv.dataUrl) {
+    return `
+      <section class="vex-inventory-crlv-card">
+        <span>CRLV</span>
+        <strong>Documento nao anexado</strong>
+        <p>Quando anexado no estoque, o CRLV aparece aqui para conferencia, download ou impressao.</p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="vex-inventory-crlv-card is-ready">
+      <span>CRLV anexado</span>
+      <strong>${escapeHTML(crlv.fileName || "Documento do veiculo")}</strong>
+      <p>${escapeHTML(crlv.mimeType || "arquivo")} | ${getVexInventoryCrlvSizeKb(crlv)} KB</p>
+      <div class="vex-inventory-crlv-actions">
+        <button class="secondary-button" type="button" onclick="openVexInventoryCrlv('${escapeHTML(item.id)}')">Visualizar</button>
+        <button class="secondary-button" type="button" onclick="downloadVexInventoryCrlv('${escapeHTML(item.id)}')">Baixar</button>
+        <button class="secondary-button" type="button" onclick="printVexInventoryCrlv('${escapeHTML(item.id)}')">Imprimir</button>
+        <button class="ghost-button" type="button" onclick="deleteVexInventoryCrlv('${escapeHTML(item.id)}')">Excluir CRLV</button>
+      </div>
+    </section>
+  `;
+}
+
+function getVexInventoryCheckHtml(item) {
+  return `
+    <section class="vex-inventory-crlv-check">
+      <span>Conferencia do documento</span>
+      <p>Confira visualmente se o CRLV bate com os dados cadastrados no estoque.</p>
+      <div>
+        ${renderVexInventoryDetail("Placa", item.plate)}
+        ${renderVexInventoryDetail("Chassi", item.chassis)}
+        ${renderVexInventoryDetail("Renavam", item.renavam)}
+        ${renderVexInventoryDetail("Cor", item.color)}
+        ${renderVexInventoryDetail("Ano / modelo", item.year)}
+        ${renderVexInventoryDetail("Combustivel", item.fuel)}
+      </div>
+    </section>
+  `;
+}
+
+function getVexInventoryCrlvById(id) {
+  const item = vexInventory.find(function(vehicle) { return vehicle.id === id; });
+  return item && item.crlv && item.crlv.dataUrl ? item.crlv : null;
+}
+
+function openVexInventoryCrlv(id) {
+  const crlv = getVexInventoryCrlvById(id);
+  if (!crlv) {
+    alert("CRLV nao anexado para este veiculo.");
+    return;
+  }
+  const win = window.open("", "_blank");
+  if (!win) return;
+  if (String(crlv.mimeType || "").indexOf("image/") === 0) {
+    win.document.write(`<title>${escapeHTML(crlv.fileName || "CRLV")}</title><body style="margin:0;background:#111;display:grid;place-items:center;min-height:100vh;"><img src="${crlv.dataUrl}" style="max-width:100%;height:auto;" /></body>`);
+  } else {
+    win.document.write(`<title>${escapeHTML(crlv.fileName || "CRLV")}</title><iframe src="${crlv.dataUrl}" style="border:0;width:100%;height:100vh;"></iframe>`);
+  }
+  win.document.close();
+}
+
+function downloadVexInventoryCrlv(id) {
+  const crlv = getVexInventoryCrlvById(id);
+  if (!crlv) return;
+  const link = document.createElement("a");
+  link.href = crlv.dataUrl;
+  link.download = crlv.fileName || "crlv-veiculo";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function printVexInventoryCrlv(id) {
+  const crlv = getVexInventoryCrlvById(id);
+  if (!crlv) return;
+  const win = window.open("", "_blank");
+  if (!win) return;
+  const body = String(crlv.mimeType || "").indexOf("image/") === 0
+    ? `<img src="${crlv.dataUrl}" style="max-width:100%;height:auto;" />`
+    : `<iframe src="${crlv.dataUrl}" style="border:0;width:100%;height:100vh;"></iframe>`;
+  win.document.write(`<html><head><title>${escapeHTML(crlv.fileName || "CRLV")}</title></head><body style="margin:0;">${body}<script>window.onload=function(){setTimeout(function(){window.print();},400);};<\/script></body></html>`);
+  win.document.close();
+}
+
+async function deleteVexInventoryCrlv(id) {
+  if (!confirm("Excluir o CRLV anexado deste veiculo?")) return;
+  const itemToSave = vexInventory.find(function(item) { return item.id === id; });
+  if (!itemToSave) return;
+
+  const updatedItem = { ...itemToSave, crlv: null, updatedAtLocal: new Date().toISOString() };
+  vexInventory = vexInventory.map(function(item) {
+    return item.id === id ? updatedItem : item;
+  });
+  saveVexInventory();
+  renderVexInventory();
+  openVexInventoryDetails(id);
+
+  try {
+    if (vexInventoryCollection && canManageContent()) {
+      await vexInventoryCollection.doc(id).set(updatedItem, { merge: true });
+    }
+  } catch (error) {
+    showVexInventoryMessage("CRLV removido localmente, mas nao sincronizou em nuvem.", "error");
+  }
+}
 function openVexInventoryForm(mode) {
   const section = document.getElementById("inventorySection");
   const title = document.getElementById("inventoryFormTitle");
@@ -1661,9 +2009,13 @@ function getVexInventoryFormData() {
     km: getElementValue("inventoryKm"),
     fipeValue: getElementValue("inventoryFipeValue"),
     status: getElementValue("inventoryStatus") || "Disponivel",
+    cdaSeller: getElementValue("inventoryCdaSeller"),
+    cdaSaleDate: getElementValue("inventoryCdaSaleDate"),
+    cdaSaleMode: getElementValue("inventoryCdaSaleMode"),
     notes: getElementValue("inventoryNotes"),
     rawText: getElementValue("inventoryRawText"),
-    photoUrl: vexInventoryPhotoDraft
+    photoUrl: vexInventoryPhotoDraft,
+    crlv: vexInventoryCrlvDraft
   };
 }
 
@@ -1731,6 +2083,45 @@ function getVexInventoryItemByPlate(plate) {
   }) || null;
 }
 
+function normalizeVexInventoryStatus(status) {
+  return String(status || "Disponivel").trim().toLowerCase();
+}
+
+function isVexInventorySoldStatus(status) {
+  return normalizeVexInventoryStatus(status).indexOf("vendido") === 0;
+}
+
+function isVexInventoryCdaSoldStatus(status) {
+  return normalizeVexInventoryStatus(status) === "vendido repasse cda";
+}
+
+function isVexInventoryCdaStoreSoldStatus(status) {
+  return normalizeVexInventoryStatus(status) === "vendido cda loja";
+}
+
+function isVexInventoryCdaStoreHandledByVex(item) {
+  return isVexInventoryCdaStoreSoldStatus(item && item.status) && String(item.cdaSaleMode || "") === "Gerar venda no VEX HUB";
+}
+
+function isVexInventoryBlockedForSale(item) {
+  if (!item || !isVexInventorySoldStatus(item.status)) return false;
+  return !isVexInventoryCdaStoreHandledByVex(item);
+}
+
+function getVexInventoryStatusBadgeClass(status) {
+  if (isVexInventoryCdaStoreSoldStatus(status)) return "inventory-status-cda-store-sold";
+  if (isVexInventoryCdaSoldStatus(status)) return "inventory-status-cda-sold";
+  if (isVexInventorySoldStatus(status)) return "inventory-status-sold";
+  if (normalizeVexInventoryStatus(status) === "reservado") return "inventory-status-reserved";
+  return "inventory-status-available";
+}
+
+function getVexInventorySoldRibbon(status) {
+  if (isVexInventoryCdaStoreSoldStatus(status)) return "Vendido Loja CDA";
+  if (isVexInventoryCdaSoldStatus(status)) return "Vendido CDA";
+  if (isVexInventorySoldStatus(status)) return "Vendido VEX";
+  return "";
+}
 function renderVexInventory() {
   const list = document.getElementById("inventoryList");
   const counter = document.getElementById("inventoryCounter");
@@ -1763,13 +2154,17 @@ function renderVexInventory() {
 
   list.innerHTML = filtered.map(function(item) {
     const status = String(item.status || "Disponivel");
-    const normalizedStatus = status.toLowerCase();
-    const isSold = normalizedStatus === "vendido";
-    const isReserved = normalizedStatus === "reservado";
-    const itemClass = isSold ? " is-sold" : (isReserved ? " is-reserved" : "");
-    const statusBadgeClass = isSold ? "inventory-status-sold" : (isReserved ? "inventory-status-reserved" : "inventory-status-available");
-    const useSaleDisabled = isSold ? " disabled" : "";
-    const soldRibbon = isSold ? `<div class="inventory-sold-ribbon">Vendido</div>` : "";
+    const isSold = isVexInventorySoldStatus(status);
+    const isReserved = normalizeVexInventoryStatus(status) === "reservado";
+    const isCdaSold = isVexInventoryCdaSoldStatus(status);
+    const isCdaStoreSold = isVexInventoryCdaStoreSoldStatus(status);
+    const isSaleBlocked = isVexInventoryBlockedForSale(item);
+    const itemClass = isSold ? (isCdaStoreSold ? " is-sold is-cda-store-sold" : (isCdaSold ? " is-sold is-cda-sold" : " is-sold")) : (isReserved ? " is-reserved" : "");
+    const statusBadgeClass = getVexInventoryStatusBadgeClass(status);
+    const useSaleDisabled = isSaleBlocked ? " disabled" : "";
+    const ribbonText = getVexInventorySoldRibbon(status);
+    const ribbonClass = isCdaStoreSold ? " inventory-cda-store-ribbon" : (isCdaSold ? " inventory-cda-ribbon" : "");
+    const soldRibbon = ribbonText ? `<div class="inventory-sold-ribbon${ribbonClass}">${escapeHTML(ribbonText)}</div>` : "";
 
     return `
       <article class="inventory-item${itemClass}">
@@ -1780,6 +2175,9 @@ function renderVexInventory() {
           <span>Combustivel ${escapeHTML(item.fuel || "-")}</span>
           <span>Placa ${escapeHTML(item.plate)} | KM ${escapeHTML(item.km || "-")} | FIPE ${escapeHTML(item.fipeValue || "-")}</span>
           <span>Chassi ${escapeHTML(item.chassis || "-")} | Renavam ${escapeHTML(item.renavam || "-")}</span>
+          <span>${item.crlv && item.crlv.dataUrl ? "CRLV anexado" : "CRLV nao anexado"}</span>
+          ${isCdaSold ? `<span>Repasse CDA${item.cdaSeller ? ` | ${escapeHTML(item.cdaSeller)}` : ""}${item.cdaSaleDate ? ` | ${escapeHTML(formatDateToBrazil(item.cdaSaleDate))}` : ""}</span>` : ""}
+          ${isCdaStoreSold ? `<span>CDA Loja${item.cdaSaleMode ? ` | ${escapeHTML(item.cdaSaleMode)}` : ""}${item.cdaSaleDate ? ` | ${escapeHTML(formatDateToBrazil(item.cdaSaleDate))}` : ""}</span>` : ""}
         </div>
         <div class="inventory-item-actions">
           <button class="secondary-button" type="button" onclick="openVexInventoryDetails('${escapeHTML(item.id)}')">Visualizar</button>
@@ -1835,7 +2233,14 @@ function openVexInventoryDetails(id) {
         ${renderVexInventoryDetail("Chassi", item.chassis)}
         ${renderVexInventoryDetail("Renavam", item.renavam)}
         ${renderVexInventoryDetail("Status", item.status || "Disponivel")}
+        ${isVexInventoryCdaSoldStatus(item.status) ? renderVexInventoryDetail("Vendido por CDA", item.cdaSeller || "Nao informado") : ""}
+        ${isVexInventoryCdaSoldStatus(item.status) ? renderVexInventoryDetail("Data repasse CDA", item.cdaSaleDate ? formatDateToBrazil(item.cdaSaleDate) : "-") : ""}
+        ${isVexInventoryCdaStoreSoldStatus(item.status) ? renderVexInventoryDetail("Venda CDA Loja", item.cdaSaleMode || "Nao informado") : ""}
+        ${isVexInventoryCdaStoreSoldStatus(item.status) ? renderVexInventoryDetail("Data CDA Loja", item.cdaSaleDate ? formatDateToBrazil(item.cdaSaleDate) : "-") : ""}
       </section>
+
+      ${getVexInventoryCrlvHtml(item)}
+      ${getVexInventoryCheckHtml(item)}
 
       ${item.notes ? `
         <section class="vex-inventory-details-notes">
@@ -1845,7 +2250,7 @@ function openVexInventoryDetails(id) {
       ` : ""}
 
       <div class="vex-drawer-actions vex-drawer-actions-safe">
-        <button class="primary-button" type="button" onclick="fillSaleFromInventory('${escapeHTML(item.id)}'); closeVexVehicleDrawer();">Usar na venda</button>
+        ${isVexInventoryBlockedForSale(item) ? `<button class="primary-button" type="button" disabled>Veiculo vendido</button>` : `<button class="primary-button" type="button" onclick="fillSaleFromInventory('${escapeHTML(item.id)}'); closeVexVehicleDrawer();">Usar na venda</button>`}
         <button class="secondary-button" type="button" onclick="editVexInventoryItem('${escapeHTML(item.id)}'); closeVexVehicleDrawer();">Editar</button>
         <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
       </div>
@@ -1873,10 +2278,15 @@ function editVexInventoryItem(id) {
   setSaleFieldValue("inventoryKm", item.km);
   setSaleFieldValue("inventoryFipeValue", item.fipeValue);
   setSaleFieldValue("inventoryStatus", item.status || "Disponivel");
+  setSaleFieldValue("inventoryCdaSeller", item.cdaSeller || "");
+  setSaleFieldValue("inventoryCdaSaleDate", item.cdaSaleDate || "");
+  setSaleFieldValue("inventoryCdaSaleMode", item.cdaSaleMode || "");
   setSaleFieldValue("inventoryNotes", item.notes);
   setSaleFieldValue("inventoryRawText", item.rawText);
   vexInventoryPhotoDraft = item.photoUrl || "";
+  vexInventoryCrlvDraft = item.crlv || null;
   updateVexInventoryPhotoPreview(vexInventoryPhotoDraft);
+  updateVexInventoryCrlvPreview(vexInventoryCrlvDraft);
   openVexInventoryForm("edit");
   showVexInventoryMessage("Editando veiculo do estoque.");
 }
@@ -1923,8 +2333,10 @@ function clearVexInventoryForm(options) {
   const form = document.getElementById("inventoryForm");
   if (form) form.reset();
   vexInventoryPhotoDraft = "";
+  vexInventoryCrlvDraft = null;
   vexInventoryEditingId = "";
   updateVexInventoryPhotoPreview("");
+  updateVexInventoryCrlvPreview(null);
   if (!keepOpen) {
     closeVexInventoryForm();
   }
@@ -2026,6 +2438,11 @@ function fillSaleFromInventoryLookup() {
     return;
   }
 
+  if (isVexInventoryBlockedForSale(item)) {
+    if (message) message.textContent = "Veiculo ja marcado como vendido no estoque.";
+    return;
+  }
+
   applyVexInventoryToSaleForm(item);
   if (message) message.textContent = "Dados carregados do estoque. Confira KM e valor da venda.";
 }
@@ -2045,6 +2462,11 @@ function autofillSaleFromInventoryPlate(plate) {
     return;
   }
 
+  if (isVexInventoryBlockedForSale(item)) {
+    if (message) message.textContent = "Veiculo ja marcado como vendido no estoque.";
+    return;
+  }
+
   applyVexInventoryToSaleForm(item);
   if (message) message.textContent = "Dados carregados automaticamente do estoque. Confira KM e valor da venda.";
 }
@@ -2052,7 +2474,7 @@ function autofillSaleFromInventoryPlate(plate) {
 function fillSaleFromInventory(id) {
   const item = vexInventory.find(function(vehicle) { return vehicle.id === id; });
   if (!item) return;
-  if (String(item.status || "").toLowerCase() === "vendido") {
+  if (isVexInventoryBlockedForSale(item)) {
     showVexInventoryMessage("Este veiculo ja esta marcado como vendido no estoque.", "error");
     return;
   }
@@ -2079,7 +2501,7 @@ async function markVexInventorySoldFromSale(sale) {
     ? vexInventory.find(function(vehicle) { return vehicle.id === id; })
     : getVexInventoryItemByPlate(plate);
 
-  if (!item || String(item.status || "").toLowerCase() === "vendido") {
+  if (!item || isVexInventoryBlockedForSale(item)) {
     return;
   }
 
@@ -2232,7 +2654,7 @@ function renderHistory() {
           <div class="vex-vehicle-title-row">
             <div>
               <h4>${escapeHTML(sale.vehicleModel)} <span>${escapeHTML(sale.vehicleYear)}</span></h4>
-              <p>${escapeHTML(sale.clientName)} • ${formatDateToBrazil(sale.saleDate)}</p>
+              <p>${escapeHTML(sale.clientName)} �?${formatDateToBrazil(sale.saleDate)}</p>
             </div>
 
             <strong class="vex-vehicle-price">${escapeHTML(value)}</strong>
@@ -2317,7 +2739,7 @@ function openSaleDetails(saleId) {
       <span class="drawer-kicker">Veículo vendido</span>
       <h3>${escapeHTML(sale.vehicleModel)} ${escapeHTML(sale.vehicleYear)}</h3>
       <strong>${escapeHTML(formatSaleValuePremium(sale.saleValue))}</strong>
-      <p>${escapeHTML(sale.clientName)} • ${formatDateToBrazil(sale.saleDate)}</p>
+      <p>${escapeHTML(sale.clientName)} �?${formatDateToBrazil(sale.saleDate)}</p>
     </div>
 
     <div class="drawer-section">
@@ -2901,6 +3323,14 @@ function prepareVexDashboardLayout() {
           <p id="vexCurrentDate">Dashboard Executivo Premium</p>
         </div>
 
+        <div class="vex-detail-item full vex-transfer-stage-detail">
+          <span>Etapa da transferencia</span>
+          <strong>
+            ${canManageContent() ? `<select class="history-inline-select vex-transfer-stage-select" onchange="updateSaleTransferStage('${sale.id}', this.value)">${getVexTransferStageOptions(getVexTransferStage(sale))}</select>` : renderVexTransferStageChip(sale)}
+          </strong>
+          <small>${escapeHTML(getVexTransferStageDescription(getVexTransferStage(sale), sale.transferType))}</small>
+        </div>
+
         <div class="vex-brand-card">
           <strong>VEX</strong>
           <span>🔑 Vire a chave do seu sonho</span>
@@ -3069,7 +3499,7 @@ function renderVexLatestVehicles() {
         <span class="vex-latest-icon">🚗</span>
         <span>
           <strong>${escapeHTML(sale.vehicleModel || "Veículo")}</strong>
-          <small>${escapeHTML(sale.clientName || "Cliente")} • ${formatDateToBrazil(sale.saleDate)}</small>
+          <small>${escapeHTML(sale.clientName || "Cliente")} �?${formatDateToBrazil(sale.saleDate)}</small>
         </span>
         <em>${escapeHTML(formatSaleValuePremium(sale.saleValue))}</em>
       </button>
@@ -3097,7 +3527,7 @@ function renderVexActivityTimeline() {
         <span></span>
         <div>
           <strong>${escapeHTML(sale.vehicleModel || "Veículo")}</strong>
-          <small>Venda registrada • ${escapeHTML(sale.afterSaleStatus || "Status")}</small>
+          <small>Venda registrada �?${escapeHTML(sale.afterSaleStatus || "Status")}</small>
         </div>
         <em>${formatDateToBrazil(sale.saleDate)}</em>
       </div>
@@ -3659,7 +4089,7 @@ function updateUserIdentityUI() {
   const email = currentUser && currentUser.email ? currentUser.email : "";
 
   if (userEmailLabel) {
-    userEmailLabel.textContent = email ? `${name} • ${getRoleLabel(getCurrentUserRole())} • ${email}` : "";
+    userEmailLabel.textContent = email ? `${name} �?${getRoleLabel(getCurrentUserRole())} �?${email}` : "";
   }
 
   updateProfileForm();
@@ -4742,7 +5172,7 @@ function updateVexDashboardExecutive() {
    ========================================================= */
 function getVexInventoryAvailableCountFinal() {
   if (!Array.isArray(vexInventory)) return 0;
-  return vexInventory.filter((item) => String(item.status || "Disponivel").toLowerCase() !== "vendido").length;
+  return vexInventory.filter((item) => !isVexInventorySoldStatus(item.status || "Disponivel")).length;
 }
 
 function prepareVexDashboardLayout() {
@@ -5160,11 +5590,11 @@ function injectVexOfficialSidebarStyles() {
 
       html body #dashboardScreen.screen.active .nav-item[data-section="dashboardSection"]::before { content: "01" !important; font-size: 10px !important; }
       html body #dashboardScreen.screen.active .nav-item[data-section="newSaleSection"]::before { content: "+" !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="inventorySection"]::before { content: "□" !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="historySection"]::before { content: "≡" !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="reportsSection"]::before { content: "▥" !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="profileSection"]::before { content: "◉" !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="usersSection"]::before { content: "⚙" !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="inventorySection"]::before { content: "�? !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="historySection"]::before { content: "�? !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="reportsSection"]::before { content: "�? !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="profileSection"]::before { content: "�? !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="usersSection"]::before { content: "�? !important; }
 
       html body #dashboardScreen.screen.active .nav-item::after {
         content: "" !important;
@@ -5900,7 +6330,7 @@ function injectVexRC332LightPremiumTheme() {
    ========================================================= */
 function getVexInventoryAvailableCount() {
   return (vexInventory || []).filter(function(item) {
-    return String(item.status || "Disponivel").toLowerCase() !== "vendido";
+    return !isVexInventorySoldStatus(item.status || "Disponivel");
   }).length;
 }
 
@@ -6512,6 +6942,7 @@ function escapeHTML(value) {
 window.deleteSale = deleteSale;
 window.updateSaleStatus = updateSaleStatus;
 window.updateSaleTransfer = updateSaleTransfer;
+window.updateSaleTransferStage = updateSaleTransferStage;
 window.updateUserRole = updateUserRole;
 window.toggleUserAccess = toggleUserAccess;
 window.openVexClientWhatsapp = openVexClientWhatsapp;
@@ -6529,7 +6960,7 @@ window.goToSection = goToSection;
 
 
 /* =========================================================
-   VEX HUB PRO v2.0 — Fase 02
+   VEX HUB PRO v2.0 �?Fase 02
    Veículos Premium + Drawer
    ========================================================= */
 
@@ -6675,7 +7106,7 @@ function renderVexVehiclesPremium() {
               </span>
             </div>
 
-            <div class="vex-card-chevron">›</div>
+            <div class="vex-card-chevron">�?/div>
           </article>
         `;
       }).join("")}
@@ -6711,7 +7142,7 @@ function openVexVehicleDrawer(saleId) {
         <div class="vex-vehicle-icon">🚗</div>
         <span class="eyebrow">Veículo vendido</span>
         <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
-        <p>${escapeHTML(sale.clientName || "Cliente não informado")} • ${formatDateToBrazil(sale.saleDate)}</p>
+        <p>${escapeHTML(sale.clientName || "Cliente não informado")} �?${formatDateToBrazil(sale.saleDate)}</p>
         <div class="vex-drawer-price">${getVehicleDisplayPrice(sale)}</div>
       </section>
 
@@ -6778,6 +7209,14 @@ function openVexVehicleDrawer(saleId) {
           <strong>
             ${canManageContent() ? `<select class="history-inline-select" onchange="updateSaleTransfer('${sale.id}', this.value)">${getTransferOptions(sale.transferType)}</select>` : escapeHTML(sale.transferType || "-")}
           </strong>
+        </div>
+
+        <div class="vex-detail-item full vex-transfer-stage-detail">
+          <span>Etapa da transferencia</span>
+          <strong>
+            ${canManageContent() ? `<select class="history-inline-select vex-transfer-stage-select" onchange="updateSaleTransferStage('${sale.id}', this.value)">${getVexTransferStageOptions(getVexTransferStage(sale))}</select>` : renderVexTransferStageChip(sale)}
+          </strong>
+          <small>${escapeHTML(getVexTransferStageDescription(getVexTransferStage(sale), sale.transferType))}</small>
         </div>
 
         <div class="vex-detail-item">
@@ -6917,7 +7356,7 @@ function openVexFormalizationClient(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">👤</div>
-        <span class="eyebrow">Formalização • Cliente</span>
+        <span class="eyebrow">Formalização �?Cliente</span>
         <h2>${escapeHTML(client.clientName || sale.clientName || "Cliente")}</h2>
         <p>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</p>
 
@@ -6928,7 +7367,7 @@ function openVexFormalizationClient(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
         </div>
-        <strong>${completion.done} de ${completion.total} campos obrigatórios • ${completion.percent}%</strong>
+        <strong>${completion.done} de ${completion.total} campos obrigatórios �?${completion.percent}%</strong>
       </section>
 
       <form class="vex-formalization-form" onsubmit="saveVexFormalizationClient(event, '${sale.id}')">
@@ -7133,7 +7572,7 @@ function openVexFormalizationVehicle(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">🚗</div>
-        <span class="eyebrow">Formalização • Veículo</span>
+        <span class="eyebrow">Formalização �?Veículo</span>
         <h2>${escapeHTML(vehicleTitle)}</h2>
         <p>${escapeHTML(sale.clientName || "Cliente não informado")}</p>
 
@@ -7144,7 +7583,7 @@ function openVexFormalizationVehicle(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
         </div>
-        <strong>${completion.done} de ${completion.total} campos obrigatórios • ${completion.percent}%</strong>
+        <strong>${completion.done} de ${completion.total} campos obrigatórios �?${completion.percent}%</strong>
       </section>
 
       <form class="vex-formalization-form" onsubmit="saveVexFormalizationVehicle(event, '${sale.id}')">
@@ -7431,7 +7870,7 @@ function openVexFormalizationPayment(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">💰</div>
-        <span class="eyebrow">Formalização • Pagamento</span>
+        <span class="eyebrow">Formalização �?Pagamento</span>
         <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
         <p>${escapeHTML(sale.clientName || "Cliente não informado")}</p>
 
@@ -7442,7 +7881,7 @@ function openVexFormalizationPayment(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
         </div>
-        <strong>${completion.done} de ${completion.total} conferências • ${completion.percent}%</strong>
+        <strong>${completion.done} de ${completion.total} conferências �?${completion.percent}%</strong>
       </section>
 
       <form class="vex-formalization-form" onsubmit="saveVexFormalizationPayment(event, '${sale.id}')">
@@ -7757,8 +8196,8 @@ function openVexFormalizationRepasse(saleId) {
       <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
 
       <section class="vex-drawer-hero vex-formalization-hero">
-        <div class="vex-vehicle-icon">🛡️</div>
-        <span class="eyebrow">Formalização • Repasse e Gastos</span>
+        <div class="vex-vehicle-icon">🛡�?/div>
+        <span class="eyebrow">Formalização �?Repasse e Gastos</span>
         <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
         <p>${escapeHTML(sale.clientName || "Cliente não informado")}</p>
 
@@ -7769,7 +8208,7 @@ function openVexFormalizationRepasse(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
         </div>
-        <strong>${completion.done} de ${completion.total} conferências • ${completion.percent}%</strong>
+        <strong>${completion.done} de ${completion.total} conferências �?${completion.percent}%</strong>
       </section>
 
       <form class="vex-formalization-form" onsubmit="saveVexFormalizationRepasse(event, '${sale.id}')">
@@ -8073,9 +8512,9 @@ function openVexFormalizationTransfer(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">🚛</div>
-        <span class="eyebrow">Formalização • Transferência</span>
+        <span class="eyebrow">Formalização �?Transferência</span>
         <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
-        <p>${escapeHTML(sale.clientName || "Cliente não informado")} • ${formatDateToBrazil(sale.saleDate)}</p>
+        <p>${escapeHTML(sale.clientName || "Cliente não informado")} �?${formatDateToBrazil(sale.saleDate)}</p>
 
         <div class="vex-formalization-status-pill">
           ${status.icon} ${escapeHTML(status.label)}
@@ -8084,7 +8523,7 @@ function openVexFormalizationTransfer(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
         </div>
-        <strong>${completion.done} de ${completion.total} etapas concluídas • ${completion.percent}%</strong>
+        <strong>${completion.done} de ${completion.total} etapas concluídas �?${completion.percent}%</strong>
       </section>
 
       <form class="vex-formalization-form" onsubmit="saveVexFormalizationTransfer(event, '${sale.id}')">
@@ -8287,18 +8726,18 @@ function getVexReceivedDocsMessagePreview(docs) {
   const lines = [];
 
   if (docs.idDocument === "CNH") {
-    lines.push("CNH: ✅ Em anexo");
+    lines.push("CNH: �?Em anexo");
   } else if (docs.idDocument === "RG") {
-    lines.push("RG: ✅ Em anexo");
+    lines.push("RG: �?Em anexo");
   } else if (docs.idDocument === "CNH + RG") {
-    lines.push("CNH: ✅ Em anexo");
-    lines.push("RG: ✅ Em anexo");
+    lines.push("CNH: �?Em anexo");
+    lines.push("RG: �?Em anexo");
   } else {
     lines.push("Documento de identificação: ⚠️ Pendente");
   }
 
-  lines.push(`Comprovante de endereço: ${docs.addressProof === "Recebido" ? "✅ Em anexo" : "⚠️ Pendente"}`);
-  lines.push(`Comprovantes de pagamento: ${docs.paymentProof === "Recebido" ? "✅ Em anexo" : "⚠️ Pendente"}`);
+  lines.push(`Comprovante de endereço: ${docs.addressProof === "Recebido" ? "�?Em anexo" : "⚠️ Pendente"}`);
+  lines.push(`Comprovantes de pagamento: ${docs.paymentProof === "Recebido" ? "�?Em anexo" : "⚠️ Pendente"}`);
 
   return lines.join("\n");
 }
@@ -8331,9 +8770,9 @@ function openVexFormalizationReceivedDocs(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">📄</div>
-        <span class="eyebrow">Formalização • Documentos Recebidos</span>
+        <span class="eyebrow">Formalização �?Documentos Recebidos</span>
         <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
-        <p>${escapeHTML(sale.clientName || "Cliente não informado")} • ${formatDateToBrazil(sale.saleDate)}</p>
+        <p>${escapeHTML(sale.clientName || "Cliente não informado")} �?${formatDateToBrazil(sale.saleDate)}</p>
 
         <div class="vex-formalization-status-pill">
           ${statusIcon} ${escapeHTML(statusLabel)}
@@ -8342,7 +8781,7 @@ function openVexFormalizationReceivedDocs(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
         </div>
-        <strong>${completion.done} de ${completion.total} itens conferidos • ${completion.percent}%</strong>
+        <strong>${completion.done} de ${completion.total} itens conferidos �?${completion.percent}%</strong>
       </section>
 
       <form class="vex-formalization-form" onsubmit="saveVexFormalizationReceivedDocs(event, '${sale.id}')">
@@ -8460,14 +8899,14 @@ function getVexCommunicationMoney(value) {
 }
 
 function getVexCommunicationIdDocumentLine(docs) {
-  if (docs.idDocument === "CNH") return "CNH: (Em anexo.) ✅";
-  if (docs.idDocument === "RG") return "RG: (Em anexo.) ✅";
-  if (docs.idDocument === "CNH + RG") return "CNH/RG: (Em anexo.) ✅";
-  return "Documento de identificação: Pendente ⚠️";
+  if (docs.idDocument === "CNH") return "CNH: (Em anexo.) OK";
+  if (docs.idDocument === "RG") return "RG: (Em anexo.) OK";
+  if (docs.idDocument === "CNH + RG") return "CNH/RG: (Em anexo.) OK";
+  return "Documento de identificacao: Pendente";
 }
 
 function getVexCommunicationAttachmentLine(label, status) {
-  return `${label}: ${status === "Recebido" ? "(Em anexo.) ✅" : "Pendente ⚠️"}`;
+  return `${label}: ${status === "Recebido" ? "(Em anexo.) OK" : "Pendente"}`;
 }
 
 function getVexCommunicationSaleCondition(repasse) {
@@ -8649,7 +9088,7 @@ function getVexCommunicationPendencies(sale) {
 
 function renderVexCommunicationPendencies(pendencies) {
   if (!pendencies.length) {
-    return `<div class="vex-formalization-inline-message success">✅ Mensagens prontas para copiar.</div>`;
+    return `<div class="vex-formalization-inline-message success">�?Mensagens prontas para copiar.</div>`;
   }
 
   return `
@@ -8699,7 +9138,7 @@ function openVexFormalizationCommunication(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">💬</div>
-        <span class="eyebrow">Formalização • Comunicação</span>
+        <span class="eyebrow">Formalização �?Comunicação</span>
         <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
         <p>${escapeHTML(sale.clientName || "Cliente não informado")}</p>
 
@@ -8757,7 +9196,7 @@ async function copyVexCommunicationMessage(type) {
     }
 
     if (message) {
-      message.innerHTML = `<div class="empty-state">✅ Mensagem copiada com sucesso.</div>`;
+      message.innerHTML = `<div class="empty-state">�?Mensagem copiada com sucesso.</div>`;
     } else {
       alert("Mensagem copiada com sucesso.");
     }
@@ -8773,7 +9212,7 @@ async function copyVexCommunicationMessage(type) {
 
 
 /* =========================================================
-   RC3.0 — Document Engine | Contrato, Termo e Procuração
+   RC3.0 �?Document Engine | Contrato, Termo e Procuração
    ========================================================= */
 
 const VEX_DOCUMENT_COMPANY = {
@@ -8793,7 +9232,7 @@ const VEX_DOCUMENT_COMPANY = {
 const VEX_DOCUMENT_REPRESENTATIVE = {
   name: "GILVAN BATISTA DO NASCIMENTO",
   cpf: "297.612.538-48",
-  address: "AVENIDA GETULIO VARGAS, 981 – PIRATININGA – OSASCO - SP"
+  address: "AVENIDA GETULIO VARGAS, 981 �?PIRATININGA �?OSASCO - SP"
 };
 
 function normalizeVexText(value) {
@@ -8801,7 +9240,7 @@ function normalizeVexText(value) {
 }
 
 function getVexCompanyAddress() {
-  return `${VEX_DOCUMENT_COMPANY.street}, ${VEX_DOCUMENT_COMPANY.number} – ${VEX_DOCUMENT_COMPANY.district}, ${VEX_DOCUMENT_COMPANY.city} – SP`;
+  return `${VEX_DOCUMENT_COMPANY.street}, ${VEX_DOCUMENT_COMPANY.number} �?${VEX_DOCUMENT_COMPANY.district}, ${VEX_DOCUMENT_COMPANY.city} �?SP`;
 }
 
 function getVexClientAddress(client, format) {
@@ -8828,7 +9267,7 @@ function getVexClientAddress(client, format) {
     district,
     city && state ? `${city}/${state}` : city || state,
     cep ? `CEP: ${cep}` : ""
-  ].filter(Boolean).join(" – ");
+  ].filter(Boolean).join(" �?");
 }
 
 function getVexDocumentPaymentText(payment) {
@@ -8980,15 +9419,15 @@ function getVexDocumentPendencies(documentType, data) {
 function getVexDocumentDefinitions(sale) {
   const isClientTransfer = sale.transferType === "Pelo cliente";
   return [
-    { type: "contract", icon: "📄", title: "Contrato Particular", description: "Compra e venda com dados do cliente, veículo, financeiro e garantia." },
-    { type: "repasse", icon: "🧾", title: "Termo de Repasse", description: "Termo de repasse e ciência de venda sem garantia." },
-    { type: "procuracao", icon: "🖊️", title: "Procuração", description: isClientTransfer ? "Opcional quando a transferência fica com o cliente." : "Procuração para regularização e transferência." }
+    { type: "contract", icon: "DOC", title: "Contrato Particular", description: "Compra e venda com dados do cliente, veiculo, financeiro e garantia." },
+    { type: "repasse", icon: "REP", title: "Termo de Repasse", description: "Termo de repasse e ciencia de venda sem garantia." },
+    { type: "procuracao", icon: "PROC", title: "Procuracao", description: isClientTransfer ? "Opcional quando a transferencia fica com o cliente." : "Procuracao para regularizacao e transferencia." }
   ];
 }
 
 function renderVexDocumentPendencies(pendencies) {
   if (!pendencies.length) {
-    return `<p class="vex-document-ready">🟢 Pronto para gerar</p>`;
+    return `<p class="vex-document-ready">Pronto para gerar</p>`;
   }
 
   return `
@@ -9050,9 +9489,9 @@ function openVexFormalizationDocuments(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">📑</div>
-        <span class="eyebrow">Formalização • Documentos</span>
+        <span class="eyebrow">Formalização �?Documentos</span>
         <h2>Pedido #${escapeHTML(data.meta.saleNumber)}</h2>
-        <p>${escapeHTML(data.client.clientName || "Cliente não informado")} • ${escapeHTML(getVexVehicleFullName(data.vehicle) || "Veículo não informado")}</p>
+        <p>${escapeHTML(data.client.clientName || "Cliente não informado")} �?${escapeHTML(getVexVehicleFullName(data.vehicle) || "Veículo não informado")}</p>
 
         <div class="vex-formalization-status-pill">
           ${progress === 100 ? "🟢 Venda pronta" : "🟡 Conferir documentos"}
@@ -9061,7 +9500,7 @@ function openVexFormalizationDocuments(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${progress}%"></div>
         </div>
-        <strong>${readyCount} de ${definitions.length} documentos prontos • ${progress}%</strong>
+        <strong>${readyCount} de ${definitions.length} documentos prontos �?${progress}%</strong>
       </section>
 
       <section class="vex-formalization-summary">
@@ -9210,27 +9649,27 @@ function buildVexContractHtml(data) {
           <p>Foi dado o abatimento no importe de <strong>${escapeHTML(formatCurrencyToBrazil(discount))}</strong> para que o comprador efetue todas as manutenções necessárias no veículo como preditivas, corretivas e preventivas, que se fizerem necessárias, bem como com eventuais vícios ocultos, em decorrência do abatimento fornecido; Carro consignado.</p>
         </div>
         <p class="contract-gastos"><strong>${gastosLine}</strong></p>
-        <p class="contract-paragraph-unique"><strong>Parágrafo único</strong> – Caso o valor não seja integralmente quitado, o COMPRADOR assume o bem como <strong>fiel depositário</strong>, não podendo vendê-lo, cedê-lo ou transferi-lo até a quitação total, sob pena de responsabilidade civil e penal.</p>
+        <p class="contract-paragraph-unique"><strong>Parágrafo único</strong> �?Caso o valor não seja integralmente quitado, o COMPRADOR assume o bem como <strong>fiel depositário</strong>, não podendo vendê-lo, cedê-lo ou transferi-lo até a quitação total, sob pena de responsabilidade civil e penal.</p>
         <p class="contract-page-number">Página 1 de 4</p>
       </section>
 
       <section class="vex-contract-page vex-contract-page-2">
-        <p class="contract-center-title">IV – DO ABATIMENTO DO PREÇO E RESPONSABILIDADE PELOS REPAROS</p>
-        <p><strong><u>Cláusula 1ª</u></strong> – O COMPRADOR declara que <strong><u>teve ampla liberdade e realizou análise minuciosa do veículo</u></strong>, inclusive tendo sido orientado a submetê-lo à avaliação técnica por mecânico de sua confiança antes da compra. Declara ainda que fez minuciosa análise das condições em que o veículo se encontra, declarando que está ciente e de acordo com os reparos necessários.</p>
-        <p><strong><u>Cláusula 2ª</u></strong> – Foi informado expressamente que <strong>o veículo não passou por qualquer revisão, preparação ou correção prévia para venda, sendo entregue no estado de conservação e uso em que se encontra</strong>, com necessidade de diversos reparos mecânicos, elétricos, estruturais, de suspensão, freios, motor e demais itens, decorrentes de desgaste natural ou falhas já existentes.</p>
-        <p><strong><u>Cláusula 3ª</u></strong> – As partes reconhecem que o <strong><u>veículo é oriundo de repasse</u></strong>, motivo pelo qual <strong><u>foi concedido abatimento sobre o valor de mercado</u></strong>, ajustando-se que o COMPRADOR assume integralmente a responsabilidade de realizar, por sua conta e risco, todas as manutenções necessárias para sua utilização regular e segura.</p>
-        <p><strong><u>Cláusula 4ª</u></strong> – O COMPRADOR <strong><u>afirma, com plena ciência, que está adquirindo o bem no estado em que se encontra e sem garantia mecânica ou geral</u></strong>, tendo sido claramente informado da necessidade de revisão completa e reparos em toda a parte mecânica, elétrica e estrutural do veículo — não se restringindo aos itens exemplificados, mas abrangendo eventuais defeitos ocultos ou futuros.</p>
-        <p><strong><u>Cláusula 5ª</u></strong> – Reconhece também que <strong><u>o valor do abatimento foi livremente acordado</u></strong> e que não poderá alegar posteriormente insuficiência, visto que teve a oportunidade de examinar o veículo com profissional de sua confiança antes da assinatura deste instrumento, tendo sido orientado a avaliar previamente por um mecânico de sua confiança, quanto a compatibilidade dos reparos a serem feitos e do abatimento ofertado, visto que não poderá posteriormente em hipótese alguma, alegar que o abatimento não tenha sido suficiente para realizar as manutenções necessárias.</p>
+        <p class="contract-center-title">IV �?DO ABATIMENTO DO PREÇO E RESPONSABILIDADE PELOS REPAROS</p>
+        <p><strong><u>Cláusula 1ª</u></strong> �?O COMPRADOR declara que <strong><u>teve ampla liberdade e realizou análise minuciosa do veículo</u></strong>, inclusive tendo sido orientado a submetê-lo à avaliação técnica por mecânico de sua confiança antes da compra. Declara ainda que fez minuciosa análise das condições em que o veículo se encontra, declarando que está ciente e de acordo com os reparos necessários.</p>
+        <p><strong><u>Cláusula 2ª</u></strong> �?Foi informado expressamente que <strong>o veículo não passou por qualquer revisão, preparação ou correção prévia para venda, sendo entregue no estado de conservação e uso em que se encontra</strong>, com necessidade de diversos reparos mecânicos, elétricos, estruturais, de suspensão, freios, motor e demais itens, decorrentes de desgaste natural ou falhas já existentes.</p>
+        <p><strong><u>Cláusula 3ª</u></strong> �?As partes reconhecem que o <strong><u>veículo é oriundo de repasse</u></strong>, motivo pelo qual <strong><u>foi concedido abatimento sobre o valor de mercado</u></strong>, ajustando-se que o COMPRADOR assume integralmente a responsabilidade de realizar, por sua conta e risco, todas as manutenções necessárias para sua utilização regular e segura.</p>
+        <p><strong><u>Cláusula 4ª</u></strong> �?O COMPRADOR <strong><u>afirma, com plena ciência, que está adquirindo o bem no estado em que se encontra e sem garantia mecânica ou geral</u></strong>, tendo sido claramente informado da necessidade de revisão completa e reparos em toda a parte mecânica, elétrica e estrutural do veículo �?não se restringindo aos itens exemplificados, mas abrangendo eventuais defeitos ocultos ou futuros.</p>
+        <p><strong><u>Cláusula 5ª</u></strong> �?Reconhece também que <strong><u>o valor do abatimento foi livremente acordado</u></strong> e que não poderá alegar posteriormente insuficiência, visto que teve a oportunidade de examinar o veículo com profissional de sua confiança antes da assinatura deste instrumento, tendo sido orientado a avaliar previamente por um mecânico de sua confiança, quanto a compatibilidade dos reparos a serem feitos e do abatimento ofertado, visto que não poderá posteriormente em hipótese alguma, alegar que o abatimento não tenha sido suficiente para realizar as manutenções necessárias.</p>
         <p class="contract-page-number">Página 2 de 4</p>
       </section>
 
       <section class="vex-contract-page vex-contract-page-3">
-        <p class="contract-center-title">V – DA TRANSFERÊNCIA DE PROPRIEDADE</p>
+        <p class="contract-center-title">V �?DA TRANSFERÊNCIA DE PROPRIEDADE</p>
         <p><strong><u>Cláusula 1ª</u></strong>: A transferência é de responsabilidade exclusiva do <strong>COMPRADOR</strong>, inclusive seus custos.</p>
         <p><strong><u>Cláusula 2ª</u></strong>: Caso o pagamento se dê via cheque ou forma a prazo, os documentos do veículo serão liberados somente após a quitação ou compensação bancária.</p>
         <p><strong><u>Cláusula 3ª</u></strong>: O Certificado de Registro do Veículo/ Autorização de Transferência Propriedade será entregue apenas após <strong>regularização de eventuais pendências administrativas ou financeiras</strong> entre COMPRADOR e VENDEDOR.</p>
 
-        <p class="contract-center-title contract-section-gap">VI – DAS NOTIFICAÇÕES</p>
+        <p class="contract-center-title contract-section-gap">VI �?DAS NOTIFICAÇÕES</p>
         <p>O <strong>COMPRADOR</strong> nesta oportunidade declara e aceita que todas as comunicações serão consideradas válidas se enviadas:</p>
         <ul class="contract-list">
           <li>Pelo WhatsApp do <strong>COMPRADOR</strong>;</li>
@@ -9238,7 +9677,7 @@ function buildVexContractHtml(data) {
           <li>Para o endereço físico cadastrado.</li>
         </ul>
 
-        <p class="contract-center-title contract-section-gap">VII – DA PROCEDÊNCIA</p>
+        <p class="contract-center-title contract-section-gap">VII �?DA PROCEDÊNCIA</p>
         <p>O <strong>VENDEDOR</strong> declara que, até a presente data, o veículo objeto deste contrato encontra-se livre e desembaraçado de ônus, gravames ou restrições de conhecimento da empresa, conforme verificação realizada nos sistemas oficiais disponíveis.</p>
         <p>Contudo, em atenção ao disposto no art. 447 do Código Civil, as partes reconhecem que a responsabilidade do <strong>VENDEDOR</strong> se limita à sua esfera de conhecimento e atuação, não se estendendo a eventuais registros, apontamentos ou restrições lançadas após a celebração do presente instrumento, ainda que decorrentes de fatos pretéritos a negociação.</p>
         <p>Fica pactuado, portanto, que eventual evicção ou reivindicação de terceiros somente ensejará responsabilidade do <strong>VENDEDOR</strong> nos casos em que comprovadamente tenha agido com dolo ou ciência prévia do vício ou ônus incidente sobre o bem.</p>
@@ -9251,11 +9690,11 @@ function buildVexContractHtml(data) {
 
       <section class="vex-contract-page vex-contract-page-4">
         <div class="contract-final-block">
-        <p class="contract-center-title contract-section-gap">IX – DA CONFIDENCIALIDADE</p>
+        <p class="contract-center-title contract-section-gap">IX �?DA CONFIDENCIALIDADE</p>
         <p>Este contrato e sua redação são protegidos por <strong>direitos autorais</strong>. É vedada sua reprodução, modificação ou reutilização sem autorização do <strong>VENDEDOR</strong> e/ou da profissional responsável. Violação sujeita às penalidades da <strong>Lei nº 9.610/98.</strong></p>
         <p>O COMPRADOR se compromete a não realizar postagens, publicações ou comentários públicos que impliquem exposição negativa, constrangimento ou ataque à reputação da empresa VENDEDORA, em redes sociais, sites ou quaisquer meios públicos, sob pena de responder civil e criminalmente por danos morais e à imagem.</p>
 
-        <p class="contract-center-title contract-section-gap">X – DO FORO</p>
+        <p class="contract-center-title contract-section-gap">X �?DO FORO</p>
         <p>As partes elegem o foro da Comarca de <strong>${escapeHTML(cityForo)}</strong> para solucionar qualquer disputa referente a este contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja.</p>
         <p>E, por estarem justas e contratadas, assinam o presente instrumento em duas vias de igual teor e forma, juntamente com duas testemunhas.</p>
         </div>
@@ -9277,7 +9716,7 @@ function buildVexRepasseHtml(data) {
     `${normalizeVexText(data.client.clientStreet)}${normalizeVexText(data.client.clientNumber) ? "," + normalizeVexText(data.client.clientNumber) : ""}${normalizeVexText(data.client.clientComplement) ? " - " + normalizeVexText(data.client.clientComplement) : ""}`,
     normalizeVexText(data.client.clientDistrict),
     `${normalizeVexText(data.client.clientCity)} - ${normalizeVexText(data.client.clientState || "SP")}`
-  ].filter(function(item) { return normalizeVexText(item).replace(/[-\s]/g, ""); }).join(" – ");
+  ].filter(function(item) { return normalizeVexText(item).replace(/[-\s]/g, ""); }).join(" �?");
 
   function field(label, value) {
     return `<div class="vex-repasse-field"><strong>${escapeHTML(label)}:</strong><span>${escapeHTML(value || "")}</span></div>`;
@@ -9295,7 +9734,7 @@ function buildVexRepasseHtml(data) {
       <h1 class="vex-repasse-title">TERMO DE REPASSE - Pedido: #${escapeHTML(data.meta.saleNumber)}</h1>
 
       <section class="vex-repasse-section">
-        <h2><span class="vex-repasse-icon">▣</span> Dados do Veículo</h2>
+        <h2><span class="vex-repasse-icon">�?/span> Dados do Veículo</h2>
         <div class="vex-repasse-box">
           <div class="vex-repasse-grid">
             <div>
@@ -9321,7 +9760,7 @@ function buildVexRepasseHtml(data) {
       </section>
 
       <section class="vex-repasse-section vex-repasse-proponente">
-        <h2><span class="vex-repasse-icon">●</span> Proponente</h2>
+        <h2><span class="vex-repasse-icon">�?/span> Proponente</h2>
         <div class="vex-repasse-box">
           <div class="vex-repasse-grid">
             <div>
@@ -9738,7 +10177,7 @@ function openVexFormalization(saleId) {
       action: "openVexFormalizationPayment"
     },
     {
-      icon: "🛡️",
+      icon: "DOC",
       label: "Repasse/Garantia",
       description: "Definir garantia, repasse, abatimento FIPE e condição da venda.",
       done: getVexRepasseCompletion(getVexFormalizationRepasseData(sale)).complete,
@@ -9796,7 +10235,7 @@ function openVexFormalization(saleId) {
         <div class="vex-vehicle-icon">📋</div>
         <span class="eyebrow">Formalização</span>
         <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
-        <p>${escapeHTML(sale.clientName || "Cliente não informado")} • ${formatDateToBrazil(sale.saleDate)}</p>
+        <p>${escapeHTML(sale.clientName || "Cliente não informado")} �?${formatDateToBrazil(sale.saleDate)}</p>
 
         <div class="vex-formalization-status-pill">
           ${statusIcon} ${escapeHTML(formalizationStatus)}
@@ -9805,7 +10244,7 @@ function openVexFormalization(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${progress}%"></div>
         </div>
-        <strong>${doneCount} de ${steps.length} etapas concluídas • ${progress}%</strong>
+        <strong>${doneCount} de ${steps.length} etapas concluídas �?${progress}%</strong>
       </section>
 
       <section class="vex-formalization-summary">
@@ -9889,7 +10328,7 @@ window.closeVexVehicleDrawer = closeVexVehicleDrawer;
 
 
 /* =========================================================
-   VEX HUB PRO v2.0 — Fase 03 BUILD 02
+   VEX HUB PRO v2.0 �?Fase 03 BUILD 02
    Campos extras inseridos sem recriar o formulário
    ========================================================= */
 
@@ -10068,7 +10507,7 @@ function getFipeDisplayValue(sale) {
 }
 
 /* =========================================================
-   VEX HUB PRO v1.0 PREMIUM UI — Sprint 6
+   VEX HUB PRO v1.0 PREMIUM UI �?Sprint 6
    UX Lista Premium + refinamento visual estrutural
    ========================================================= */
 
@@ -10105,7 +10544,7 @@ function getVexVehicleOneLine(sale) {
   if (sale.vehicleTransmission) parts.push(sale.vehicleTransmission);
   if (sale.vehicleColor) parts.push(sale.vehicleColor);
   if (sale.vehiclePlate) parts.push(sale.vehiclePlate);
-  return parts.filter(Boolean).join(" • ") || "Veículo não informado";
+  return parts.filter(Boolean).join(" - ") || "Veiculo nao informado";
 }
 
 function getVexVehicleSmallSpecs(sale) {
@@ -10114,7 +10553,7 @@ function getVexVehicleSmallSpecs(sale) {
   if (sale.clientPhone) parts.push(sale.clientPhone);
   if (sale.transferType) parts.push(sale.transferType);
   if (sale.saleDate) parts.push(formatDateToBrazil(sale.saleDate));
-  return parts.filter(Boolean).join(" • ") || "Informações complementares não informadas";
+  return parts.filter(Boolean).join(" - ") || "Informacoes complementares nao informadas";
 }
 
 function renderVexVehiclesPremium() {
@@ -10184,7 +10623,7 @@ function renderVexVehiclesPremium() {
 
             <span class="vex-s6-row-value">${escapeHTML(value)}</span>
             <span class="vex-s6-row-status ${statusClass}">${escapeHTML(sale.afterSaleStatus || "Sem status")}</span>
-            <span class="vex-s6-row-arrow">›</span>
+            <span class="vex-s6-row-arrow">&gt;</span>
           </button>
         `;
       }).join("")}
@@ -10627,7 +11066,7 @@ function injectVexPremiumUISprint6Styles() {
       }
 
       .sidebar-nav .nav-item[data-section="dashboardSection"]::before { content: "🏠"; font-size: 18px; }
-      .sidebar-nav .nav-item[data-section="newSaleSection"]::before { content: "➕"; font-size: 18px; }
+      .sidebar-nav .nav-item[data-section="newSaleSection"]::before { content: "�?; font-size: 18px; }
       .sidebar-nav .nav-item[data-section="historySection"]::before { content: "🚗"; font-size: 18px; }
       .sidebar-nav .nav-item[data-section="reportsSection"]::before { content: "📊"; font-size: 18px; }
       .sidebar-nav .nav-item[data-section="profileSection"]::before { content: "👤"; font-size: 18px; }
@@ -10678,7 +11117,7 @@ initializeVexPremiumUISprint6();
 
 
 /* =========================================================
-   VEX HUB PRO v1.0 PREMIUM UI — Sprint 7
+   VEX HUB PRO v1.0 PREMIUM UI �?Sprint 7
    Identidade Visual VEX + Polimento PWA
    ========================================================= */
 
@@ -10937,7 +11376,7 @@ initializeVexIdentitySprint7();
 
 
 /* =========================================================
-   VEX HUB PRO v1.0 PREMIUM UI — Sprint 8
+   VEX HUB PRO v1.0 PREMIUM UI �?Sprint 8
    App Mobile Premium + Responsividade Final
    ========================================================= */
 
@@ -11285,7 +11724,7 @@ initializeVexMobileSprint8();
 
 
 /* =========================================================
-   Sprint 9 — Premium Polish
+   Sprint 9 �?Premium Polish
    Polimento visual/UX sem alterar Firebase, initialize() ou regras de negócio.
    ========================================================= */
 function initializeVexSprint9PremiumPolish() {
@@ -11811,7 +12250,7 @@ function enhanceVexSprint10ScrollToTop() {
   button.type = "button";
   button.className = "vex-s10-scroll-top";
   button.setAttribute("aria-label", "Voltar ao topo");
-  button.textContent = "↑";
+  button.textContent = "UP";
   document.body.appendChild(button);
 
   const workspace = document.querySelector(".workspace");
@@ -12245,7 +12684,7 @@ setTimeout(injectVexRC13LegibilityPatch, 250);
 setTimeout(injectVexRC13LegibilityPatch, 1000);
 
 /* =========================================================
-   VEX HUB PRO — RC2.01
+   VEX HUB PRO �?RC2.01
    Mobile seguro: centralização + menu Mais + Sair no celular
    Escopo: CSS/UX mobile. Não altera Firebase, Auth, Firestore ou cadastro de venda.
 ========================================================= */
@@ -12349,7 +12788,7 @@ function injectVexRC201MobileStyles() {
       }
 
       .vex-rc2-mobile-more-button::before {
-        content: "☰" !important;
+        content: "�? !important;
         display: block !important;
         font-size: 20px !important;
         line-height: 1 !important;
@@ -12881,7 +13320,7 @@ function updateVexDashboardExecutive() {
 })();
 
 /* =========================================================
-   VEX HUB PRO — RC2.03
+   VEX HUB PRO �?RC2.03
    Detalhes do veículo: Editar ADM + Formalização inicial
    ========================================================= */
 function injectVexRC203DetailsStyles() {
@@ -13106,7 +13545,7 @@ function updateVexDashboardExecutive() {
    ========================================================= */
 function getVexInventoryAvailableCountClean() {
   if (!Array.isArray(vexInventory)) return 0;
-  return vexInventory.filter((item) => String(item.status || "Disponivel").toLowerCase() !== "vendido").length;
+  return vexInventory.filter((item) => !isVexInventorySoldStatus(item.status || "Disponivel")).length;
 }
 
 function prepareVexDashboardLayout() {
@@ -14760,3 +15199,8 @@ setTimeout(() => {
   if (dashboardSection) dashboardSection.removeAttribute("data-vex-dashboard-ready");
   if (typeof updateVexDashboardExecutive === "function") updateVexDashboardExecutive();
 }, 0);
+
+
+
+
+

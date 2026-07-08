@@ -1,4 +1,4 @@
-const CACHE_NAME = "vex-hub-rc3-0-62-campos-formalizacao-legiveis";
+﻿const CACHE_NAME = "vex-hub-rc3-0-69-lista-veiculos-ajustada";
 
 const FILES_TO_CACHE = [
   "./",
@@ -54,3 +54,4 @@ self.addEventListener("fetch", function (event) {
     })
   );
 });
+
