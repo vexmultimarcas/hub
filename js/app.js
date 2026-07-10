@@ -118,7 +118,7 @@ function initializeVexLaunchExperience() {
 
 function initializeFirebase() {
   if (typeof firebase === "undefined") {
-    showLoginMessage("Firebase não carregou. Verifique a internet.");
+    showLoginMessage("Firebase nao carregou. Verifique a internet.");
     return;
   }
 
@@ -157,6 +157,10 @@ function initializeNavigation() {
 
       if (targetSectionId === "historySection") {
         renderHistory();
+      }
+
+      if (targetSectionId === "pendenciesSection") {
+        renderVexPendingBoard();
       }
     });
   });
@@ -309,7 +313,7 @@ function initializeProfileForm() {
       showProfileMessage("Nome salvo com sucesso.");
     } catch (error) {
       console.error("Erro ao salvar nome de usuário:", error);
-      showProfileMessage("Não foi possível salvar o nome agora.");
+      showProfileMessage("Nao foi possível salvar o nome agora.");
     }
   });
 }
@@ -385,7 +389,7 @@ function initializeSaleForm() {
     ) {
       saleMessage.innerHTML = `
         <div class="empty-state">
-          Preencha todos os campos obrigatórios antes de salvar a venda.
+          Preencha todos os campos obrigatorios antes de salvar a venda.
         </div>
       `;
 
@@ -557,12 +561,12 @@ async function fillVexAddressFromCep(cepValue, mapping, messageElementId) {
   const message = messageElementId ? document.getElementById(messageElementId) : null;
 
   try {
-    if (message) message.innerHTML = `<div class="empty-state">Buscando endereço pelo CEP...</div>`;
+    if (message) message.innerHTML = `<div class="empty-state">Buscando endereco pelo CEP...</div>`;
     const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     const data = await response.json();
 
     if (!response.ok || data.erro) {
-      if (message) message.innerHTML = `<div class="empty-state">CEP não encontrado. Preencha o endereço manualmente.</div>`;
+      if (message) message.innerHTML = `<div class="empty-state">CEP nao encontrado. Preencha o endereco manualmente.</div>`;
       return;
     }
 
@@ -571,10 +575,10 @@ async function fillVexAddressFromCep(cepValue, mapping, messageElementId) {
     setVexFieldValueIfEmpty(mapping.city, data.localidade);
     setVexFieldValueIfEmpty(mapping.state, data.uf);
 
-    if (message) message.innerHTML = `<div class="success-state">Endereço preenchido automaticamente pelo CEP.</div>`;
+    if (message) message.innerHTML = `<div class="success-state">Endereco preenchido automaticamente pelo CEP.</div>`;
   } catch (error) {
-    console.warn("Não foi possível buscar o CEP:", error);
-    if (message) message.innerHTML = `<div class="empty-state">Não foi possível consultar o CEP agora. Preencha o endereço manualmente.</div>`;
+    console.warn("Nao foi possível buscar o CEP:", error);
+    if (message) message.innerHTML = `<div class="empty-state">Nao foi possível consultar o CEP agora. Preencha o endereco manualmente.</div>`;
   }
 }
 
@@ -915,7 +919,7 @@ function updateSaleEditModeUI(sale) {
   if (saleMessage) {
     saleMessage.innerHTML = `
       <div class="empty-state vex-edit-mode-message">
-        Editando: <strong>${escapeHTML(sale.vehicleModel || "Veículo")}</strong> �?${escapeHTML(sale.clientName || "Cliente")}
+        Editando: <strong>${escapeHTML(sale.vehicleModel || "Veiculo")}</strong>  - ${escapeHTML(sale.clientName || "Cliente")}
         <br>
         <button class="secondary-button" type="button" onclick="cancelSaleEditMode()">Cancelar edição</button>
       </div>
@@ -939,7 +943,7 @@ function clearSaleEditMode() {
   }
 
   if (saleDescription) {
-    saleDescription.textContent = "Cadastro organizado por cliente, veículo, financeiro e entrega.";
+    saleDescription.textContent = "Cadastro organizado por cliente, veiculo, financeiro e entrega.";
   }
 }
 
@@ -1137,9 +1141,173 @@ async function updateSaleTransferStage(saleId, newStage) {
     alert("Erro ao atualizar etapa da transferencia.");
   }
 }
+function getVexTransferChecklistDefinitions(sale) {
+  const transferType = String(sale && sale.transferType || "").toLowerCase();
+  const storeFlow = transferType.includes("loja");
+
+  if (storeFlow) {
+    return [
+      { key: "contractsSigned", label: "Contratos assinados", hint: "Contrato, termo e procuracao assinados pelo cliente." },
+      { key: "notaryDone", label: "Reconhecimento em cartorio", hint: "Documentos reconhecidos antes do envio ao ADM." },
+      { key: "ecvDone", label: "Laudo ECV", hint: "Laudo feito no vistoriador combinado." },
+      { key: "sentToAdmin", label: "Enviado ao ADM", hint: "Laudo, documentos e comprovantes enviados para conferencia." },
+      { key: "sentToDispatcher", label: "Despachante acionado", hint: "Processo enviado ao despachante." },
+      { key: "waitingDocument", label: "Aguardando ATPV / documento", hint: "Aguardando retorno do despachante." },
+      { key: "transferred", label: "Transferido", hint: "Documento novo emitido no nome do comprador." }
+    ];
+  }
+
+  return [
+    { key: "contractSigned", label: "Contrato assinado", hint: "Contrato particular assinado." },
+    { key: "termSigned", label: "Termo assinado", hint: "Termo de repasse/garantia assinado quando aplicavel." },
+    { key: "saleStarted", label: "Venda comunicada", hint: "Entrada/ATPV iniciado pelo responsavel da loja." },
+    { key: "documentsDelivered", label: "Documentos entregues", hint: "Documentos entregues para o cliente finalizar." },
+    { key: "waitingClient", label: "Aguardando cliente", hint: "Cliente ainda precisa concluir a transferencia." },
+    { key: "transferred", label: "Transferido", hint: "Transferencia finalizada pelo cliente." }
+  ];
+}
+
+function getVexTransferChecklistState(sale) {
+  const current = sale && sale.transferChecklist && typeof sale.transferChecklist === "object" ? sale.transferChecklist : {};
+  return current;
+}
+
+function getVexTransferChecklistProgress(sale) {
+  const definitions = getVexTransferChecklistDefinitions(sale);
+  const state = getVexTransferChecklistState(sale);
+  const done = definitions.filter(function(item) { return !!state[item.key]; }).length;
+  const total = definitions.length || 1;
+  return {
+    done: done,
+    total: total,
+    percent: Math.round((done / total) * 100)
+  };
+}
+
+function renderVexTransferChecklist(sale) {
+  const definitions = getVexTransferChecklistDefinitions(sale);
+  const state = getVexTransferChecklistState(sale);
+  const progress = getVexTransferChecklistProgress(sale);
+
+  return `
+    <div class="vex-transfer-checklist">
+      <div class="vex-transfer-checklist-head">
+        <div>
+          <span>Checklist operacional</span>
+          <strong>${progress.done} de ${progress.total} concluidos</strong>
+        </div>
+        <em>${progress.percent}%</em>
+      </div>
+      <div class="vex-transfer-checklist-bar"><i style="width:${progress.percent}%"></i></div>
+      <div class="vex-transfer-checklist-items">
+        ${definitions.map(function(item) {
+          const checked = !!state[item.key];
+          return `
+            <label class="vex-transfer-check-item ${checked ? "is-done" : "is-pending"}">
+              <input type="checkbox" ${checked ? "checked" : ""} ${canManageContent() ? `onchange="updateSaleTransferChecklist('${sale.id}', '${item.key}', this.checked)"` : "disabled"}>
+              <span>
+                <strong>${escapeHTML(item.label)}</strong>
+                <small>${escapeHTML(item.hint)}</small>
+              </span>
+            </label>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
+async function updateSaleTransferChecklist(saleId, key, checked) {
+  if (!canManageContent()) {
+    alert("Apenas administradores podem alterar o checklist da transferencia.");
+    openVexVehicleDrawer(saleId);
+    return;
+  }
+
+  if (!saleId || !key) return;
+
+  try {
+    const sale = sales.find(function(item) { return item.id === saleId; });
+    const current = getVexTransferChecklistState(sale);
+    const nextChecklist = {
+      ...current,
+      [key]: !!checked
+    };
+
+    const payload = {
+      transferChecklist: nextChecklist,
+      updatedAtLocal: new Date().toISOString()
+    };
+
+    if (checked && key === "transferred") {
+      payload.transferStage = "Transferido";
+      payload.afterSaleStatus = "Transferido";
+    } else if (checked && key === "waitingDocument") {
+      payload.transferStage = "Aguardando ATPV / despachante";
+      payload.afterSaleStatus = "Transferencia em andamento";
+    } else if (checked && key === "sentToDispatcher") {
+      payload.transferStage = "Enviar ao despachante";
+      payload.afterSaleStatus = "Transferencia em andamento";
+    } else if (checked && key === "documentsDelivered") {
+      payload.transferStage = "Documentos entregues ao cliente";
+      payload.afterSaleStatus = "Aguardando Cliente";
+    } else if (checked && key === "waitingClient") {
+      payload.transferStage = "Aguardando cliente";
+      payload.afterSaleStatus = "Aguardando Cliente";
+    }
+    const saleRef = getSaleDocumentRef(saleId);
+    if (!saleRef) return;
+    await saleRef.update(payload);
+
+    sales = sales.map(function(item) {
+      if (item.id !== saleId) return item;
+      return {
+        ...item,
+        ...payload
+      };
+    });
+
+    openVexVehicleDrawer(saleId);
+  } catch (error) {
+    console.error("Erro ao atualizar checklist da transferencia:", error);
+    alert("Erro ao atualizar checklist da transferencia.");
+  }
+}
+async function updateSaleTransferNote(saleId, note) {
+  if (!canManageContent()) {
+    alert("Apenas administradores podem alterar a observacao da transferencia.");
+    refreshApplication();
+    return;
+  }
+
+  if (!saleId) return;
+
+  try {
+    const saleRef = getSaleDocumentRef(saleId);
+    if (!saleRef) return;
+
+    const payload = {
+      transferStageNote: String(note || "").trim(),
+      updatedAtLocal: new Date().toISOString()
+    };
+
+    await saleRef.update(payload);
+
+    sales = sales.map(function(sale) {
+      if (sale.id !== saleId) return sale;
+      return {
+        ...sale,
+        ...payload
+      };
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar observacao da transferencia:", error);
+    alert("Erro ao atualizar observacao da transferencia.");
+  }
+}
 async function updateSaleTransfer(saleId, newTransfer) {
   if (!canManageContent()) {
-    alert("Apenas administradores podem alterar a transferência.");
+    alert("Apenas administradores podem alterar a transferencia.");
     refreshApplication();
     return;
   }
@@ -1170,8 +1338,8 @@ async function updateSaleTransfer(saleId, newTransfer) {
 
     refreshApplication();
   } catch (error) {
-    console.error("Erro ao atualizar transferência:", error);
-    alert("Erro ao atualizar transferência.");
+    console.error("Erro ao atualizar transferencia:", error);
+    alert("Erro ao atualizar transferencia.");
   }
 }
 
@@ -1230,6 +1398,9 @@ function refreshApplication() {
   renderHistory();
   updateDashboardCards();
   updateVexDashboardExecutive();
+  if (document.getElementById("pendenciesSection")?.classList.contains("active")) {
+    renderVexPendingBoard();
+  }
   updateReports();
   renderVexInventory();
 }
@@ -2208,7 +2379,7 @@ function openVexInventoryDetails(id) {
   drawer.innerHTML = `
     <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
     <aside class="vex-drawer-panel vex-inventory-details-panel">
-      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">X</button>
 
       <section class="vex-inventory-details-head">
         <span class="eyebrow">Estoque</span>
@@ -2362,7 +2533,7 @@ function parseVexInventoryRawText() {
   const chassis = compact.match(/(?:chassi|chassis)[\s:.-]+([A-Z0-9]{11,17})/i);
   const renavam = compact.match(/(?:renavam)[\s:.-]+(\d{9,11})/i);
   const type = compact.match(/(?:tipo|categoria)[\s:.-]+([^,.;]+)/i);
-  const fuel = compact.match(/(?:combustivel|combustível)[\s:.-]+([^,.;]+)/i);
+  const fuel = compact.match(/(?:combustivel|combustivel)[\s:.-]+([^,.;]+)/i);
   const year = compact.match(/\b(19|20)\d{2}\s*\/\s*(19|20)\d{2}\b/) || compact.match(/\b(19|20)\d{2}\b/);
   const color = compact.match(/(?:cor)[\s:.-]+([^,.;]+)/i);
   const transmission = /autom[aá]tico/i.test(compact) ? "Automatico" : (/manual/i.test(compact) ? "Manual" : "");
@@ -2533,7 +2704,7 @@ function renderSaleConfirmation(sale, message) {
         </div>
 
         <div>
-          <strong>Veículo</strong>
+          <strong>Veiculo</strong>
           <span>${escapeHTML(sale.vehicleModel)} - ${escapeHTML(sale.vehicleYear)}</span>
         </div>
 
@@ -2548,7 +2719,7 @@ function renderSaleConfirmation(sale, message) {
         </div>
 
         <div>
-          <strong>Transferência</strong>
+          <strong>Transferencia</strong>
           <span>${escapeHTML(sale.transferType)}</span>
         </div>
 
@@ -2558,7 +2729,7 @@ function renderSaleConfirmation(sale, message) {
         </div>
 
         <div>
-          <strong>Comissão total</strong>
+          <strong>Comissao total</strong>
           <span>R$ 250,00</span>
         </div>
       </div>
@@ -2615,12 +2786,12 @@ function renderHistory() {
     historyList.innerHTML = `
       <div class="vex-empty-premium">
         <div class="vex-empty-icon">V</div>
-        <strong>Nenhum veículo vendido ainda.</strong>
-        <span>Assim que uma venda for cadastrada, ela aparecerá aqui no formato VEX Premium.</span>
+        <strong>Nenhum veiculo vendido ainda.</strong>
+        <span>Assim que uma venda for cadastrada, ela aparecera aqui no formato VEX Premium.</span>
       </div>
     `;
 
-    historyCounter.textContent = "0 veículos";
+    historyCounter.textContent = "0 veiculos";
     return;
   }
 
@@ -2628,8 +2799,8 @@ function renderHistory() {
     historyList.innerHTML = `
       <div class="vex-empty-premium">
         <div class="vex-empty-icon">V</div>
-        <strong>Nenhum veículo encontrado.</strong>
-        <span>Tente limpar os filtros ou pesquisar outro cliente, veículo ou status.</span>
+        <strong>Nenhum veiculo encontrado.</strong>
+        <span>Tente limpar os filtros ou pesquisar outro cliente, veiculo ou status.</span>
       </div>
     `;
 
@@ -2637,7 +2808,7 @@ function renderHistory() {
     return;
   }
 
-  historyCounter.textContent = `${filteredSales.length} de ${sales.length} veículo(s)`;
+  historyCounter.textContent = `${filteredSales.length} de ${sales.length} veiculo(s)`;
   historyList.classList.add("vex-vehicle-list");
 
   historyList.innerHTML = filteredSales.map(function (sale, index) {
@@ -2654,7 +2825,7 @@ function renderHistory() {
           <div class="vex-vehicle-title-row">
             <div>
               <h4>${escapeHTML(sale.vehicleModel)} <span>${escapeHTML(sale.vehicleYear)}</span></h4>
-              <p>${escapeHTML(sale.clientName)} �?${formatDateToBrazil(sale.saleDate)}</p>
+              <p>${escapeHTML(sale.clientName)}  - ${formatDateToBrazil(sale.saleDate)}</p>
             </div>
 
             <strong class="vex-vehicle-price">${escapeHTML(value)}</strong>
@@ -2662,7 +2833,7 @@ function renderHistory() {
 
           <div class="vex-vehicle-meta">
             <span>Telefone: <strong>${escapeHTML(sale.clientPhone)}</strong></span>
-            <span>Transferência: <strong>${escapeHTML(sale.transferType)}</strong></span>
+            <span>Transferencia: <strong>${escapeHTML(sale.transferType)}</strong></span>
             <span class="vex-status-pill ${statusClass}">${escapeHTML(sale.afterSaleStatus)}</span>
           </div>
         </div>
@@ -2693,8 +2864,8 @@ function prepareHistoryVexLayout() {
   const eyebrow = historySection.querySelector(".eyebrow");
 
   if (eyebrow) eyebrow.textContent = "VEX MULTIMARCAS";
-  if (title) title.textContent = "Veículos Vendidos";
-  if (description) description.textContent = "Relação premium de veículos vendidos. Clique no veículo para abrir status, transferência, comissão e observações.";
+  if (title) title.textContent = "Veiculos Vendidos";
+  if (description) description.textContent = "Relação premium de veiculos vendidos. Clique no veiculo para abrir status, transferencia, comissão e observacoes.";
 }
 
 function createSaleDetailsDrawer() {
@@ -2707,7 +2878,7 @@ function createSaleDetailsDrawer() {
   overlay.className = "sale-details-overlay";
   overlay.innerHTML = `
     <aside class="sale-details-drawer">
-      <button class="sale-details-close" type="button" onclick="closeSaleDetails()">×</button>
+      <button class="sale-details-close" type="button" onclick="closeSaleDetails()">X</button>
       <div id="saleDetailsContent"></div>
     </aside>
   `;
@@ -2736,10 +2907,10 @@ function openSaleDetails(saleId) {
   content.innerHTML = `
     <div class="drawer-hero">
       ${renderVehiclePhoto(sale, "drawer")}
-      <span class="drawer-kicker">Veículo vendido</span>
+      <span class="drawer-kicker">Veiculo vendido</span>
       <h3>${escapeHTML(sale.vehicleModel)} ${escapeHTML(sale.vehicleYear)}</h3>
       <strong>${escapeHTML(formatSaleValuePremium(sale.saleValue))}</strong>
-      <p>${escapeHTML(sale.clientName)} �?${formatDateToBrazil(sale.saleDate)}</p>
+      <p>${escapeHTML(sale.clientName)}  - ${formatDateToBrazil(sale.saleDate)}</p>
     </div>
 
     <div class="drawer-section">
@@ -2747,7 +2918,7 @@ function openSaleDetails(saleId) {
       <div class="drawer-grid">
         <div><span>Cliente</span><strong>${escapeHTML(sale.clientName)}</strong></div>
         <div><span>Telefone</span><strong>${escapeHTML(sale.clientPhone)}</strong></div>
-        <div><span>Veículo</span><strong>${escapeHTML(sale.vehicleModel)}</strong></div>
+        <div><span>Veiculo</span><strong>${escapeHTML(sale.vehicleModel)}</strong></div>
         <div><span>Ano</span><strong>${escapeHTML(sale.vehicleYear)}</strong></div>
         <div><span>Valor</span><strong>${escapeHTML(formatSaleValuePremium(sale.saleValue))}</strong></div>
         <div><span>Data</span><strong>${formatDateToBrazil(sale.saleDate)}</strong></div>
@@ -2755,12 +2926,12 @@ function openSaleDetails(saleId) {
     </div>
 
     <div class="drawer-section">
-      <h4>Pós-venda e transferência</h4>
+      <h4>Pós-venda e transferencia</h4>
       ${renderAdminDrawerControls(sale)}
     </div>
 
     <div class="drawer-section commission-drawer">
-      <h4>Comissão</h4>
+      <h4>Comissao</h4>
       <div class="commission-total">R$ 250,00</div>
       <div class="drawer-grid two">
         <div><span>Frank Luiz</span><strong>R$ 125,00</strong></div>
@@ -2769,13 +2940,13 @@ function openSaleDetails(saleId) {
     </div>
 
     <div class="drawer-section">
-      <h4>Observações</h4>
-      <p class="drawer-notes">${escapeHTML(sale.saleNotes || "Sem observações cadastradas.")}</p>
+      <h4>Observacoes</h4>
+      <p class="drawer-notes">${escapeHTML(sale.saleNotes || "Sem observacoes cadastradas.")}</p>
     </div>
 
     <div class="drawer-actions vex-drawer-actions-safe">
       ${canManageContent() ? `<button class="primary-button" type="button" onclick="startEditSale('${sale.id}')">Editar</button>` : ""}
-      <button class="primary-button" type="button" onclick="openVexFormalization('${sale.id}')">Formalização</button>
+      <button class="primary-button" type="button" onclick="openVexFormalization('${sale.id}')">Formalizacao</button>
       <button class="secondary-button" type="button" onclick="openVexClientWhatsapp('${sale.id}', 'transfer')">WhatsApp</button>
       <button class="secondary-button" type="button" onclick="closeSaleDetails();">Fechar</button>
       ${canManageContent() ? `<button class="danger-button" type="button" onclick="deleteSale('${sale.id}'); closeSaleDetails();">Excluir</button>` : ""}
@@ -2789,11 +2960,11 @@ function renderAdminDrawerControls(sale) {
   if (!canManageContent()) {
     return `
       <div class="readonly-notice">
-        Seu acesso é de usuário comum. Apenas administradores podem alterar status ou transferência.
+        Seu acesso é de usuário comum. Apenas administradores podem alterar status ou transferencia.
       </div>
       <div class="drawer-grid two">
         <div><span>Status</span><strong>${escapeHTML(sale.afterSaleStatus || "-")}</strong></div>
-        <div><span>Transferência</span><strong>${escapeHTML(sale.transferType || "-")}</strong></div>
+        <div><span>Transferencia</span>${canManageContent() ? `<select class="history-inline-select vex-transfer-mode-select" onchange="updateSaleTransfer('${sale.id}', this.value)">${getTransferOptions(sale.transferType)}</select>` : `<strong>${escapeHTML(sale.transferType || "-")}</strong>`}</div>
       </div>
     `;
   }
@@ -2807,7 +2978,7 @@ function renderAdminDrawerControls(sale) {
     </label>
 
     <label class="drawer-label">
-      Transferência
+      Transferencia
       <select onchange="updateSaleTransfer('${sale.id}', this.value)">
         ${getTransferOptions(sale.transferType)}
       </select>
@@ -2837,7 +3008,7 @@ function renderVehiclePhoto(sale, mode) {
 
   return `
     <div class="${className} vex-logo-placeholder" aria-hidden="true">
-      <div class="vex-car-symbol">🚗</div>
+      <div class="vex-car-symbol">VE</div>
       <div class="vex-logo-text">
         <strong>VEX</strong>
         <span>MULTIMARCAS</span>
@@ -3296,7 +3467,7 @@ function prepareVexNavigationLabels() {
     const target = button.getAttribute("data-section");
 
     if (target === "historySection") {
-      button.textContent = "Veículos";
+      button.textContent = "Veiculos";
     }
 
     if (target === "newSaleSection") {
@@ -3305,6 +3476,104 @@ function prepareVexNavigationLabels() {
   });
 }
 
+function getVexDaysSinceSale(sale) {
+  if (!sale || !sale.saleDate) return 0;
+  const date = new Date(sale.saleDate + "T00:00:00");
+  if (Number.isNaN(date.getTime())) return 0;
+  const diff = Date.now() - date.getTime();
+  return Math.max(0, Math.floor(diff / 86400000));
+}
+
+function isVexSaleTransferFinished(sale) {
+  const status = String((sale && sale.afterSaleStatus) || "").toLowerCase();
+  const stage = String(getVexTransferStage(sale) || "").toLowerCase();
+  return status.includes("transferido") || status.includes("finalizado") || stage.includes("transferido");
+}
+
+function getVexNextTransferChecklistItem(sale) {
+  const definitions = typeof getVexTransferChecklistDefinitions === "function" ? getVexTransferChecklistDefinitions(sale) : [];
+  const state = typeof getVexTransferChecklistState === "function" ? getVexTransferChecklistState(sale) : {};
+  return definitions.find(function(item) { return !state[item.key]; }) || null;
+}
+
+function getVexDashboardPendingItems() {
+  if (!Array.isArray(sales)) return [];
+
+  return sales
+    .filter(function(sale) { return !isVexSaleTransferFinished(sale); })
+    .map(function(sale) {
+      const days = getVexDaysSinceSale(sale);
+      const nextItem = getVexNextTransferChecklistItem(sale);
+      const stage = getVexTransferStage(sale);
+      const transfer = sale.transferType || "Transferencia nao informada";
+      let tone = "normal";
+      let label = "Acompanhar";
+      let detail = nextItem ? nextItem.label : stage;
+      let score = 1;
+
+      if (days >= 25) {
+        tone = "critical";
+        label = "Prazo critico";
+        score = 100 + days;
+        detail = `${days} dias desde a venda - ${detail}`;
+      } else if (String(stage).toLowerCase().includes("cliente")) {
+        tone = "client";
+        label = "Aguardando cliente";
+        score = 70 + days;
+      } else if (String(stage).toLowerCase().includes("despachante") || String(stage).toLowerCase().includes("atpv")) {
+        tone = "progress";
+        label = "Despachante / ATPV";
+        score = 55 + days;
+      } else if (nextItem) {
+        tone = "pending";
+        label = "Pendente";
+        score = 35 + days;
+      }
+
+      return {
+        id: sale.id,
+        label: label,
+        tone: tone,
+        score: score,
+        title: `${sale.vehicleModel || "Veiculo"} ${sale.vehicleYear || ""}`.trim(),
+        subtitle: `${sale.clientName || "Cliente nao informado"} - ${transfer}`,
+        detail: detail,
+        date: sale.saleDate ? formatDateToBrazil(sale.saleDate) : "Sem data"
+      };
+    })
+    .sort(function(a, b) { return b.score - a.score; })
+    .slice(0, 8);
+}
+
+function renderVexPendingBoard() {
+  const board = document.getElementById("vexPendingBoard");
+  const counter = document.getElementById("vexPendingBoardCount");
+  if (!board) return;
+
+  const items = getVexDashboardPendingItems();
+  if (counter) counter.textContent = `${items.length} prioridade(s)`;
+
+  if (!items.length) {
+    board.innerHTML = `
+      <div class="vex-pending-empty">
+        <strong>Nenhuma pendencia critica agora.</strong>
+        <span>As transferencias em aberto aparecerao aqui automaticamente.</span>
+      </div>
+    `;
+    return;
+  }
+
+  board.innerHTML = items.map(function(item) {
+    return `
+      <button class="vex-pending-item is-${escapeHTML(item.tone)}" type="button" onclick="openVexVehicleDrawer('${escapeHTML(item.id)}')">
+        <span>${escapeHTML(item.label)}</span>
+        <strong>${escapeHTML(item.title)}</strong>
+        <small>${escapeHTML(item.subtitle)}</small>
+        <em>${escapeHTML(item.detail)} - ${escapeHTML(item.date)}</em>
+      </button>
+    `;
+  }).join("");
+}
 function prepareVexDashboardLayout() {
   const dashboardSection = document.getElementById("dashboardSection");
 
@@ -3329,6 +3598,19 @@ function prepareVexDashboardLayout() {
             ${canManageContent() ? `<select class="history-inline-select vex-transfer-stage-select" onchange="updateSaleTransferStage('${sale.id}', this.value)">${getVexTransferStageOptions(getVexTransferStage(sale))}</select>` : renderVexTransferStageChip(sale)}
           </strong>
           <small>${escapeHTML(getVexTransferStageDescription(getVexTransferStage(sale), sale.transferType))}</small>
+          <div class="vex-transfer-flow-grid">
+            <div>
+              <span>Modo</span>
+              ${canManageContent() ? `<select class="history-inline-select vex-transfer-mode-select" onchange="updateSaleTransfer('${sale.id}', this.value)">${getTransferOptions(sale.transferType)}</select>` : `<strong>${escapeHTML(sale.transferType || "-")}</strong>`}
+            </div>
+            <div>
+              <span>Sinal visual</span>
+              ${renderVexTransferStageChip(sale)}
+            </div>
+          </div>
+          <label class="vex-transfer-note-label" for="transferNote-${sale.id}">Observacao operacional</label>
+          ${canManageContent() ? `<textarea id="transferNote-${sale.id}" class="vex-transfer-note-input" rows="3" onblur="updateSaleTransferNote('${sale.id}', this.value)" placeholder="Ex: cliente trazendo documentos reconhecidos.">${escapeHTML(sale.transferStageNote || "")}</textarea>` : `<p class="vex-transfer-note-readonly">${escapeHTML(sale.transferStageNote || "Sem observacao operacional.")}</p>`}
+          ${renderVexTransferChecklist(sale)}
         </div>
 
         <div class="vex-brand-card">
@@ -3340,8 +3622,8 @@ function prepareVexDashboardLayout() {
       <section class="vex-executive-grid">
         <article class="vex-commission-card">
           <div class="vex-card-topline">
-            <span>Comissão do mês</span>
-            <small id="vexMonthlySalesCount">0 veículos</small>
+            <span>Comissao do mês</span>
+            <small id="vexMonthlySalesCount">0 veiculos</small>
           </div>
 
           <strong id="vexMonthlyCommission">R$ 0,00</strong>
@@ -3369,7 +3651,7 @@ function prepareVexDashboardLayout() {
 
       <section class="vex-kpi-grid">
         <article class="vex-kpi-card">
-          <span>Veículos vendidos</span>
+          <span>Veiculos vendidos</span>
           <strong id="totalSalesCard">0</strong>
           <small>Total geral</small>
         </article>
@@ -3383,7 +3665,7 @@ function prepareVexDashboardLayout() {
         <article class="vex-kpi-card">
           <span>Ticket médio</span>
           <strong id="vexAverageTicket">R$ 0,00</strong>
-          <small>Média por veículo</small>
+          <small>Média por veiculo</small>
         </article>
 
         <article class="vex-kpi-card">
@@ -3397,10 +3679,10 @@ function prepareVexDashboardLayout() {
         <article class="vex-panel-card">
           <div class="vex-panel-header">
             <div>
-              <span class="vex-kicker">Últimos veículos</span>
+              <span class="vex-kicker">Últimos veiculos</span>
               <h3>Vendidos recentemente</h3>
             </div>
-            <button class="vex-mini-button" type="button" onclick="goToSection('historySection')">Ver veículos</button>
+            <button class="vex-mini-button" type="button" onclick="goToSection('historySection')">Ver veiculos</button>
           </div>
           <div id="vexLatestVehicles" class="vex-latest-list"></div>
         </article>
@@ -3434,7 +3716,7 @@ function updateVexDashboardExecutive() {
     return sale.afterSaleStatus !== "Finalizado";
   }).length;
   const pendingTransfers = sales.filter(function (sale) {
-    return sale.afterSaleStatus === "Transferência em andamento" || sale.afterSaleStatus === "Aguardando Cliente" || sale.transferType === "Pela loja";
+    return sale.afterSaleStatus === "Transferencia em andamento" || sale.afterSaleStatus === "Aguardando Cliente" || sale.transferType === "Pela loja";
   }).length;
 
   const commissionGoal = 6000;
@@ -3443,7 +3725,7 @@ function updateVexDashboardExecutive() {
 
   setTextById("vexGreetingTitle", getGreetingText());
   setTextById("vexCurrentDate", getCurrentDateLabel());
-  setTextById("vexMonthlySalesCount", `${currentMonthSales.length} veículo(s) no mês`);
+  setTextById("vexMonthlySalesCount", `${currentMonthSales.length} veiculo(s) no mês`);
   setTextById("vexMonthlyCommission", formatCurrencyToBrazil(monthlyCommission));
   setTextById("vexGoalLabel", `Meta: ${formatCurrencyToBrazil(commissionGoal)}`);
   setTextById("vexGoalPercent", `${goalPercent.toFixed(0)}%`);
@@ -3473,7 +3755,7 @@ function renderVexSmartAlerts(pendingAfterSales, pendingTransfers, goalPercent, 
 
   container.innerHTML = `
     <div><span>🔴</span><strong>${pendingAfterSales}</strong><small>pós-venda(s) pendente(s)</small></div>
-    <div><span>📄</span><strong>${pendingTransfers}</strong><small>transferência(s) em atenção</small></div>
+    <div><span>DR</span><strong>${pendingTransfers}</strong><small>transferencia(s) em atenção</small></div>
     <div><span>🎯</span><strong>${goalPercent.toFixed(0)}%</strong><small>da meta do mês</small></div>
     <div><span>📈</span><strong>${escapeHTML(growthText)}</strong><small>crescimento</small></div>
   `;
@@ -3489,17 +3771,17 @@ function renderVexLatestVehicles() {
   const latestSales = sales.slice(0, 5);
 
   if (latestSales.length === 0) {
-    container.innerHTML = `<div class="vex-dashboard-empty">Nenhum veículo vendido ainda.</div>`;
+    container.innerHTML = `<div class="vex-dashboard-empty">Nenhum veiculo vendido ainda.</div>`;
     return;
   }
 
   container.innerHTML = latestSales.map(function (sale) {
     return `
       <button class="vex-latest-item" type="button" onclick="openSaleDetails('${sale.id}')">
-        <span class="vex-latest-icon">🚗</span>
+        <span class="vex-latest-icon">VE</span>
         <span>
-          <strong>${escapeHTML(sale.vehicleModel || "Veículo")}</strong>
-          <small>${escapeHTML(sale.clientName || "Cliente")} �?${formatDateToBrazil(sale.saleDate)}</small>
+          <strong>${escapeHTML(sale.vehicleModel || "Veiculo")}</strong>
+          <small>${escapeHTML(sale.clientName || "Cliente")}  - ${formatDateToBrazil(sale.saleDate)}</small>
         </span>
         <em>${escapeHTML(formatSaleValuePremium(sale.saleValue))}</em>
       </button>
@@ -3526,8 +3808,8 @@ function renderVexActivityTimeline() {
       <div class="vex-timeline-item">
         <span></span>
         <div>
-          <strong>${escapeHTML(sale.vehicleModel || "Veículo")}</strong>
-          <small>Venda registrada �?${escapeHTML(sale.afterSaleStatus || "Status")}</small>
+          <strong>${escapeHTML(sale.vehicleModel || "Veiculo")}</strong>
+          <small>Venda registrada  - ${escapeHTML(sale.afterSaleStatus || "Status")}</small>
         </div>
         <em>${formatDateToBrazil(sale.saleDate)}</em>
       </div>
@@ -3689,7 +3971,7 @@ function loadUsersForAdmin() {
         if (usersMessage) {
           usersMessage.innerHTML = isPermissionError
             ? '<div class="empty-state">O Firestore bloqueou a leitura da coleção de usuários. Publique as regras oficiais em <b>Firestore Database &gt; Rules</b> para permitir que administradores leiam <b>users</b>. Enquanto isso, sua conta ADM foi exibida em modo local.</div>'
-            : '<div class="empty-state">Não foi possível carregar todos os usuários. Verifique a conexão ou as regras do Firestore. Enquanto isso, sua conta ADM foi exibida em modo local.</div>';
+            : '<div class="empty-state">Nao foi possível carregar todos os usuários. Verifique a conexão ou as regras do Firestore. Enquanto isso, sua conta ADM foi exibida em modo local.</div>';
         }
       }
     );
@@ -3719,15 +4001,15 @@ function renderUsersList() {
     const role = user.role === "admin" ? "admin" : "user";
     const isCurrent = currentUser && user.id === currentUser.uid;
     const name = user.displayName || createFriendlyNameFromEmail(user.email || "");
-    const email = user.email || "E-mail não informado";
+    const email = user.email || "E-mail nao informado";
     const disabled = isCurrent ? "disabled" : "";
-    const hint = isCurrent ? "Esta é sua conta atual. Não é possível rebaixar você mesmo pelo painel." : "";
+    const hint = isCurrent ? "Esta é sua conta atual. Nao é possível rebaixar você mesmo pelo painel." : "";
     const roleBadgeClass = role === "admin" ? "role-badge admin" : "role-badge user";
     const isActive = user.active !== false;
     const accessBadgeClass = isActive ? "access-badge active" : "access-badge blocked";
     const accessLabel = isActive ? "Ativo" : "Bloqueado";
     const blockButtonLabel = isActive ? "Bloquear acesso" : "Desbloquear acesso";
-    const lastLogin = user.lastLoginAtLocal ? formatUserDate(user.lastLoginAtLocal) : "Último acesso não registrado";
+    const lastLogin = user.lastLoginAtLocal ? formatUserDate(user.lastLoginAtLocal) : "Último acesso nao registrado";
 
     return `
       <article class="user-card">
@@ -3802,13 +4084,13 @@ async function createUserFromAdminPanel(event) {
   }
 
   if (password.length < 6) {
-    showAdminCreateUserMessage("A senha provisória precisa ter pelo menos 6 caracteres.", "error");
+    showAdminCreateUserMessage("A senha provisoria precisa ter pelo menos 6 caracteres.", "error");
     return;
   }
 
   const secondaryAuth = getAdminSecondaryAuth();
   if (!secondaryAuth || !db) {
-    showAdminCreateUserMessage("Firebase ainda não está pronto. Tente novamente em alguns segundos.", "error");
+    showAdminCreateUserMessage("Firebase ainda nao está pronto. Tente novamente em alguns segundos.", "error");
     return;
   }
 
@@ -3823,7 +4105,7 @@ async function createUserFromAdminPanel(event) {
     const createdUser = credential && credential.user ? credential.user : null;
 
     if (!createdUser) {
-      throw new Error("Usuário não retornado pelo Firebase Authentication.");
+      throw new Error("Usuário nao retornado pelo Firebase Authentication.");
     }
 
     if (typeof createdUser.updateProfile === "function") {
@@ -3852,17 +4134,17 @@ async function createUserFromAdminPanel(event) {
     const code = error && error.code ? error.code : "";
 
     if (code === "auth/email-already-in-use") {
-      showAdminCreateUserMessage("Este e-mail já existe no Firebase Authentication. Se ele não aparece na lista, publique as regras oficiais e peça para o usuário fazer o primeiro login.", "error");
+      showAdminCreateUserMessage("Este e-mail já existe no Firebase Authentication. Se ele nao aparece na lista, publique as regras oficiais e peça para o usuário fazer o primeiro login.", "error");
     } else if (code === "permission-denied") {
       showAdminCreateUserMessage("O acesso foi criado no Authentication, mas o Firestore bloqueou o registro no painel. Publique o arquivo firestore.rules no Firebase Console.", "error");
     } else {
-      showAdminCreateUserMessage("Não foi possível cadastrar o usuário. Verifique os dados, conexão e regras do Firestore.", "error");
+      showAdminCreateUserMessage("Nao foi possível cadastrar o usuário. Verifique os dados, conexão e regras do Firestore.", "error");
     }
   } finally {
     try {
       await secondaryAuth.signOut();
     } catch (error) {
-      console.warn("Não foi possível encerrar a sessão secundária:", error);
+      console.warn("Nao foi possível encerrar a sessão secundária:", error);
     }
 
     if (submitButton) {
@@ -3883,7 +4165,7 @@ async function updateUserRole(userId, role) {
   }
 
   if (currentUser && userId === currentUser.uid) {
-    alert("Por segurança, você não pode alterar o próprio acesso por este painel.");
+    alert("Por segurança, você nao pode alterar o próprio acesso por este painel.");
     renderUsersList();
     return;
   }
@@ -3898,7 +4180,7 @@ async function updateUserRole(userId, role) {
     }, { merge: true });
   } catch (error) {
     console.error("Erro ao atualizar permissão:", error);
-    alert("Não foi possível atualizar a permissão. Verifique as regras do Firestore.");
+    alert("Nao foi possível atualizar a permissão. Verifique as regras do Firestore.");
     renderUsersList();
   }
 }
@@ -3914,7 +4196,7 @@ async function toggleUserAccess(userId, active) {
   }
 
   if (currentUser && userId === currentUser.uid) {
-    alert("Por segurança, você não pode bloquear a própria conta.");
+    alert("Por segurança, você nao pode bloquear a própria conta.");
     renderUsersList();
     return;
   }
@@ -3927,20 +4209,20 @@ async function toggleUserAccess(userId, active) {
     }, { merge: true });
   } catch (error) {
     console.error("Erro ao alterar acesso do usuário:", error);
-    alert("Não foi possível alterar o acesso. Verifique as regras do Firestore.");
+    alert("Nao foi possível alterar o acesso. Verifique as regras do Firestore.");
     renderUsersList();
   }
 }
 
 function formatUserDate(value) {
   if (!value) {
-    return "Último acesso não registrado";
+    return "Último acesso nao registrado";
   }
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "Último acesso não registrado";
+    return "Último acesso nao registrado";
   }
 
   return `Último acesso: ${date.toLocaleDateString("pt-BR")} às ${date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
@@ -4036,7 +4318,7 @@ async function ensureUserProfileDocument(user, displayName) {
 
     return finalRole;
   } catch (error) {
-    console.warn("Não foi possível garantir o perfil do usuário no Firestore:", error);
+    console.warn("Nao foi possível garantir o perfil do usuário no Firestore:", error);
     return defaultRole;
   }
 }
@@ -4078,7 +4360,7 @@ async function loadUserProfile(user) {
 
     await ensureUserProfileDocument(user, profile.displayName || createFriendlyNameFromEmail(user.email || ""));
   } catch (error) {
-    console.warn("Não foi possível ler o perfil do usuário no Firestore:", error);
+    console.warn("Nao foi possível ler o perfil do usuário no Firestore:", error);
   }
 
   return profile;
@@ -4089,7 +4371,7 @@ function updateUserIdentityUI() {
   const email = currentUser && currentUser.email ? currentUser.email : "";
 
   if (userEmailLabel) {
-    userEmailLabel.textContent = email ? `${name} �?${getRoleLabel(getCurrentUserRole())} �?${email}` : "";
+    userEmailLabel.textContent = email ? `${name}  - ${getRoleLabel(getCurrentUserRole())}  - ${email}` : "";
   }
 
   updateProfileForm();
@@ -4588,7 +4870,7 @@ function getStatusOptions(selectedStatus) {
     "Pendente",
     "Em andamento",
     "Aguardando Cliente",
-    "Transferência em andamento",
+    "Transferencia em andamento",
     "Transferido",
     "Finalizado"
   ];
@@ -4687,7 +4969,7 @@ function getAuthErrorMessage(error) {
   }
 
   if (code === "auth/user-not-found") {
-    return "Usuário não encontrado.";
+    return "Usuário nao encontrado.";
   }
 
   if (code === "auth/wrong-password") {
@@ -4711,7 +4993,7 @@ function getAuthErrorMessage(error) {
   }
 
   if (code === "auth/operation-not-allowed") {
-    return "Cadastro por e-mail/senha não está habilitado no Firebase Authentication.";
+    return "Cadastro por e-mail/senha nao está habilitado no Firebase Authentication.";
   }
 
   return authMode === "register"
@@ -4999,6 +5281,104 @@ function renderVexSmartAlerts(pendingAfterSales, pendingTransfers, goalPercent, 
 /* =========================================================
    RC3.0.13 - Dashboard Clean Loja
    ========================================================= */
+function getVexDaysSinceSale(sale) {
+  if (!sale || !sale.saleDate) return 0;
+  const date = new Date(sale.saleDate + "T00:00:00");
+  if (Number.isNaN(date.getTime())) return 0;
+  const diff = Date.now() - date.getTime();
+  return Math.max(0, Math.floor(diff / 86400000));
+}
+
+function isVexSaleTransferFinished(sale) {
+  const status = String((sale && sale.afterSaleStatus) || "").toLowerCase();
+  const stage = String(getVexTransferStage(sale) || "").toLowerCase();
+  return status.includes("transferido") || status.includes("finalizado") || stage.includes("transferido");
+}
+
+function getVexNextTransferChecklistItem(sale) {
+  const definitions = typeof getVexTransferChecklistDefinitions === "function" ? getVexTransferChecklistDefinitions(sale) : [];
+  const state = typeof getVexTransferChecklistState === "function" ? getVexTransferChecklistState(sale) : {};
+  return definitions.find(function(item) { return !state[item.key]; }) || null;
+}
+
+function getVexDashboardPendingItems() {
+  if (!Array.isArray(sales)) return [];
+
+  return sales
+    .filter(function(sale) { return !isVexSaleTransferFinished(sale); })
+    .map(function(sale) {
+      const days = getVexDaysSinceSale(sale);
+      const nextItem = getVexNextTransferChecklistItem(sale);
+      const stage = getVexTransferStage(sale);
+      const transfer = sale.transferType || "Transferencia nao informada";
+      let tone = "normal";
+      let label = "Acompanhar";
+      let detail = nextItem ? nextItem.label : stage;
+      let score = 1;
+
+      if (days >= 25) {
+        tone = "critical";
+        label = "Prazo critico";
+        score = 100 + days;
+        detail = `${days} dias desde a venda - ${detail}`;
+      } else if (String(stage).toLowerCase().includes("cliente")) {
+        tone = "client";
+        label = "Aguardando cliente";
+        score = 70 + days;
+      } else if (String(stage).toLowerCase().includes("despachante") || String(stage).toLowerCase().includes("atpv")) {
+        tone = "progress";
+        label = "Despachante / ATPV";
+        score = 55 + days;
+      } else if (nextItem) {
+        tone = "pending";
+        label = "Pendente";
+        score = 35 + days;
+      }
+
+      return {
+        id: sale.id,
+        label: label,
+        tone: tone,
+        score: score,
+        title: `${sale.vehicleModel || "Veiculo"} ${sale.vehicleYear || ""}`.trim(),
+        subtitle: `${sale.clientName || "Cliente nao informado"} - ${transfer}`,
+        detail: detail,
+        date: sale.saleDate ? formatDateToBrazil(sale.saleDate) : "Sem data"
+      };
+    })
+    .sort(function(a, b) { return b.score - a.score; })
+    .slice(0, 8);
+}
+
+function renderVexPendingBoard() {
+  const board = document.getElementById("vexPendingBoard");
+  const counter = document.getElementById("vexPendingBoardCount");
+  if (!board) return;
+
+  const items = getVexDashboardPendingItems();
+  if (counter) counter.textContent = `${items.length} prioridade(s)`;
+
+  if (!items.length) {
+    board.innerHTML = `
+      <div class="vex-pending-empty">
+        <strong>Nenhuma pendencia critica agora.</strong>
+        <span>As transferencias em aberto aparecerao aqui automaticamente.</span>
+      </div>
+    `;
+    return;
+  }
+
+  board.innerHTML = items.map(function(item) {
+    return `
+      <button class="vex-pending-item is-${escapeHTML(item.tone)}" type="button" onclick="openVexVehicleDrawer('${escapeHTML(item.id)}')">
+        <span>${escapeHTML(item.label)}</span>
+        <strong>${escapeHTML(item.title)}</strong>
+        <small>${escapeHTML(item.subtitle)}</small>
+        <em>${escapeHTML(item.detail)} - ${escapeHTML(item.date)}</em>
+      </button>
+    `;
+  }).join("");
+}
 function prepareVexDashboardLayout() {
   const dashboardSection = document.getElementById("dashboardSection");
 
@@ -5036,8 +5416,7 @@ function prepareVexDashboardLayout() {
           <small>Comparado ao mes anterior</small>
         </article>
       </section>
-
-      <section class="vex-clean-grid">
+<section class="vex-clean-grid">
         <article class="vex-clean-panel vex-clean-latest-panel">
           <div class="vex-clean-panel-header">
             <div>
@@ -5175,6 +5554,104 @@ function getVexInventoryAvailableCountFinal() {
   return vexInventory.filter((item) => !isVexInventorySoldStatus(item.status || "Disponivel")).length;
 }
 
+function getVexDaysSinceSale(sale) {
+  if (!sale || !sale.saleDate) return 0;
+  const date = new Date(sale.saleDate + "T00:00:00");
+  if (Number.isNaN(date.getTime())) return 0;
+  const diff = Date.now() - date.getTime();
+  return Math.max(0, Math.floor(diff / 86400000));
+}
+
+function isVexSaleTransferFinished(sale) {
+  const status = String((sale && sale.afterSaleStatus) || "").toLowerCase();
+  const stage = String(getVexTransferStage(sale) || "").toLowerCase();
+  return status.includes("transferido") || status.includes("finalizado") || stage.includes("transferido");
+}
+
+function getVexNextTransferChecklistItem(sale) {
+  const definitions = typeof getVexTransferChecklistDefinitions === "function" ? getVexTransferChecklistDefinitions(sale) : [];
+  const state = typeof getVexTransferChecklistState === "function" ? getVexTransferChecklistState(sale) : {};
+  return definitions.find(function(item) { return !state[item.key]; }) || null;
+}
+
+function getVexDashboardPendingItems() {
+  if (!Array.isArray(sales)) return [];
+
+  return sales
+    .filter(function(sale) { return !isVexSaleTransferFinished(sale); })
+    .map(function(sale) {
+      const days = getVexDaysSinceSale(sale);
+      const nextItem = getVexNextTransferChecklistItem(sale);
+      const stage = getVexTransferStage(sale);
+      const transfer = sale.transferType || "Transferencia nao informada";
+      let tone = "normal";
+      let label = "Acompanhar";
+      let detail = nextItem ? nextItem.label : stage;
+      let score = 1;
+
+      if (days >= 25) {
+        tone = "critical";
+        label = "Prazo critico";
+        score = 100 + days;
+        detail = `${days} dias desde a venda - ${detail}`;
+      } else if (String(stage).toLowerCase().includes("cliente")) {
+        tone = "client";
+        label = "Aguardando cliente";
+        score = 70 + days;
+      } else if (String(stage).toLowerCase().includes("despachante") || String(stage).toLowerCase().includes("atpv")) {
+        tone = "progress";
+        label = "Despachante / ATPV";
+        score = 55 + days;
+      } else if (nextItem) {
+        tone = "pending";
+        label = "Pendente";
+        score = 35 + days;
+      }
+
+      return {
+        id: sale.id,
+        label: label,
+        tone: tone,
+        score: score,
+        title: `${sale.vehicleModel || "Veiculo"} ${sale.vehicleYear || ""}`.trim(),
+        subtitle: `${sale.clientName || "Cliente nao informado"} - ${transfer}`,
+        detail: detail,
+        date: sale.saleDate ? formatDateToBrazil(sale.saleDate) : "Sem data"
+      };
+    })
+    .sort(function(a, b) { return b.score - a.score; })
+    .slice(0, 8);
+}
+
+function renderVexPendingBoard() {
+  const board = document.getElementById("vexPendingBoard");
+  const counter = document.getElementById("vexPendingBoardCount");
+  if (!board) return;
+
+  const items = getVexDashboardPendingItems();
+  if (counter) counter.textContent = `${items.length} prioridade(s)`;
+
+  if (!items.length) {
+    board.innerHTML = `
+      <div class="vex-pending-empty">
+        <strong>Nenhuma pendencia critica agora.</strong>
+        <span>As transferencias em aberto aparecerao aqui automaticamente.</span>
+      </div>
+    `;
+    return;
+  }
+
+  board.innerHTML = items.map(function(item) {
+    return `
+      <button class="vex-pending-item is-${escapeHTML(item.tone)}" type="button" onclick="openVexVehicleDrawer('${escapeHTML(item.id)}')">
+        <span>${escapeHTML(item.label)}</span>
+        <strong>${escapeHTML(item.title)}</strong>
+        <small>${escapeHTML(item.subtitle)}</small>
+        <em>${escapeHTML(item.detail)} - ${escapeHTML(item.date)}</em>
+      </button>
+    `;
+  }).join("");
+}
 function prepareVexDashboardLayout() {
   const dashboardSection = document.getElementById("dashboardSection");
   if (!dashboardSection) return;
@@ -5205,8 +5682,7 @@ function prepareVexDashboardLayout() {
           <small>vs. mes anterior</small>
         </article>
       </section>
-
-      <section class="vex-clean-grid">
+<section class="vex-clean-grid">
         <article class="vex-clean-panel vex-clean-panel-main">
           <div class="vex-clean-panel-head">
             <div>
@@ -6334,6 +6810,104 @@ function getVexInventoryAvailableCount() {
   }).length;
 }
 
+function getVexDaysSinceSale(sale) {
+  if (!sale || !sale.saleDate) return 0;
+  const date = new Date(sale.saleDate + "T00:00:00");
+  if (Number.isNaN(date.getTime())) return 0;
+  const diff = Date.now() - date.getTime();
+  return Math.max(0, Math.floor(diff / 86400000));
+}
+
+function isVexSaleTransferFinished(sale) {
+  const status = String((sale && sale.afterSaleStatus) || "").toLowerCase();
+  const stage = String(getVexTransferStage(sale) || "").toLowerCase();
+  return status.includes("transferido") || status.includes("finalizado") || stage.includes("transferido");
+}
+
+function getVexNextTransferChecklistItem(sale) {
+  const definitions = typeof getVexTransferChecklistDefinitions === "function" ? getVexTransferChecklistDefinitions(sale) : [];
+  const state = typeof getVexTransferChecklistState === "function" ? getVexTransferChecklistState(sale) : {};
+  return definitions.find(function(item) { return !state[item.key]; }) || null;
+}
+
+function getVexDashboardPendingItems() {
+  if (!Array.isArray(sales)) return [];
+
+  return sales
+    .filter(function(sale) { return !isVexSaleTransferFinished(sale); })
+    .map(function(sale) {
+      const days = getVexDaysSinceSale(sale);
+      const nextItem = getVexNextTransferChecklistItem(sale);
+      const stage = getVexTransferStage(sale);
+      const transfer = sale.transferType || "Transferencia nao informada";
+      let tone = "normal";
+      let label = "Acompanhar";
+      let detail = nextItem ? nextItem.label : stage;
+      let score = 1;
+
+      if (days >= 25) {
+        tone = "critical";
+        label = "Prazo critico";
+        score = 100 + days;
+        detail = `${days} dias desde a venda - ${detail}`;
+      } else if (String(stage).toLowerCase().includes("cliente")) {
+        tone = "client";
+        label = "Aguardando cliente";
+        score = 70 + days;
+      } else if (String(stage).toLowerCase().includes("despachante") || String(stage).toLowerCase().includes("atpv")) {
+        tone = "progress";
+        label = "Despachante / ATPV";
+        score = 55 + days;
+      } else if (nextItem) {
+        tone = "pending";
+        label = "Pendente";
+        score = 35 + days;
+      }
+
+      return {
+        id: sale.id,
+        label: label,
+        tone: tone,
+        score: score,
+        title: `${sale.vehicleModel || "Veiculo"} ${sale.vehicleYear || ""}`.trim(),
+        subtitle: `${sale.clientName || "Cliente nao informado"} - ${transfer}`,
+        detail: detail,
+        date: sale.saleDate ? formatDateToBrazil(sale.saleDate) : "Sem data"
+      };
+    })
+    .sort(function(a, b) { return b.score - a.score; })
+    .slice(0, 8);
+}
+
+function renderVexPendingBoard() {
+  const board = document.getElementById("vexPendingBoard");
+  const counter = document.getElementById("vexPendingBoardCount");
+  if (!board) return;
+
+  const items = getVexDashboardPendingItems();
+  if (counter) counter.textContent = `${items.length} prioridade(s)`;
+
+  if (!items.length) {
+    board.innerHTML = `
+      <div class="vex-pending-empty">
+        <strong>Nenhuma pendencia critica agora.</strong>
+        <span>As transferencias em aberto aparecerao aqui automaticamente.</span>
+      </div>
+    `;
+    return;
+  }
+
+  board.innerHTML = items.map(function(item) {
+    return `
+      <button class="vex-pending-item is-${escapeHTML(item.tone)}" type="button" onclick="openVexVehicleDrawer('${escapeHTML(item.id)}')">
+        <span>${escapeHTML(item.label)}</span>
+        <strong>${escapeHTML(item.title)}</strong>
+        <small>${escapeHTML(item.subtitle)}</small>
+        <em>${escapeHTML(item.detail)} - ${escapeHTML(item.date)}</em>
+      </button>
+    `;
+  }).join("");
+}
 function prepareVexDashboardLayout() {
   const dashboardSection = document.getElementById("dashboardSection");
 
@@ -6366,8 +6940,7 @@ function prepareVexDashboardLayout() {
           <small>Vs. mes anterior</small>
         </article>
       </section>
-
-      <section class="vex-clean-grid">
+<section class="vex-clean-grid">
         <article class="vex-clean-panel vex-clean-latest-panel">
           <div class="vex-clean-panel-header">
             <div>
@@ -6943,6 +7516,8 @@ window.deleteSale = deleteSale;
 window.updateSaleStatus = updateSaleStatus;
 window.updateSaleTransfer = updateSaleTransfer;
 window.updateSaleTransferStage = updateSaleTransferStage;
+window.updateSaleTransferNote = updateSaleTransferNote;
+window.updateSaleTransferChecklist = updateSaleTransferChecklist;
 window.updateUserRole = updateUserRole;
 window.toggleUserAccess = toggleUserAccess;
 window.openVexClientWhatsapp = openVexClientWhatsapp;
@@ -6960,8 +7535,8 @@ window.goToSection = goToSection;
 
 
 /* =========================================================
-   VEX HUB PRO v2.0 �?Fase 02
-   Veículos Premium + Drawer
+   VEX HUB PRO v2.0  - Fase 02
+   Veiculos Premium + Drawer
    ========================================================= */
 
 function initializeVexPhase02Vehicles() {
@@ -6977,7 +7552,7 @@ function renameHistoryToVehicles() {
     const text = (button.textContent || "").toLowerCase();
 
     if (section.includes("history") || text.includes("histórico") || text.includes("historico")) {
-      button.textContent = "🚗 Veículos";
+      button.textContent = "VE Veiculos";
     }
   });
 }
@@ -6998,7 +7573,7 @@ function getVexStatusClass(status) {
 
   if (normalized.includes("finalizado")) return "vex-status-finalizado";
   if (normalized.includes("transferido")) return "vex-status-transferido";
-  if (normalized.includes("transferência") || normalized.includes("transferencia")) return "vex-status-transferencia";
+  if (normalized.includes("transferencia") || normalized.includes("transferencia")) return "vex-status-transferencia";
   if (normalized.includes("andamento")) return "vex-status-andamento";
   if (normalized.includes("aguardando")) return "vex-status-aguardando";
   if (normalized.includes("pendente")) return "vex-status-pendente";
@@ -7037,9 +7612,9 @@ function renderVexVehiclesPremium() {
         const title = titleBlock.querySelector("h2");
         const desc = titleBlock.querySelector("p");
 
-        if (eyebrow) eyebrow.textContent = "Catálogo inteligente";
-        if (title) title.textContent = "Veículos Vendidos";
-        if (desc) desc.textContent = "Lista premium de veículos vendidos com detalhes completos em painel lateral.";
+        if (eyebrow) eyebrow.textContent = "Catalogo inteligente";
+        if (title) title.textContent = "Veiculos Vendidos";
+        if (desc) desc.textContent = "Lista premium de veiculos vendidos com detalhes completos em painel lateral.";
       }
     }
   }
@@ -7047,18 +7622,18 @@ function renderVexVehiclesPremium() {
   if (sales.length === 0) {
     historyList.innerHTML = `
       <div class="empty-state">
-        Nenhum veículo vendido registrado ainda.
+        Nenhum veiculo vendido registrado ainda.
       </div>
     `;
 
-    historyCounter.textContent = "0 veículos";
+    historyCounter.textContent = "0 veiculos";
     return true;
   }
 
   if (filteredSales.length === 0) {
     historyList.innerHTML = `
       <div class="empty-state">
-        Nenhum veículo encontrado com os filtros aplicados.
+        Nenhum veiculo encontrado com os filtros aplicados.
       </div>
     `;
 
@@ -7070,7 +7645,7 @@ function renderVexVehiclesPremium() {
     return total + (typeof getSaleNumericValue === "function" ? getSaleNumericValue(sale) : Number(sale.saleValueNumber || 0));
   }, 0);
 
-  historyCounter.textContent = `${filteredSales.length} de ${sales.length} veículo(s)`;
+  historyCounter.textContent = `${filteredSales.length} de ${sales.length} veiculo(s)`;
 
   historyList.className = "vex-vehicle-list";
 
@@ -7083,7 +7658,7 @@ function renderVexVehiclesPremium() {
     <div class="vex-vehicle-compact-feed">
       ${filteredSales.map(function (sale) {
         const statusClass = getVexStatusClass(sale.afterSaleStatus);
-        const vehicleName = `${sale.vehicleModel || "Veículo"} ${sale.vehicleYear || ""}`.trim();
+        const vehicleName = `${sale.vehicleModel || "Veiculo"} ${sale.vehicleYear || ""}`.trim();
         const transferData = typeof getVexFormalizationTransferData === "function" ? getVexFormalizationTransferData(sale) : { responsible: sale.transferType || "" };
         const transferStatus = typeof getVexTransferStatus === "function" ? getVexTransferStatus(transferData) : null;
 
@@ -7092,9 +7667,9 @@ function renderVexVehiclesPremium() {
             <div class="vex-vehicle-compact-main">
               <h3 class="vex-vehicle-compact-title">${escapeHTML(vehicleName)}</h3>
               <div class="vex-vehicle-compact-subline">
-                <span>${escapeHTML(sale.clientName || "Cliente não informado")}</span>
+                <span>${escapeHTML(sale.clientName || "Cliente nao informado")}</span>
                 <span>${formatDateToBrazil(sale.saleDate)}</span>
-                <span>${escapeHTML(sale.transferType || "Transferência não informada")}</span>
+                <span>${escapeHTML(sale.transferType || "Transferencia nao informada")}</span>
                 ${transferStatus ? `<span>${transferStatus.icon} ${escapeHTML(transferStatus.label)}</span>` : ""}
               </div>
             </div>
@@ -7106,7 +7681,7 @@ function renderVexVehiclesPremium() {
               </span>
             </div>
 
-            <div class="vex-card-chevron">�?/div>
+            <div class="vex-card-chevron"> - /div>
           </article>
         `;
       }).join("")}
@@ -7136,13 +7711,13 @@ function openVexVehicleDrawer(saleId) {
     <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
 
     <aside class="vex-drawer-panel">
-      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">X</button>
 
       <section class="vex-drawer-hero">
-        <div class="vex-vehicle-icon">🚗</div>
-        <span class="eyebrow">Veículo vendido</span>
-        <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
-        <p>${escapeHTML(sale.clientName || "Cliente não informado")} �?${formatDateToBrazil(sale.saleDate)}</p>
+        <div class="vex-vehicle-icon">VE</div>
+        <span class="eyebrow">Veiculo vendido</span>
+        <h2>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente nao informado")}  - ${formatDateToBrazil(sale.saleDate)}</p>
         <div class="vex-drawer-price">${getVehicleDisplayPrice(sale)}</div>
       </section>
 
@@ -7163,17 +7738,17 @@ function openVexVehicleDrawer(saleId) {
         </div>
 
         <div class="vex-detail-item">
-          <span>Preço FIPE / tabela</span>
+          <span>Preco FIPE / tabela</span>
           <strong>${typeof getFipeDisplayValue === "function" ? getFipeDisplayValue(sale) : "-"}</strong>
         </div>
 
         <div class="vex-detail-item">
-          <span>Versão</span>
+          <span>Versao</span>
           <strong>${escapeHTML(sale.vehicleVersion || "-")}</strong>
         </div>
 
         <div class="vex-detail-item">
-          <span>Câmbio</span>
+          <span>Cambio</span>
           <strong>${escapeHTML(sale.vehicleTransmission || "-")}</strong>
         </div>
 
@@ -7192,10 +7767,6 @@ function openVexVehicleDrawer(saleId) {
           <strong>${escapeHTML(sale.vehicleKm || "-")}</strong>
         </div>
 
-        <div class="vex-detail-item">
-          <span>Transferência</span>
-          <strong>${escapeHTML(sale.transferType || "-")}</strong>
-        </div>
 
         <div class="vex-detail-item full">
           <span>Status</span>
@@ -7204,12 +7775,6 @@ function openVexVehicleDrawer(saleId) {
           </strong>
         </div>
 
-        <div class="vex-detail-item full">
-          <span>Alterar transferência</span>
-          <strong>
-            ${canManageContent() ? `<select class="history-inline-select" onchange="updateSaleTransfer('${sale.id}', this.value)">${getTransferOptions(sale.transferType)}</select>` : escapeHTML(sale.transferType || "-")}
-          </strong>
-        </div>
 
         <div class="vex-detail-item full vex-transfer-stage-detail">
           <span>Etapa da transferencia</span>
@@ -7217,10 +7782,23 @@ function openVexVehicleDrawer(saleId) {
             ${canManageContent() ? `<select class="history-inline-select vex-transfer-stage-select" onchange="updateSaleTransferStage('${sale.id}', this.value)">${getVexTransferStageOptions(getVexTransferStage(sale))}</select>` : renderVexTransferStageChip(sale)}
           </strong>
           <small>${escapeHTML(getVexTransferStageDescription(getVexTransferStage(sale), sale.transferType))}</small>
+          <div class="vex-transfer-flow-grid">
+            <div>
+              <span>Modo</span>
+              ${canManageContent() ? `<select class="history-inline-select vex-transfer-mode-select" onchange="updateSaleTransfer('${sale.id}', this.value)">${getTransferOptions(sale.transferType)}</select>` : `<strong>${escapeHTML(sale.transferType || "-")}</strong>`}
+            </div>
+            <div>
+              <span>Sinal visual</span>
+              ${renderVexTransferStageChip(sale)}
+            </div>
+          </div>
+          <label class="vex-transfer-note-label" for="transferNote-${sale.id}">Observacao operacional</label>
+          ${canManageContent() ? `<textarea id="transferNote-${sale.id}" class="vex-transfer-note-input" rows="3" onblur="updateSaleTransferNote('${sale.id}', this.value)" placeholder="Ex: cliente trazendo documentos reconhecidos.">${escapeHTML(sale.transferStageNote || "")}</textarea>` : `<p class="vex-transfer-note-readonly">${escapeHTML(sale.transferStageNote || "Sem observacao operacional.")}</p>`}
+          ${renderVexTransferChecklist(sale)}
         </div>
 
         <div class="vex-detail-item">
-          <span>Comissão total</span>
+          <span>Comissao total</span>
           <strong>R$ 250,00</strong>
         </div>
 
@@ -7235,14 +7813,14 @@ function openVexVehicleDrawer(saleId) {
         </div>
 
         <div class="vex-detail-item full">
-          <span>Observações</span>
-          <strong>${escapeHTML(sale.saleNotes || "Sem observações")}</strong>
+          <span>Observacoes</span>
+          <strong>${escapeHTML(sale.saleNotes || "Sem observacoes")}</strong>
         </div>
       </div>
 
       <div class="vex-drawer-actions vex-drawer-actions-safe">
         ${canManageContent() ? `<button class="primary-button" type="button" onclick="startEditSale('${sale.id}')">Editar</button>` : ""}
-        <button class="primary-button" type="button" onclick="openVexFormalization('${sale.id}')">Formalização</button>
+        <button class="primary-button" type="button" onclick="openVexFormalization('${sale.id}')">Formalizacao</button>
         <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
         ${canManageContent() ? `<button class="danger-button" type="button" onclick="deleteSale('${sale.id}'); closeVexVehicleDrawer();">Excluir</button>` : ""}
       </div>
@@ -7261,7 +7839,7 @@ function renderVexFormalizationSummaryItem(label, value) {
   return `
     <div class="vex-formalization-summary-item">
       <span>${escapeHTML(label)}</span>
-      <strong>${escapeHTML(value || "Não informado")}</strong>
+      <strong>${escapeHTML(value || "Nao informado")}</strong>
     </div>
   `;
 }
@@ -7346,19 +7924,19 @@ function openVexFormalizationClient(saleId) {
   const client = getVexFormalizationClientData(sale);
   const completion = getVexClientCompletion(client);
   const statusLabel = completion.complete ? "Cliente concluído" : "Cliente pendente";
-  const statusIcon = completion.complete ? "🟢" : "🟡";
+  const statusIcon = completion.complete ? "OK" : "..";
 
   drawer.innerHTML = `
     <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
 
     <aside class="vex-drawer-panel vex-formalization-panel">
-      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">X</button>
 
       <section class="vex-drawer-hero vex-formalization-hero">
-        <div class="vex-vehicle-icon">👤</div>
-        <span class="eyebrow">Formalização �?Cliente</span>
+        <div class="vex-vehicle-icon">CL</div>
+        <span class="eyebrow">Formalizacao  - Cliente</span>
         <h2>${escapeHTML(client.clientName || sale.clientName || "Cliente")}</h2>
-        <p>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</p>
+        <p>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</p>
 
         <div class="vex-formalization-status-pill">
           ${statusIcon} ${escapeHTML(statusLabel)}
@@ -7367,7 +7945,7 @@ function openVexFormalizationClient(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
         </div>
-        <strong>${completion.done} de ${completion.total} campos obrigatórios �?${completion.percent}%</strong>
+        <strong>${completion.done} de ${completion.total} campos obrigatorios  - ${completion.percent}%</strong>
       </section>
 
       <form class="vex-formalization-form" onsubmit="saveVexFormalizationClient(event, '${sale.id}')">
@@ -7377,7 +7955,7 @@ function openVexFormalizationClient(saleId) {
             ${renderVexFormalizationField("formalClientName", "Nome completo", client.clientName)}
             ${renderVexFormalizationField("formalClientCpf", "CPF", client.clientCpf)}
             ${renderVexFormalizationField("formalClientRg", "RG", client.clientRg)}
-            ${renderVexFormalizationField("formalClientRgIssuer", "Órgão emissor", client.clientRgIssuer)}
+            ${renderVexFormalizationField("formalClientRgIssuer", "Orgao emissor", client.clientRgIssuer)}
             ${renderVexFormalizationField("formalClientRgIssuerUf", "UF emissor", client.clientRgIssuerUf)}
             ${renderVexFormalizationField("formalClientBirthDate", "Data de nascimento", client.clientBirthDate, "date")}
             ${renderVexFormalizationField("formalClientCivilStatus", "Estado civil", client.clientCivilStatus)}
@@ -7388,12 +7966,12 @@ function openVexFormalizationClient(saleId) {
         </div>
 
         <div class="vex-formalization-form-card">
-          <h3>Endereço do comprador</h3>
-          <p>Regra padrão: usar sempre o endereço real do cliente. Endereço da loja só em exceção manual e consciente.</p>
+          <h3>Endereco do comprador</h3>
+          <p>Regra padrao: usar sempre o endereco real do cliente. Endereco da loja so em excecao manual e consciente.</p>
           <div class="vex-formalization-form-grid">
             ${renderVexFormalizationField("formalClientCep", "CEP", client.clientCep)}
             ${renderVexFormalizationField("formalClientStreet", "Rua / Avenida", client.clientStreet)}
-            ${renderVexFormalizationField("formalClientNumber", "Número", client.clientNumber)}
+            ${renderVexFormalizationField("formalClientNumber", "Numero", client.clientNumber)}
             ${renderVexFormalizationField("formalClientComplement", "Complemento", client.clientComplement)}
             ${renderVexFormalizationField("formalClientDistrict", "Bairro", client.clientDistrict)}
             ${renderVexFormalizationField("formalClientCity", "Cidade", client.clientCity)}
@@ -7424,7 +8002,7 @@ async function saveVexFormalizationClient(event, saleId) {
   event.preventDefault();
 
   if (!canManageContent()) {
-    alert("Apenas administradores podem atualizar a formalização.");
+    alert("Apenas administradores podem atualizar a formalizacao.");
     return;
   }
 
@@ -7483,11 +8061,11 @@ async function saveVexFormalizationClient(event, saleId) {
 
     openVexFormalizationClient(saleId);
   } catch (error) {
-    console.error("Erro ao salvar cliente da formalização:", error);
+    console.error("Erro ao salvar cliente da formalizacao:", error);
     if (message) {
       message.innerHTML = `<div class="empty-state">Erro ao salvar. Verifique sua conexão ou as regras do Firestore.</div>`;
     } else {
-      alert("Erro ao salvar cliente da formalização.");
+      alert("Erro ao salvar cliente da formalizacao.");
     }
   }
 }
@@ -7560,21 +8138,21 @@ function openVexFormalizationVehicle(saleId) {
 
   const vehicle = getVexFormalizationVehicleData(sale);
   const completion = getVexVehicleCompletion(vehicle);
-  const statusLabel = completion.complete ? "Veículo concluído" : "Veículo pendente";
-  const statusIcon = completion.complete ? "🟢" : "🟡";
-  const vehicleTitle = `${vehicle.vehicleBrand || ""} ${vehicle.vehicleModel || sale.vehicleModel || "Veículo"} ${vehicle.vehicleYear || ""}`.trim();
+  const statusLabel = completion.complete ? "Veiculo concluído" : "Veiculo pendente";
+  const statusIcon = completion.complete ? "OK" : "..";
+  const vehicleTitle = `${vehicle.vehicleBrand || ""} ${vehicle.vehicleModel || sale.vehicleModel || "Veiculo"} ${vehicle.vehicleYear || ""}`.trim();
 
   drawer.innerHTML = `
     <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
 
     <aside class="vex-drawer-panel vex-formalization-panel">
-      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">X</button>
 
       <section class="vex-drawer-hero vex-formalization-hero">
-        <div class="vex-vehicle-icon">🚗</div>
-        <span class="eyebrow">Formalização �?Veículo</span>
+        <div class="vex-vehicle-icon">VE</div>
+        <span class="eyebrow">Formalizacao  - Veiculo</span>
         <h2>${escapeHTML(vehicleTitle)}</h2>
-        <p>${escapeHTML(sale.clientName || "Cliente não informado")}</p>
+        <p>${escapeHTML(sale.clientName || "Cliente nao informado")}</p>
 
         <div class="vex-formalization-status-pill">
           ${statusIcon} ${escapeHTML(statusLabel)}
@@ -7583,17 +8161,17 @@ function openVexFormalizationVehicle(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
         </div>
-        <strong>${completion.done} de ${completion.total} campos obrigatórios �?${completion.percent}%</strong>
+        <strong>${completion.done} de ${completion.total} campos obrigatorios  - ${completion.percent}%</strong>
       </section>
 
       <form class="vex-formalization-form" onsubmit="saveVexFormalizationVehicle(event, '${sale.id}')">
         <div class="vex-formalization-form-card">
-          <h3>Dados do veículo</h3>
-          <p>Confira os dados que já vieram da venda e complete apenas o que faltar para documentos e transferência.</p>
+          <h3>Dados do veiculo</h3>
+          <p>Confira os dados que já vieram da venda e complete apenas o que faltar para documentos e transferencia.</p>
           <div class="vex-formalization-form-grid">
             ${renderVexFormalizationField("formalVehicleBrand", "Marca", vehicle.vehicleBrand)}
             ${renderVexFormalizationField("formalVehicleModel", "Modelo", vehicle.vehicleModel)}
-            ${renderVexFormalizationField("formalVehicleVersion", "Versão", vehicle.vehicleVersion)}
+            ${renderVexFormalizationField("formalVehicleVersion", "Versao", vehicle.vehicleVersion)}
             ${renderVexFormalizationField("formalVehicleType", "Tipo", vehicle.vehicleType)}
             ${renderVexFormalizationField("formalVehicleYear", "Ano / Modelo", vehicle.vehicleYear)}
             ${renderVexFormalizationField("formalVehicleColor", "Cor", vehicle.vehicleColor)}
@@ -7603,12 +8181,12 @@ function openVexFormalizationVehicle(saleId) {
         </div>
 
         <div class="vex-formalization-form-card">
-          <h3>Dados para transferência</h3>
+          <h3>Dados para transferencia</h3>
           <div class="vex-formalization-form-grid">
             ${renderVexFormalizationField("formalVehicleChassis", "Chassi", vehicle.vehicleChassis)}
             ${renderVexFormalizationField("formalVehicleRenavam", "Renavam", vehicle.vehicleRenavam)}
-            ${renderVexFormalizationField("formalVehicleFuel", "Combustível", vehicle.vehicleFuel)}
-            ${renderVexFormalizationField("formalVehicleTransmission", "Câmbio", vehicle.vehicleTransmission)}
+            ${renderVexFormalizationField("formalVehicleFuel", "Combustivel", vehicle.vehicleFuel)}
+            ${renderVexFormalizationField("formalVehicleTransmission", "Cambio", vehicle.vehicleTransmission)}
             ${renderVexFormalizationField("formalVehicleDoors", "Portas", vehicle.vehicleDoors)}
             ${renderVexFormalizationField("formalVehicleCategory", "Categoria", vehicle.vehicleCategory)}
           </div>
@@ -7617,7 +8195,7 @@ function openVexFormalizationVehicle(saleId) {
         <div id="formalVehicleMessage" class="vex-formalization-inline-message"></div>
 
         <div class="vex-drawer-actions vex-drawer-actions-safe">
-          ${canManageContent() ? `<button class="primary-button" type="submit">Salvar veículo</button>` : ""}
+          ${canManageContent() ? `<button class="primary-button" type="submit">Salvar veiculo</button>` : ""}
           <button class="secondary-button" type="button" onclick="openVexFormalization('${sale.id}')">Voltar</button>
           <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
         </div>
@@ -7632,7 +8210,7 @@ async function saveVexFormalizationVehicle(event, saleId) {
   event.preventDefault();
 
   if (!canManageContent()) {
-    alert("Apenas administradores podem atualizar a formalização.");
+    alert("Apenas administradores podem atualizar a formalizacao.");
     return;
   }
 
@@ -7659,7 +8237,7 @@ async function saveVexFormalizationVehicle(event, saleId) {
 
   const message = document.getElementById("formalVehicleMessage");
   if (message) {
-    message.innerHTML = `<div class="empty-state">Salvando dados do veículo...</div>`;
+    message.innerHTML = `<div class="empty-state">Salvando dados do veiculo...</div>`;
   }
 
   try {
@@ -7688,11 +8266,11 @@ async function saveVexFormalizationVehicle(event, saleId) {
 
     openVexFormalizationVehicle(saleId);
   } catch (error) {
-    console.error("Erro ao salvar veículo da formalização:", error);
+    console.error("Erro ao salvar veiculo da formalizacao:", error);
     if (message) {
       message.innerHTML = `<div class="empty-state">Erro ao salvar. Verifique sua conexão ou as regras do Firestore.</div>`;
     } else {
-      alert("Erro ao salvar veículo da formalização.");
+      alert("Erro ao salvar veiculo da formalizacao.");
     }
   }
 }
@@ -7714,7 +8292,7 @@ function getVexFormalizationPaymentData(sale) {
       };
     }),
     vehicleTotal: payment.vehicleTotal || (saleTotal ? formatCurrencyToBrazil(saleTotal) : ""),
-    transferCharged: payment.transferCharged || "Não",
+    transferCharged: payment.transferCharged || "Nao",
     transferValue: payment.transferValue || "",
     ipvaValue: payment.ipvaValue || "",
     ipvaPaidBy: payment.ipvaPaidBy || "Loja",
@@ -7765,7 +8343,7 @@ function getVexPaymentCompletion(payment, sale) {
   const changeValue = getVexPaymentChangeValue(methodsTotal, vehicleTotal, methods);
   const hasPayment = methods.length > 0;
   const totalOk = vehicleTotal > 0 ? Math.abs((methodsTotal - changeValue) - vehicleTotal) < 0.01 : hasPayment;
-  const transferOk = payment.transferCharged === "Não" || parseSaleCurrencyValue(payment.transferValue) > 0;
+  const transferOk = payment.transferCharged === "Nao" || parseSaleCurrencyValue(payment.transferValue) > 0;
 
   const checks = [hasPayment, totalOk, transferOk, Boolean(payment.ipvaPaidBy), Boolean(payment.licensingPaidBy)];
   const doneFields = checks.filter(Boolean).length;
@@ -7798,7 +8376,7 @@ function renderVexFormalizationSelect(id, label, value, options) {
 }
 
 function renderVexPaymentMethodRow(method, index) {
-  const options = ["PIX", "Financiamento", "Veículo troca", "Cartão de crédito", "Crédito em conta", "Parcelamento loja", "Dinheiro", "Outro"];
+  const options = ["PIX", "Financiamento", "Veiculo troca", "Cartão de crédito", "Crédito em conta", "Parcelamento loja", "Dinheiro", "Outro"];
   return `
     <div class="vex-payment-method-row" data-payment-row="true">
       <label class="vex-formalization-field">
@@ -7856,7 +8434,7 @@ function openVexFormalizationPayment(saleId) {
   const payment = getVexFormalizationPaymentData(sale);
   const completion = getVexPaymentCompletion(payment, sale);
   const statusLabel = completion.complete ? "Pagamento concluído" : "Pagamento pendente";
-  const statusIcon = completion.complete ? "🟢" : "🟡";
+  const statusIcon = completion.complete ? "OK" : "..";
   const diff = completion.vehicleTotal - completion.methodsTotal;
   const paymentStatusText = completion.totalOk
     ? (completion.changeValue > 0 ? "Conferido com troco de " + formatCurrencyToBrazil(completion.changeValue) : "Conferido")
@@ -7866,13 +8444,13 @@ function openVexFormalizationPayment(saleId) {
     <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
 
     <aside class="vex-drawer-panel vex-formalization-panel">
-      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">X</button>
 
       <section class="vex-drawer-hero vex-formalization-hero">
-        <div class="vex-vehicle-icon">💰</div>
-        <span class="eyebrow">Formalização �?Pagamento</span>
-        <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
-        <p>${escapeHTML(sale.clientName || "Cliente não informado")}</p>
+        <div class="vex-vehicle-icon">$</div>
+        <span class="eyebrow">Formalizacao  - Pagamento</span>
+        <h2>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente nao informado")}</p>
 
         <div class="vex-formalization-status-pill">
           ${statusIcon} ${escapeHTML(statusLabel)}
@@ -7881,13 +8459,13 @@ function openVexFormalizationPayment(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
         </div>
-        <strong>${completion.done} de ${completion.total} conferências �?${completion.percent}%</strong>
+        <strong>${completion.done} de ${completion.total} conferências  - ${completion.percent}%</strong>
       </section>
 
       <form class="vex-formalization-form" onsubmit="saveVexFormalizationPayment(event, '${sale.id}')">
         <div class="vex-formalization-form-card">
-          <h3>Formas de pagamento do veículo</h3>
-          <p>Informe uma ou mais formas. O total das formas deve bater com o valor do veículo para contrato.</p>
+          <h3>Formas de pagamento do veiculo</h3>
+          <p>Informe uma ou mais formas. O total das formas deve bater com o valor do veiculo para contrato.</p>
           <div id="formalPaymentMethodsList" class="vex-payment-method-list">
             ${payment.methods.map(renderVexPaymentMethodRow).join("")}
           </div>
@@ -7897,22 +8475,22 @@ function openVexFormalizationPayment(saleId) {
         <div class="vex-formalization-form-card">
           <h3>Conferência</h3>
           <div class="vex-formalization-summary">
-            ${renderVexFormalizationSummaryItem("Valor do veículo", formatCurrencyToBrazil(completion.vehicleTotal || 0))}
+            ${renderVexFormalizationSummaryItem("Valor do veiculo", formatCurrencyToBrazil(completion.vehicleTotal || 0))}
             ${renderVexFormalizationSummaryItem("Total informado nas formas", formatCurrencyToBrazil(completion.methodsTotal || 0))}
             ${renderVexFormalizationSummaryItem("Status", completion.totalOk ? "Conferido" : "Divergência de " + formatCurrencyToBrazil(Math.abs(diff)))}
           </div>
         </div>
 
         <div class="vex-formalization-form-card">
-          <h3>Transferência e taxas da negociação</h3>
+          <h3>Transferencia e taxas da negociação</h3>
           <p>Esses dados serão usados principalmente na mensagem do Grupo Vendas e, quando necessário, nos documentos.</p>
           <div class="vex-formalization-form-grid">
-            ${renderVexFormalizationSelect("formalTransferCharged", "Transferência cobrada do cliente?", payment.transferCharged, ["Não", "Sim"])}
-            ${renderVexFormalizationField("formalTransferValue", "Valor da transferência", payment.transferValue)}
+            ${renderVexFormalizationSelect("formalTransferCharged", "Transferencia cobrada do cliente?", payment.transferCharged, ["Nao", "Sim"])}
+            ${renderVexFormalizationField("formalTransferValue", "Valor da transferencia", payment.transferValue)}
             ${renderVexFormalizationField("formalIpvaValue", "IPVA", payment.ipvaValue)}
-            ${renderVexFormalizationSelect("formalIpvaPaidBy", "IPVA pago por", payment.ipvaPaidBy, ["Loja", "Cliente", "Não se aplica"])}
+            ${renderVexFormalizationSelect("formalIpvaPaidBy", "IPVA pago por", payment.ipvaPaidBy, ["Loja", "Cliente", "Nao se aplica"])}
             ${renderVexFormalizationField("formalLicensingValue", "Licenciamento", payment.licensingValue)}
-            ${renderVexFormalizationSelect("formalLicensingPaidBy", "Licenciamento pago por", payment.licensingPaidBy, ["Loja", "Cliente", "Não se aplica"])}
+            ${renderVexFormalizationSelect("formalLicensingPaidBy", "Licenciamento pago por", payment.licensingPaidBy, ["Loja", "Cliente", "Nao se aplica"])}
           </div>
         </div>
 
@@ -7923,8 +8501,8 @@ function openVexFormalizationPayment(saleId) {
             ${renderVexFormalizationSummaryItem("Observação automática", getVexPaymentResponsibilityText(payment))}
           </div>
           <label class="vex-formalization-field full">
-            <span>Observações da negociação</span>
-            <textarea id="formalPaymentNotes" rows="3" placeholder="Digite apenas observações reais da negociação. Deixe em branco se não houver.">${escapeHTML(payment.notes || "")}</textarea>
+            <span>Observacoes da negociação</span>
+            <textarea id="formalPaymentNotes" rows="3" placeholder="Digite apenas observacoes reais da negociação. Deixe em branco se nao houver.">${escapeHTML(payment.notes || "")}</textarea>
           </label>
         </div>
 
@@ -7975,7 +8553,7 @@ async function saveVexFormalizationPayment(event, saleId) {
   event.preventDefault();
 
   if (!canManageContent()) {
-    alert("Apenas administradores podem atualizar a formalização.");
+    alert("Apenas administradores podem atualizar a formalizacao.");
     return;
   }
 
@@ -8034,11 +8612,11 @@ async function saveVexFormalizationPayment(event, saleId) {
 
     openVexFormalizationPayment(saleId);
   } catch (error) {
-    console.error("Erro ao salvar pagamento da formalização:", error);
+    console.error("Erro ao salvar pagamento da formalizacao:", error);
     if (message) {
       message.innerHTML = `<div class="empty-state">Erro ao salvar. Verifique sua conexão ou as regras do Firestore.</div>`;
     } else {
-      alert("Erro ao salvar pagamento da formalização.");
+      alert("Erro ao salvar pagamento da formalizacao.");
     }
   }
 }
@@ -8186,20 +8764,20 @@ function openVexFormalizationRepasse(saleId) {
   const repasse = getVexFormalizationRepasseData(sale);
   const completion = getVexRepasseCompletion(repasse);
   const statusLabel = completion.complete ? "Repasse concluído" : "Repasse pendente";
-  const statusIcon = completion.complete ? "🟢" : "🟡";
+  const statusIcon = completion.complete ? "OK" : "..";
   const rows = repasse.items.length ? repasse.items : [{ category: "Histórico", description: "" }];
 
   drawer.innerHTML = `
     <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
 
     <aside class="vex-drawer-panel vex-formalization-panel">
-      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">X</button>
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">🛡�?/div>
-        <span class="eyebrow">Formalização �?Repasse e Gastos</span>
-        <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
-        <p>${escapeHTML(sale.clientName || "Cliente não informado")}</p>
+        <span class="eyebrow">Formalizacao  - Repasse e Gastos</span>
+        <h2>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente nao informado")}</p>
 
         <div class="vex-formalization-status-pill">
           ${statusIcon} ${escapeHTML(statusLabel)}
@@ -8208,7 +8786,7 @@ function openVexFormalizationRepasse(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
         </div>
-        <strong>${completion.done} de ${completion.total} conferências �?${completion.percent}%</strong>
+        <strong>${completion.done} de ${completion.total} conferências  - ${completion.percent}%</strong>
       </section>
 
       <form class="vex-formalization-form" onsubmit="saveVexFormalizationRepasse(event, '${sale.id}')">
@@ -8235,8 +8813,8 @@ function openVexFormalizationRepasse(saleId) {
         </div>
 
         <div class="vex-formalization-form-card">
-          <h3>Gastos / Material do veículo</h3>
-          <p>Cadastre em itens separados. Essa lista será reutilizada no Grupo Preparação, Grupo Vendas, contrato e termo.</p>
+          <h3>Gastos / Material do veiculo</h3>
+          <p>Cadastre em itens separados. Essa lista será reutilizada no Grupo Preparacao, Grupo Vendas, contrato e termo.</p>
           <div id="formalOperationalItemsList" class="vex-operational-item-list">
             ${rows.map(renderVexOperationalItemRow).join("")}
           </div>
@@ -8244,10 +8822,10 @@ function openVexFormalizationRepasse(saleId) {
         </div>
 
         <div class="vex-formalization-form-card">
-          <h3>Observações internas</h3>
+          <h3>Observacoes internas</h3>
           <label class="vex-formalization-field full">
-            <span>Observações</span>
-            <textarea id="formalRepasseNotes" rows="3" placeholder="Observação interna sobre repasse, garantia ou condição autorizada pela gerência.">${escapeHTML(repasse.notes || "")}</textarea>
+            <span>Observacoes</span>
+            <textarea id="formalRepasseNotes" rows="3" placeholder="Observação interna sobre repasse, garantia ou condicao autorizada pela gerência.">${escapeHTML(repasse.notes || "")}</textarea>
           </label>
         </div>
 
@@ -8269,7 +8847,7 @@ async function saveVexFormalizationRepasse(event, saleId) {
   event.preventDefault();
 
   if (!canManageContent()) {
-    alert("Apenas administradores podem atualizar a formalização.");
+    alert("Apenas administradores podem atualizar a formalizacao.");
     return;
   }
 
@@ -8318,11 +8896,11 @@ async function saveVexFormalizationRepasse(event, saleId) {
 
     openVexFormalizationRepasse(saleId);
   } catch (error) {
-    console.error("Erro ao salvar repasse/gastos da formalização:", error);
+    console.error("Erro ao salvar repasse/gastos da formalizacao:", error);
     if (message) {
       message.innerHTML = `<div class="empty-state">Erro ao salvar. Verifique sua conexão ou as regras do Firestore.</div>`;
     } else {
-      alert("Erro ao salvar repasse/gastos da formalização.");
+      alert("Erro ao salvar repasse/gastos da formalizacao.");
     }
   }
 }
@@ -8387,8 +8965,8 @@ function getVexTransferStatus(transfer) {
   if (responsible === "Cliente") {
     return {
       label: "Controle encerrado",
-      description: "Transferência por conta do cliente. Procuração não necessária.",
-      icon: "🟢",
+      description: "Transferencia por conta do cliente. Procuração nao necessária.",
+      icon: "OK",
       className: "done",
       dueDate: "",
       daysLeft: null
@@ -8399,7 +8977,7 @@ function getVexTransferStatus(transfer) {
     return {
       label: "Aguardando reconhecimento",
       description: "Informe a data do reconhecimento da venda para iniciar o prazo de 30 dias.",
-      icon: "🟡",
+      icon: "..",
       className: "pending",
       dueDate: "",
       daysLeft: null
@@ -8413,7 +8991,7 @@ function getVexTransferStatus(transfer) {
     return {
       label: "Data inválida",
       description: "Revise a data informada.",
-      icon: "🟡",
+      icon: "..",
       className: "pending",
       dueDate: "",
       daysLeft: null
@@ -8422,7 +9000,7 @@ function getVexTransferStatus(transfer) {
 
   if (daysLeft < 0) {
     return {
-      label: "Transferência vencida",
+      label: "Transferencia vencida",
       description: `Vencida há ${Math.abs(daysLeft)} dia(s).`,
       icon: "🔴",
       className: "danger",
@@ -8446,7 +9024,7 @@ function getVexTransferStatus(transfer) {
     return {
       label: "Atenção",
       description: `Vence em ${daysLeft} dia(s).`,
-      icon: "🟡",
+      icon: "..",
       className: "pending",
       dueDate,
       daysLeft
@@ -8456,7 +9034,7 @@ function getVexTransferStatus(transfer) {
   return {
     label: "Em dia",
     description: `Vence em ${daysLeft} dia(s).`,
-    icon: "🟢",
+    icon: "OK",
     className: "done",
     dueDate,
     daysLeft
@@ -8498,7 +9076,7 @@ function openVexFormalizationTransfer(saleId) {
   const completion = getVexTransferCompletion(transfer);
   const status = completion.status;
   const dueDateLabel = status.dueDate ? formatDateToBrazil(status.dueDate) : "Calculado após informar a data";
-  const recognitionDateLabel = transfer.recognitionDate ? formatDateToBrazil(transfer.recognitionDate) : "Não informado";
+  const recognitionDateLabel = transfer.recognitionDate ? formatDateToBrazil(transfer.recognitionDate) : "Nao informado";
   const showLojaFields = transfer.responsible === "Loja";
   const transferNotesPlaceholder = showLojaFields
     ? "Ex.: Loja ficou responsavel pela transferencia. Acompanhar reconhecimento, prazo e protocolo."
@@ -8508,13 +9086,13 @@ function openVexFormalizationTransfer(saleId) {
     <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
 
     <aside class="vex-drawer-panel vex-formalization-panel">
-      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">X</button>
 
       <section class="vex-drawer-hero vex-formalization-hero">
-        <div class="vex-vehicle-icon">🚛</div>
-        <span class="eyebrow">Formalização �?Transferência</span>
-        <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
-        <p>${escapeHTML(sale.clientName || "Cliente não informado")} �?${formatDateToBrazil(sale.saleDate)}</p>
+        <div class="vex-vehicle-icon">TR</div>
+        <span class="eyebrow">Formalizacao  - Transferencia</span>
+        <h2>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente nao informado")}  - ${formatDateToBrazil(sale.saleDate)}</p>
 
         <div class="vex-formalization-status-pill">
           ${status.icon} ${escapeHTML(status.label)}
@@ -8523,13 +9101,13 @@ function openVexFormalizationTransfer(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
         </div>
-        <strong>${completion.done} de ${completion.total} etapas concluídas �?${completion.percent}%</strong>
+        <strong>${completion.done} de ${completion.total} etapas concluidas  - ${completion.percent}%</strong>
       </section>
 
       <form class="vex-formalization-form" onsubmit="saveVexFormalizationTransfer(event, '${sale.id}')">
         <div class="vex-formalization-form-card">
-          <h3>Responsável pela transferência</h3>
-          <p>Defina quem fará a transferência. Se for pelo cliente, a procuração fica marcada como não necessária.</p>
+          <h3>Responsável pela transferencia</h3>
+          <p>Defina quem fará a transferencia. Se for pelo cliente, a procuracao fica marcada como nao necessária.</p>
           <div class="vex-formalization-form-grid">
             <label class="vex-formalization-field full">
               <span>Responsável</span>
@@ -8546,10 +9124,10 @@ function openVexFormalizationTransfer(saleId) {
           <div class="vex-formalization-summary">
             ${renderVexFormalizationSummaryItem("Responsável", transfer.responsible)}
             ${renderVexFormalizationSummaryItem("Reconhecimento", recognitionDateLabel)}
-            ${renderVexFormalizationSummaryItem("Prazo legal", transfer.responsible === "Loja" ? "30 dias" : "Não necessário")}
+            ${renderVexFormalizationSummaryItem("Prazo legal", transfer.responsible === "Loja" ? "30 dias" : "Nao necessário")}
             ${renderVexFormalizationSummaryItem("Vencimento", dueDateLabel)}
             ${renderVexFormalizationSummaryItem("Status", `${status.icon} ${status.label}`)}
-            ${renderVexFormalizationSummaryItem("Procuração", transfer.responsible === "Loja" ? "Necessária" : "Não necessária")}
+            ${renderVexFormalizationSummaryItem("Procuração", transfer.responsible === "Loja" ? "Necessária" : "Nao necessária")}
           </div>
           <p class="vex-transfer-status-text">${escapeHTML(status.description)}</p>
         </div>
@@ -8574,9 +9152,9 @@ function openVexFormalizationTransfer(saleId) {
         `}
 
         <div class="vex-formalization-form-card">
-          <h3>Observações internas</h3>
+          <h3>Observacoes internas</h3>
           <label class="vex-formalization-field full">
-            <span>Observações</span>
+            <span>Observacoes</span>
             <textarea id="formalTransferNotes" rows="3" placeholder="${escapeHTML(transferNotesPlaceholder)}">${escapeHTML(transfer.notes || "")}</textarea>
           </label>
         </div>
@@ -8584,7 +9162,7 @@ function openVexFormalizationTransfer(saleId) {
         <div id="formalTransferMessage" class="vex-formalization-inline-message"></div>
 
         <div class="vex-drawer-actions vex-drawer-actions-safe">
-          ${canManageContent() ? `<button class="primary-button" type="submit">Salvar transferência</button>` : ""}
+          ${canManageContent() ? `<button class="primary-button" type="submit">Salvar transferencia</button>` : ""}
           <button class="secondary-button" type="button" onclick="openVexFormalization('${sale.id}')">Voltar</button>
           <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
         </div>
@@ -8617,7 +9195,7 @@ async function saveVexFormalizationTransfer(event, saleId) {
   event.preventDefault();
 
   if (!canManageContent()) {
-    alert("Apenas administradores podem atualizar a formalização.");
+    alert("Apenas administradores podem atualizar a formalizacao.");
     return;
   }
 
@@ -8642,7 +9220,7 @@ async function saveVexFormalizationTransfer(event, saleId) {
 
   const message = document.getElementById("formalTransferMessage");
   if (message) {
-    message.innerHTML = `<div class="empty-state">Salvando transferência...</div>`;
+    message.innerHTML = `<div class="empty-state">Salvando transferencia...</div>`;
   }
 
   try {
@@ -8673,11 +9251,11 @@ async function saveVexFormalizationTransfer(event, saleId) {
 
     openVexFormalizationTransfer(saleId);
   } catch (error) {
-    console.error("Erro ao salvar transferência da formalização:", error);
+    console.error("Erro ao salvar transferencia da formalizacao:", error);
     if (message) {
       message.innerHTML = `<div class="empty-state">Erro ao salvar. Verifique sua conexão ou as regras do Firestore.</div>`;
     } else {
-      alert("Erro ao salvar transferência da formalização.");
+      alert("Erro ao salvar transferencia da formalizacao.");
     }
   }
 }
@@ -8736,7 +9314,7 @@ function getVexReceivedDocsMessagePreview(docs) {
     lines.push("Documento de identificação: ⚠️ Pendente");
   }
 
-  lines.push(`Comprovante de endereço: ${docs.addressProof === "Recebido" ? "�?Em anexo" : "⚠️ Pendente"}`);
+  lines.push(`Comprovante de endereco: ${docs.addressProof === "Recebido" ? "�?Em anexo" : "⚠️ Pendente"}`);
   lines.push(`Comprovantes de pagamento: ${docs.paymentProof === "Recebido" ? "�?Em anexo" : "⚠️ Pendente"}`);
 
   return lines.join("\n");
@@ -8759,20 +9337,20 @@ function openVexFormalizationReceivedDocs(saleId) {
   const docs = getVexFormalizationReceivedDocsData(sale);
   const completion = getVexReceivedDocsCompletion(docs);
   const statusLabel = completion.complete ? "Documentos recebidos concluído" : "Documentos recebidos pendente";
-  const statusIcon = completion.complete ? "🟢" : "🟡";
+  const statusIcon = completion.complete ? "OK" : "..";
   const preview = getVexReceivedDocsMessagePreview(docs);
 
   drawer.innerHTML = `
     <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
 
     <aside class="vex-drawer-panel vex-formalization-panel">
-      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">X</button>
 
       <section class="vex-drawer-hero vex-formalization-hero">
-        <div class="vex-vehicle-icon">📄</div>
-        <span class="eyebrow">Formalização �?Documentos Recebidos</span>
-        <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
-        <p>${escapeHTML(sale.clientName || "Cliente não informado")} �?${formatDateToBrazil(sale.saleDate)}</p>
+        <div class="vex-vehicle-icon">DR</div>
+        <span class="eyebrow">Formalizacao  - Documentos Recebidos</span>
+        <h2>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente nao informado")}  - ${formatDateToBrazil(sale.saleDate)}</p>
 
         <div class="vex-formalization-status-pill">
           ${statusIcon} ${escapeHTML(statusLabel)}
@@ -8781,16 +9359,16 @@ function openVexFormalizationReceivedDocs(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${completion.percent}%"></div>
         </div>
-        <strong>${completion.done} de ${completion.total} itens conferidos �?${completion.percent}%</strong>
+        <strong>${completion.done} de ${completion.total} itens conferidos  - ${completion.percent}%</strong>
       </section>
 
       <form class="vex-formalization-form" onsubmit="saveVexFormalizationReceivedDocs(event, '${sale.id}')">
         <div class="vex-formalization-form-card">
-          <h3>Documentos para comunicação e contrato</h3>
-          <p>Marque o que já foi recebido. Esses dados serão usados no Grupo Vendas e na conferência da formalização.</p>
+          <h3>Documentos para comunicacao e contrato</h3>
+          <p>Marque o que já foi recebido. Esses dados serão usados no Grupo Vendas e na conferência da formalizacao.</p>
           <div class="vex-formalization-form-grid">
             ${renderVexReceivedDocsSelect("formalDocsIdDocument", "Documento de identificação", ["Pendente", "CNH", "RG", "CNH + RG"], docs.idDocument)}
-            ${renderVexReceivedDocsSelect("formalDocsAddressProof", "Comprovante de endereço", ["Pendente", "Recebido"], docs.addressProof)}
+            ${renderVexReceivedDocsSelect("formalDocsAddressProof", "Comprovante de endereco", ["Pendente", "Recebido"], docs.addressProof)}
             ${renderVexReceivedDocsSelect("formalDocsPaymentProof", "Comprovantes de pagamento", ["Pendente", "Recebido"], docs.paymentProof)}
           </div>
         </div>
@@ -8801,9 +9379,9 @@ function openVexFormalizationReceivedDocs(saleId) {
         </div>
 
         <div class="vex-formalization-form-card">
-          <h3>Observações internas</h3>
+          <h3>Observacoes internas</h3>
           <label class="vex-formalization-field full">
-            <span>Observações</span>
+            <span>Observacoes</span>
             <textarea id="formalDocsNotes" rows="3" placeholder="Ex.: RG enviado no lugar da CNH.">${escapeHTML(docs.notes || "")}</textarea>
           </label>
         </div>
@@ -8826,7 +9404,7 @@ async function saveVexFormalizationReceivedDocs(event, saleId) {
   event.preventDefault();
 
   if (!canManageContent()) {
-    alert("Apenas administradores podem atualizar a formalização.");
+    alert("Apenas administradores podem atualizar a formalizacao.");
     return;
   }
 
@@ -8889,7 +9467,7 @@ function getVexCommunicationVehicleTitle(sale) {
     .filter(Boolean)
     .join(" ")
     .replace(/\s+/g, " ")
-    .trim() || "Veículo não informado";
+    .trim() || "Veiculo nao informado";
 }
 
 function getVexCommunicationMoney(value) {
@@ -8939,7 +9517,7 @@ function getVexCommunicationTransactionLines(payment) {
   });
 
   if (payment.transferCharged === "Sim" && parseSaleCurrencyValue(payment.transferValue) > 0) {
-    lines.push(`Transferência: ${formatCurrencyToBrazil(parseSaleCurrencyValue(payment.transferValue))}`);
+    lines.push(`Transferencia: ${formatCurrencyToBrazil(parseSaleCurrencyValue(payment.transferValue))}`);
   }
 
   if (parseSaleCurrencyValue(payment.ipvaValue) > 0) {
@@ -8975,10 +9553,10 @@ function getVexCommunicationResponsibilityText(payment) {
   }
 
   const parts = [];
-  if (ipvaValue > 0 && ipvaBy && ipvaBy !== "Não se aplica") {
+  if (ipvaValue > 0 && ipvaBy && ipvaBy !== "Nao se aplica") {
     parts.push(`IPVA pago ${ipvaBy === "Loja" ? "pela loja" : "pelo cliente"}.`);
   }
-  if (licensingValue > 0 && licensingBy && licensingBy !== "Não se aplica") {
+  if (licensingValue > 0 && licensingBy && licensingBy !== "Nao se aplica") {
     parts.push(`Licenciamento pago ${licensingBy === "Loja" ? "pela loja" : "pelo cliente"}.`);
   }
   return parts.join(" ").toUpperCase();
@@ -8987,12 +9565,12 @@ function getVexCommunicationResponsibilityText(payment) {
 function buildVexPreparationMessage(sale) {
   const vehicle = getVexFormalizationVehicleData(sale);
   const vehicleTitle = getVexCommunicationVehicleTitle(sale);
-  const plate = vehicle.vehiclePlate || sale.vehiclePlate || "Placa não informada";
+  const plate = vehicle.vehiclePlate || sale.vehiclePlate || "Placa nao informada";
 
   return [
-    "🚗 VEÍCULO VENDIDO",
+    "VE VEÍCULO VENDIDO",
     "",
-    `Veículo: ${vehicleTitle}`,
+    `Veiculo: ${vehicleTitle}`,
     `Placa: ${plate}`,
     "",
     "Solicitamos a retirada dos anúncios.",
@@ -9014,21 +9592,21 @@ function buildVexSalesGroupMessage(sale) {
   const responsibilityText = getVexCommunicationResponsibilityText(payment);
   const lines = [];
 
-  lines.push(`Veículo: ${vehicleTitle}`);
-  lines.push(`Placa: ${vehicle.vehiclePlate || sale.vehiclePlate || "Não informada"}`);
+  lines.push(`Veiculo: ${vehicleTitle}`);
+  lines.push(`Placa: ${vehicle.vehiclePlate || sale.vehiclePlate || "Nao informada"}`);
   lines.push("");
-  lines.push(`Cliente: ${client.clientName || sale.clientName || "Não informado"}`);
+  lines.push(`Cliente: ${client.clientName || sale.clientName || "Nao informado"}`);
   lines.push("");
-  lines.push(getVexCommunicationAttachmentLine("Comprovante de endereço", docs.addressProof));
+  lines.push(getVexCommunicationAttachmentLine("Comprovante de endereco", docs.addressProof));
   lines.push(getVexCommunicationIdDocumentLine(docs));
   lines.push(getVexCommunicationAttachmentLine("Comprovantes de pagamento", docs.paymentProof));
   lines.push("");
-  lines.push(`Número de telefone: ${client.clientPhone || sale.clientPhone || "Não informado"}`);
-  lines.push(`E-mail: ${client.clientEmail || "Não informado"}`);
+  lines.push(`Numero de telefone: ${client.clientPhone || sale.clientPhone || "Nao informado"}`);
+  lines.push(`E-mail: ${client.clientEmail || "Nao informado"}`);
   lines.push("");
-  lines.push(`Km atual do veículo: ${vehicle.vehicleKm || sale.vehicleKm || "Não informado"}`);
+  lines.push(`Km atual do veiculo: ${vehicle.vehicleKm || sale.vehicleKm || "Nao informado"}`);
   lines.push("");
-  lines.push(`Valor de venda no carro: ${saleValue || "Não informado"}`);
+  lines.push(`Valor de venda no carro: ${saleValue || "Nao informado"}`);
   lines.push("");
   lines.push(getVexCommunicationSaleCondition(repasse));
   lines.push("*GASTOS*");
@@ -9036,7 +9614,7 @@ function buildVexSalesGroupMessage(sale) {
     lines.push(item);
   });
   lines.push("");
-  lines.push(`*A transferência vai ser feita com a gente:* ${getVexCommunicationTransferAnswer(sale)}`);
+  lines.push(`*A transferencia vai ser feita com a gente:* ${getVexCommunicationTransferAnswer(sale)}`);
   lines.push("");
   lines.push("Detalhes da Transação.");
   lines.push("");
@@ -9046,7 +9624,7 @@ function buildVexSalesGroupMessage(sale) {
       lines.push(line);
     });
   } else {
-    lines.push("Forma de pagamento não informada.");
+    lines.push("Forma de pagamento nao informada.");
   }
 
   lines.push("");
@@ -9072,15 +9650,15 @@ function getVexCommunicationPendencies(sale) {
   const repasse = getVexFormalizationRepasseData(sale);
   const pendencies = [];
 
-  if (!client.clientName) pendencies.push("Nome do cliente não informado");
-  if (!client.clientPhone) pendencies.push("Telefone do cliente não informado");
-  if (!client.clientEmail) pendencies.push("E-mail do cliente não informado");
+  if (!client.clientName) pendencies.push("Nome do cliente nao informado");
+  if (!client.clientPhone) pendencies.push("Telefone do cliente nao informado");
+  if (!client.clientEmail) pendencies.push("E-mail do cliente nao informado");
   if (docs.idDocument === "Pendente") pendencies.push("Documento de identificação pendente");
-  if (docs.addressProof !== "Recebido") pendencies.push("Comprovante de endereço pendente");
+  if (docs.addressProof !== "Recebido") pendencies.push("Comprovante de endereco pendente");
   if (docs.paymentProof !== "Recebido") pendencies.push("Comprovantes de pagamento pendentes");
-  if (!getVexRepasseItems(repasse).length) pendencies.push("Gastos/material não informados");
+  if (!getVexRepasseItems(repasse).length) pendencies.push("Gastos/material nao informados");
   if (!payment.methods || !payment.methods.some(function(method) { return parseSaleCurrencyValue(method.value) > 0; })) {
-    pendencies.push("Forma de pagamento não informada");
+    pendencies.push("Forma de pagamento nao informada");
   }
 
   return pendencies;
@@ -9097,7 +9675,7 @@ function renderVexCommunicationPendencies(pendencies) {
       <ul>
         ${pendencies.map(function(item) { return `<li>${escapeHTML(item)}</li>`; }).join("")}
       </ul>
-      <small>O sistema não bloqueia a cópia, apenas alerta para conferência antes do envio.</small>
+      <small>O sistema nao bloqueia a cópia, apenas alerta para conferência antes do envio.</small>
     </div>
   `;
 }
@@ -9110,7 +9688,7 @@ function renderVexCommunicationBlock(title, subtitle, previewId, message, copyTy
       <pre id="${escapeHTML(previewId)}" class="vex-message-preview">${escapeHTML(message)}</pre>
       <div class="vex-drawer-actions vex-drawer-actions-safe vex-communication-actions">
         <button class="secondary-button" type="button" onclick="toggleVexCommunicationPreview('${previewId}')">👁 Visualizar</button>
-        <button class="primary-button" type="button" onclick="copyVexCommunicationMessage('${copyType}')">📋 Copiar</button>
+        <button class="primary-button" type="button" onclick="copyVexCommunicationMessage('${copyType}')">FO Copiar</button>
       </div>
     </div>
   `;
@@ -9134,24 +9712,24 @@ function openVexFormalizationCommunication(saleId) {
     <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
 
     <aside class="vex-drawer-panel vex-formalization-panel">
-      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">X</button>
 
       <section class="vex-drawer-hero vex-formalization-hero">
-        <div class="vex-vehicle-icon">💬</div>
-        <span class="eyebrow">Formalização �?Comunicação</span>
-        <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
-        <p>${escapeHTML(sale.clientName || "Cliente não informado")}</p>
+        <div class="vex-vehicle-icon">CM</div>
+        <span class="eyebrow">Formalizacao  - Comunicacao</span>
+        <h2>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente nao informado")}</p>
 
         <div class="vex-formalization-status-pill">
-          ${pendencies.length ? "🟡 Conferir pendências" : "🟢 Comunicação pronta"}
+          ${pendencies.length ? ".. Conferir pendências" : "OK Comunicacao pronta"}
         </div>
       </section>
 
       ${renderVexCommunicationPendencies(pendencies)}
 
       <section class="vex-formalization-form">
-        ${renderVexCommunicationBlock("📦 Grupo Preparação", "Mensagem curta para retirada dos anúncios.", "vexPreparationMessagePreview", preparationMessage, "preparation")}
-        ${renderVexCommunicationBlock("💬 Grupo Vendas", "Mensagem completa com dados da venda, anexos e negociação.", "vexSalesMessagePreview", salesMessage, "sales")}
+        ${renderVexCommunicationBlock("📦 Grupo Preparacao", "Mensagem curta para retirada dos anúncios.", "vexPreparationMessagePreview", preparationMessage, "preparation")}
+        ${renderVexCommunicationBlock("CM Grupo Vendas", "Mensagem completa com dados da venda, anexos e negociação.", "vexSalesMessagePreview", salesMessage, "sales")}
       </section>
 
       <div id="formalCommunicationMessage" class="vex-formalization-inline-message"></div>
@@ -9203,16 +9781,16 @@ async function copyVexCommunicationMessage(type) {
   } catch (error) {
     console.error("Erro ao copiar mensagem:", error);
     if (message) {
-      message.innerHTML = `<div class="empty-state">Não foi possível copiar automaticamente. Selecione e copie a mensagem manualmente.</div>`;
+      message.innerHTML = `<div class="empty-state">Nao foi possível copiar automaticamente. Selecione e copie a mensagem manualmente.</div>`;
     } else {
-      alert("Não foi possível copiar automaticamente.");
+      alert("Nao foi possível copiar automaticamente.");
     }
   }
 }
 
 
 /* =========================================================
-   RC3.0 �?Document Engine | Contrato, Termo e Procuração
+   RC3.0  - Document Engine | Contrato, Termo e Procuração
    ========================================================= */
 
 const VEX_DOCUMENT_COMPANY = {
@@ -9232,7 +9810,7 @@ const VEX_DOCUMENT_COMPANY = {
 const VEX_DOCUMENT_REPRESENTATIVE = {
   name: "GILVAN BATISTA DO NASCIMENTO",
   cpf: "297.612.538-48",
-  address: "AVENIDA GETULIO VARGAS, 981 �?PIRATININGA �?OSASCO - SP"
+  address: "AVENIDA GETULIO VARGAS, 981  - PIRATININGA  - OSASCO - SP"
 };
 
 function normalizeVexText(value) {
@@ -9240,7 +9818,7 @@ function normalizeVexText(value) {
 }
 
 function getVexCompanyAddress() {
-  return `${VEX_DOCUMENT_COMPANY.street}, ${VEX_DOCUMENT_COMPANY.number} �?${VEX_DOCUMENT_COMPANY.district}, ${VEX_DOCUMENT_COMPANY.city} �?SP`;
+  return `${VEX_DOCUMENT_COMPANY.street}, ${VEX_DOCUMENT_COMPANY.number}  - ${VEX_DOCUMENT_COMPANY.district}, ${VEX_DOCUMENT_COMPANY.city}  - SP`;
 }
 
 function getVexClientAddress(client, format) {
@@ -9267,7 +9845,7 @@ function getVexClientAddress(client, format) {
     district,
     city && state ? `${city}/${state}` : city || state,
     cep ? `CEP: ${cep}` : ""
-  ].filter(Boolean).join(" �?");
+  ].filter(Boolean).join("  - ");
 }
 
 function getVexDocumentPaymentText(payment) {
@@ -9275,7 +9853,7 @@ function getVexDocumentPaymentText(payment) {
     return method.type && parseSaleCurrencyValue(method.value) > 0;
   });
 
-  if (!methods.length) return "Não informado";
+  if (!methods.length) return "Nao informado";
 
   return methods.map(function(method) {
     return `${method.type}: ${formatCurrencyToBrazil(parseSaleCurrencyValue(method.value))}`;
@@ -9287,7 +9865,7 @@ function getVexDocumentPrimaryPaymentText(payment) {
     return method.type && parseSaleCurrencyValue(method.value) > 0;
   });
 
-  return methods.length ? methods.map(function(method) { return method.type; }).join(" + ") : "Não informado";
+  return methods.length ? methods.map(function(method) { return method.type; }).join(" + ") : "Nao informado";
 }
 
 function getVexVehicleFullName(vehicle) {
@@ -9360,15 +9938,15 @@ function getVexRequiredDocumentFields(documentType) {
   const common = [
     { key: "client.clientName", label: "Nome do cliente", action: "openVexFormalizationClient" },
     { key: "client.clientCpf", label: "CPF/CNPJ do cliente", action: "openVexFormalizationClient" },
-    { key: "client.clientStreet", label: "Endereço do cliente", action: "openVexFormalizationClient" },
-    { key: "client.clientNumber", label: "Número do endereço", action: "openVexFormalizationClient" },
+    { key: "client.clientStreet", label: "Endereco do cliente", action: "openVexFormalizationClient" },
+    { key: "client.clientNumber", label: "Numero do endereco", action: "openVexFormalizationClient" },
     { key: "client.clientDistrict", label: "Bairro do cliente", action: "openVexFormalizationClient" },
     { key: "client.clientCity", label: "Cidade do cliente", action: "openVexFormalizationClient" },
     { key: "client.clientState", label: "Estado do cliente", action: "openVexFormalizationClient" },
     { key: "client.clientPhone", label: "Celular do cliente", action: "openVexFormalizationClient" },
-    { key: "vehicle.vehicleBrand", label: "Marca do veículo", action: "openVexFormalizationVehicle" },
-    { key: "vehicle.vehicleModel", label: "Modelo do veículo", action: "openVexFormalizationVehicle" },
-    { key: "vehicle.vehicleVersion", label: "Versão do veículo", action: "openVexFormalizationVehicle" },
+    { key: "vehicle.vehicleBrand", label: "Marca do veiculo", action: "openVexFormalizationVehicle" },
+    { key: "vehicle.vehicleModel", label: "Modelo do veiculo", action: "openVexFormalizationVehicle" },
+    { key: "vehicle.vehicleVersion", label: "Versao do veiculo", action: "openVexFormalizationVehicle" },
     { key: "vehicle.vehicleYear", label: "Ano/modelo", action: "openVexFormalizationVehicle" },
     { key: "vehicle.vehiclePlate", label: "Placa", action: "openVexFormalizationVehicle" },
     { key: "vehicle.vehicleChassis", label: "Chassi", action: "openVexFormalizationVehicle" },
@@ -9382,20 +9960,20 @@ function getVexRequiredDocumentFields(documentType) {
       { key: "client.clientBirthDate", label: "Data de nascimento", action: "openVexFormalizationClient" },
       { key: "vehicle.vehicleColor", label: "Cor", action: "openVexFormalizationVehicle" },
       { key: "vehicle.vehicleKm", label: "Quilometragem", action: "openVexFormalizationVehicle" },
-      { key: "vehicle.vehicleFuel", label: "Combustível", action: "openVexFormalizationVehicle" }
+      { key: "vehicle.vehicleFuel", label: "Combustivel", action: "openVexFormalizationVehicle" }
     ],
     repasse: [
-      { key: "meta.saleNumber", label: "Número do pedido", action: "openVexFormalization" },
+      { key: "meta.saleNumber", label: "Numero do pedido", action: "openVexFormalization" },
       { key: "client.clientRg", label: "RG/IE", action: "openVexFormalizationClient" },
-      { key: "vehicle.vehicleType", label: "Tipo do veículo", action: "openVexFormalizationVehicle" },
+      { key: "vehicle.vehicleType", label: "Tipo do veiculo", action: "openVexFormalizationVehicle" },
       { key: "vehicle.vehicleDoors", label: "Portas", action: "openVexFormalizationVehicle" },
-      { key: "vehicle.vehicleTransmission", label: "Câmbio", action: "openVexFormalizationVehicle" },
-      { key: "vehicle.vehicleFuel", label: "Combustível", action: "openVexFormalizationVehicle" },
+      { key: "vehicle.vehicleTransmission", label: "Cambio", action: "openVexFormalizationVehicle" },
+      { key: "vehicle.vehicleFuel", label: "Combustivel", action: "openVexFormalizationVehicle" },
       { key: "vehicle.vehicleCategory", label: "Categoria", action: "openVexFormalizationVehicle" }
     ],
     procuracao: [
       { key: "client.clientRg", label: "RG", action: "openVexFormalizationClient" },
-      { key: "client.clientRgIssuer", label: "Órgão emissor", action: "openVexFormalizationClient" },
+      { key: "client.clientRgIssuer", label: "Orgao emissor", action: "openVexFormalizationClient" },
       { key: "client.clientRgIssuerUf", label: "UF emissor", action: "openVexFormalizationClient" },
       { key: "client.clientEmail", label: "E-mail do cliente", action: "openVexFormalizationClient" }
     ]
@@ -9461,7 +10039,7 @@ function renderVexDocumentCard(definition, sale, data) {
           <button class="primary-button" type="button" onclick="downloadVexDocumentDocx('${sale.id}', '${definition.type}')">DOCX</button>
           <button class="secondary-button" type="button" onclick="printVexDocument('${sale.id}', '${definition.type}')">PDF / Imprimir</button>
           <button class="secondary-button" type="button" onclick="shareVexDocumentWhatsapp('${sale.id}', '${definition.type}')">WhatsApp</button>
-        ` : `<button class="secondary-button" type="button" onclick="${action}('${sale.id}')">Ir para Formalização</button>`}
+        ` : `<button class="secondary-button" type="button" onclick="${action}('${sale.id}')">Ir para Formalizacao</button>`}
       </div>
     </article>
   `;
@@ -9485,27 +10063,27 @@ function openVexFormalizationDocuments(saleId) {
     <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
 
     <aside class="vex-drawer-panel vex-formalization-panel">
-      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">X</button>
 
       <section class="vex-drawer-hero vex-formalization-hero">
-        <div class="vex-vehicle-icon">📑</div>
-        <span class="eyebrow">Formalização �?Documentos</span>
+        <div class="vex-vehicle-icon">DC</div>
+        <span class="eyebrow">Formalizacao  - Documentos</span>
         <h2>Pedido #${escapeHTML(data.meta.saleNumber)}</h2>
-        <p>${escapeHTML(data.client.clientName || "Cliente não informado")} �?${escapeHTML(getVexVehicleFullName(data.vehicle) || "Veículo não informado")}</p>
+        <p>${escapeHTML(data.client.clientName || "Cliente nao informado")}  - ${escapeHTML(getVexVehicleFullName(data.vehicle) || "Veiculo nao informado")}</p>
 
         <div class="vex-formalization-status-pill">
-          ${progress === 100 ? "🟢 Venda pronta" : "🟡 Conferir documentos"}
+          ${progress === 100 ? "OK Venda pronta" : ".. Conferir documentos"}
         </div>
 
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${progress}%"></div>
         </div>
-        <strong>${readyCount} de ${definitions.length} documentos prontos �?${progress}%</strong>
+        <strong>${readyCount} de ${definitions.length} documentos prontos  - ${progress}%</strong>
       </section>
 
       <section class="vex-formalization-summary">
         ${renderVexFormalizationSummaryItem("Cliente", data.client.clientName)}
-        ${renderVexFormalizationSummaryItem("Veículo", getVexVehicleFullName(data.vehicle))}
+        ${renderVexFormalizationSummaryItem("Veiculo", getVexVehicleFullName(data.vehicle))}
         ${renderVexFormalizationSummaryItem("Placa", data.vehicle.vehiclePlate)}
         ${renderVexFormalizationSummaryItem("Valor", data.payment.vehicleTotal)}
       </section>
@@ -9516,7 +10094,7 @@ function openVexFormalizationDocuments(saleId) {
 
       ${progress === 100 ? `
         <div class="vex-document-generate-all">
-          <strong>🟢 Todos os documentos estão prontos.</strong>
+          <strong>OK Todos os documentos estão prontos.</strong>
           <button class="primary-button" type="button" onclick="downloadAllVexDocuments('${sale.id}')">Baixar todos em DOCX</button>
           <button class="secondary-button" type="button" onclick="printAllVexDocuments('${sale.id}')">Imprimir todos / Salvar PDF</button>
         </div>
@@ -9536,7 +10114,7 @@ function getVexDocumentTitle(type) {
   const titles = {
     contract: "Contrato Particular de Compra e Venda",
     repasse: "Termo de Repasse",
-    procuracao: "Procuração para Transferência"
+    procuracao: "Procuração para Transferencia"
   };
   return titles[type] || "Documento";
 }
@@ -10156,65 +10734,65 @@ function openVexFormalization(saleId) {
   const isClientTransfer = sale.transferType === "Pelo cliente";
   const steps = [
     {
-      icon: "👤",
+      icon: "CL",
       label: "Cliente",
-      description: "Completar comprador e endereço.",
+      description: "Completar comprador e endereco.",
       done: getVexClientCompletion(getVexFormalizationClientData(sale)).complete,
       action: "openVexFormalizationClient"
     },
     {
-      icon: "🚗",
-      label: "Veículo",
-      description: "Conferir dados e completar chassi, renavam, combustível e câmbio.",
+      icon: "VE",
+      label: "Veiculo",
+      description: "Conferir dados e completar chassi, renavam, combustivel e cambio.",
       done: getVexVehicleCompletion(getVexFormalizationVehicleData(sale)).complete,
       action: "openVexFormalizationVehicle"
     },
     {
-      icon: "💰",
+      icon: "$",
       label: "Pagamento",
-      description: "Registrar formas de pagamento, transferência cobrada, IPVA e licenciamento.",
+      description: "Registrar formas de pagamento, transferencia cobrada, IPVA e licenciamento.",
       done: getVexPaymentCompletion(getVexFormalizationPaymentData(sale), sale).complete,
       action: "openVexFormalizationPayment"
     },
     {
       icon: "DOC",
       label: "Repasse/Garantia",
-      description: "Definir garantia, repasse, abatimento FIPE e condição da venda.",
+      description: "Definir garantia, repasse, abatimento FIPE e condicao da venda.",
       done: getVexRepasseCompletion(getVexFormalizationRepasseData(sale)).complete,
       action: "openVexFormalizationRepasse"
     },
     {
-      icon: "🔧",
+      icon: "MA",
       label: "Gastos / Material",
-      description: "Registrar gastos e material em lista reutilizável.",
+      description: "Registrar gastos e material em lista reutilizavel.",
       done: getVexRepasseItems(getVexFormalizationRepasseData(sale)).length > 0,
       action: "openVexFormalizationRepasse"
     },
     {
-      icon: "🚛",
-      label: "Transferência",
-      description: "Definir responsabilidade, procuração e acompanhar prazo de 30 dias.",
+      icon: "TR",
+      label: "Transferencia",
+      description: "Definir responsabilidade, procuracao e acompanhar prazo de 30 dias.",
       done: getVexTransferCompletion(getVexFormalizationTransferData(sale)).complete,
       action: "openVexFormalizationTransfer"
     },
     {
-      icon: "📄",
+      icon: "DR",
       label: "Documentos Recebidos",
-      description: "Conferir CNH ou RG, comprovante de endereço e comprovantes de pagamento.",
+      description: "Conferir CNH ou RG, comprovante de endereco e comprovantes de pagamento.",
       done: getVexReceivedDocsCompletion(getVexFormalizationReceivedDocsData(sale)).complete,
       action: "openVexFormalizationReceivedDocs"
     },
     {
-      icon: "💬",
-      label: "Comunicação",
-      description: "Gerar textos dos grupos Preparação e Vendas.",
+      icon: "CM",
+      label: "Comunicacao",
+      description: "Gerar textos dos grupos Preparacao e Vendas.",
       done: true,
       action: "openVexFormalizationCommunication"
     },
     {
-      icon: "📑",
+      icon: "DC",
       label: "Documentos",
-      description: isClientTransfer ? "Contrato e termo." : "Contrato, termo e procuração.",
+      description: isClientTransfer ? "Contrato e termo." : "Contrato, termo e procuracao.",
       done: getVexDocumentDefinitions(sale).every(function(definition) { return getVexDocumentPendencies(definition.type, buildVexDocumentData(sale)).length === 0; }),
       action: "openVexFormalizationDocuments"
     }
@@ -10222,20 +10800,20 @@ function openVexFormalization(saleId) {
 
   const doneCount = steps.filter(function(step) { return step.done; }).length;
   const progress = Math.round((doneCount / steps.length) * 100);
-  const formalizationStatus = progress >= 100 ? "Formalização concluída" : "Formalização em andamento";
-  const statusIcon = progress >= 100 ? "🟢" : "🟡";
+  const formalizationStatus = progress >= 100 ? "Formalizacao concluida" : "Formalizacao em andamento";
+  const statusIcon = progress >= 100 ? "OK" : "..";
 
   drawer.innerHTML = `
     <div class="vex-drawer-backdrop" onclick="closeVexVehicleDrawer()"></div>
 
     <aside class="vex-drawer-panel vex-formalization-panel">
-      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">×</button>
+      <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">X</button>
 
       <section class="vex-drawer-hero vex-formalization-hero">
-        <div class="vex-vehicle-icon">📋</div>
-        <span class="eyebrow">Formalização</span>
-        <h2>${escapeHTML(sale.vehicleModel || "Veículo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
-        <p>${escapeHTML(sale.clientName || "Cliente não informado")} �?${formatDateToBrazil(sale.saleDate)}</p>
+        <div class="vex-vehicle-icon">FO</div>
+        <span class="eyebrow">Formalizacao</span>
+        <h2>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
+        <p>${escapeHTML(sale.clientName || "Cliente nao informado")}  - ${formatDateToBrazil(sale.saleDate)}</p>
 
         <div class="vex-formalization-status-pill">
           ${statusIcon} ${escapeHTML(formalizationStatus)}
@@ -10244,16 +10822,16 @@ function openVexFormalization(saleId) {
         <div class="vex-formalization-progress">
           <div class="vex-formalization-progress-bar" style="width:${progress}%"></div>
         </div>
-        <strong>${doneCount} de ${steps.length} etapas concluídas �?${progress}%</strong>
+        <strong>${doneCount} de ${steps.length} etapas concluidas  - ${progress}%</strong>
       </section>
 
       <section class="vex-formalization-summary">
         ${renderVexFormalizationSummaryItem("Cliente", sale.clientName)}
         ${renderVexFormalizationSummaryItem("Telefone", sale.clientPhone)}
-        ${renderVexFormalizationSummaryItem("Veículo", `${sale.vehicleModel || ""} ${sale.vehicleYear || ""}`.trim())}
+        ${renderVexFormalizationSummaryItem("Veiculo", `${sale.vehicleModel || ""} ${sale.vehicleYear || ""}`.trim())}
         ${renderVexFormalizationSummaryItem("Placa", sale.vehiclePlate)}
-        ${renderVexFormalizationSummaryItem("Valor", sale.saleValue ? formatCurrencyToBrazil(sale.saleValue) : "Não informado")}
-        ${renderVexFormalizationSummaryItem("Transferência", getVexFormalizationTransferData(sale).responsible)}
+        ${renderVexFormalizationSummaryItem("Valor", sale.saleValue ? formatCurrencyToBrazil(sale.saleValue) : "Nao informado")}
+        ${renderVexFormalizationSummaryItem("Transferencia", getVexFormalizationTransferData(sale).responsible)}
       </section>
 
       <div class="vex-formalization-grid vex-formalization-card-grid">
@@ -10271,7 +10849,7 @@ function openVexFormalization(saleId) {
 
       <div class="vex-detail-item full vex-formalization-note">
         <span>RC2.11</span>
-        <strong>Comunicação Inteligente liberada com mensagens para Grupo Preparação e Grupo Vendas, visualização e cópia automática.</strong>
+        <strong>Comunicacao Inteligente liberada com mensagens para Grupo Preparacao e Grupo Vendas, visualização e cópia automática.</strong>
       </div>
 
       <div class="vex-drawer-actions vex-drawer-actions-safe">
@@ -10328,7 +10906,7 @@ window.closeVexVehicleDrawer = closeVexVehicleDrawer;
 
 
 /* =========================================================
-   VEX HUB PRO v2.0 �?Fase 03 BUILD 02
+   VEX HUB PRO v2.0  - Fase 03 BUILD 02
    Campos extras inseridos sem recriar o formulário
    ========================================================= */
 
@@ -10350,17 +10928,17 @@ function insertVexPhase03Build02Fields() {
 
   wrapper.innerHTML = `
     <label>
-      Preço FIPE / tabela
+      Preco FIPE / tabela
       <input id="vehicleFipeValue" type="text" placeholder="Ex: R$ 41.990,00" />
     </label>
 
     <label>
-      Versão
+      Versao
       <input id="vehicleVersion" type="text" placeholder="Ex: Completo, LX, GLX, XEI" />
     </label>
 
     <label>
-      Câmbio
+      Cambio
       <select id="vehicleTransmission">
         <option value="">Selecione</option>
         <option value="Automático">Automático</option>
@@ -10507,7 +11085,7 @@ function getFipeDisplayValue(sale) {
 }
 
 /* =========================================================
-   VEX HUB PRO v1.0 PREMIUM UI �?Sprint 6
+   VEX HUB PRO v1.0 PREMIUM UI  - Sprint 6
    UX Lista Premium + refinamento visual estrutural
    ========================================================= */
 
@@ -10522,9 +11100,9 @@ function prepareVexSprint6Copy() {
     const title = historySection.querySelector(".section-header h2");
     const description = historySection.querySelector(".section-header p");
     const eyebrow = historySection.querySelector(".eyebrow");
-    if (eyebrow) eyebrow.textContent = "Catálogo VEX";
-    if (title) title.textContent = "Veículos";
-    if (description) description.textContent = "Lista compacta para localizar veículos rapidamente. Clique em qualquer linha para ver os detalhes completos.";
+    if (eyebrow) eyebrow.textContent = "Catalogo VEX";
+    if (title) title.textContent = "Veiculos";
+    if (description) description.textContent = "Lista compacta para localizar veiculos rapidamente. Clique em qualquer linha para ver os detalhes completos.";
   }
 
   const saleSection = document.getElementById("newSaleSection");
@@ -10532,7 +11110,7 @@ function prepareVexSprint6Copy() {
     const title = saleSection.querySelector(".section-header h2");
     const description = saleSection.querySelector(".section-header p");
     if (title) title.textContent = "Nova Venda";
-    if (description) description.textContent = "Cadastro organizado por cliente, veículo, financeiro e entrega.";
+    if (description) description.textContent = "Cadastro organizado por cliente, veiculo, financeiro e entrega.";
   }
 }
 
@@ -10569,11 +11147,11 @@ function renderVexVehiclesPremium() {
     historyList.className = "vex-premium-list-shell";
     historyList.innerHTML = `
       <div class="vex-s6-empty">
-        <strong>Nenhum veículo vendido ainda.</strong>
-        <span>Quando uma venda for salva, o veículo aparecerá aqui em formato de lista compacta.</span>
+        <strong>Nenhum veiculo vendido ainda.</strong>
+        <span>Quando uma venda for salva, o veiculo aparecera aqui em formato de lista compacta.</span>
       </div>
     `;
-    historyCounter.textContent = "0 veículos";
+    historyCounter.textContent = "0 veiculos";
     return true;
   }
 
@@ -10581,8 +11159,8 @@ function renderVexVehiclesPremium() {
     historyList.className = "vex-premium-list-shell";
     historyList.innerHTML = `
       <div class="vex-s6-empty">
-        <strong>Nenhum veículo encontrado.</strong>
-        <span>Limpe os filtros ou tente outro cliente, telefone, veículo, placa ou status.</span>
+        <strong>Nenhum veiculo encontrado.</strong>
+        <span>Limpe os filtros ou tente outro cliente, telefone, veiculo, placa ou status.</span>
       </div>
     `;
     historyCounter.textContent = "0 encontrados";
@@ -10593,7 +11171,7 @@ function renderVexVehiclesPremium() {
     return total + parseSaleCurrencyValue(sale.saleValue);
   }, 0);
 
-  historyCounter.textContent = `${filteredSales.length} de ${sales.length} veículo(s)`;
+  historyCounter.textContent = `${filteredSales.length} de ${sales.length} veiculo(s)`;
   historyList.className = "vex-premium-list-shell";
 
   historyList.innerHTML = `
@@ -10602,7 +11180,7 @@ function renderVexVehiclesPremium() {
         <span>Total filtrado</span>
         <strong>${formatCurrencyToBrazil(totalValue)}</strong>
       </div>
-      <small>${filteredSales.length} veículo(s) na lista</small>
+      <small>${filteredSales.length} veiculo(s) na lista</small>
     </div>
 
     <div class="vex-s6-vehicle-list">
@@ -10614,7 +11192,7 @@ function renderVexVehiclesPremium() {
 
         return `
           <button class="vex-s6-vehicle-row" type="button" onclick="openVexVehicleDrawer('${sale.id}')" title="${escapeHTML(vehicleLine)}">
-            <span class="vex-s6-row-icon">🚗</span>
+            <span class="vex-s6-row-icon">VE</span>
 
             <span class="vex-s6-row-main">
               <strong>${escapeHTML(vehicleLine)}</strong>
@@ -11065,12 +11643,13 @@ function injectVexPremiumUISprint6Styles() {
         font-size: 0;
       }
 
-      .sidebar-nav .nav-item[data-section="dashboardSection"]::before { content: "🏠"; font-size: 18px; }
-      .sidebar-nav .nav-item[data-section="newSaleSection"]::before { content: "�?; font-size: 18px; }
-      .sidebar-nav .nav-item[data-section="historySection"]::before { content: "🚗"; font-size: 18px; }
-      .sidebar-nav .nav-item[data-section="reportsSection"]::before { content: "📊"; font-size: 18px; }
-      .sidebar-nav .nav-item[data-section="profileSection"]::before { content: "👤"; font-size: 18px; }
-      .sidebar-nav .nav-item[data-section="usersSection"]::before { content: "⚙️"; font-size: 18px; }
+      .sidebar-nav .nav-item[data-section="dashboardSection"]::before { content: "IN"; font-size: 18px; }
+      .sidebar-nav .nav-item[data-section="newSaleSection"]::before { content: "+"; font-size: 18px; }
+      .sidebar-nav .nav-item[data-section="pendenciesSection"]::before { content: "PE"; font-size: 18px; }
+      .sidebar-nav .nav-item[data-section="historySection"]::before { content: "VE"; font-size: 18px; }
+      .sidebar-nav .nav-item[data-section="reportsSection"]::before { content: "RE"; font-size: 18px; }
+      .sidebar-nav .nav-item[data-section="profileSection"]::before { content: "CL"; font-size: 18px; }
+      .sidebar-nav .nav-item[data-section="usersSection"]::before { content: "AD"; font-size: 18px; }
 
       #historySection .section-header {
         padding: 14px !important;
@@ -11117,7 +11696,7 @@ initializeVexPremiumUISprint6();
 
 
 /* =========================================================
-   VEX HUB PRO v1.0 PREMIUM UI �?Sprint 7
+   VEX HUB PRO v1.0 PREMIUM UI  - Sprint 7
    Identidade Visual VEX + Polimento PWA
    ========================================================= */
 
@@ -11376,7 +11955,7 @@ initializeVexIdentitySprint7();
 
 
 /* =========================================================
-   VEX HUB PRO v1.0 PREMIUM UI �?Sprint 8
+   VEX HUB PRO v1.0 PREMIUM UI  - Sprint 8
    App Mobile Premium + Responsividade Final
    ========================================================= */
 
@@ -11391,7 +11970,8 @@ function prepareVexMobileNavigationSprint8() {
   const labels = {
     dashboardSection: "Início",
     newSaleSection: "Venda",
-    historySection: "Veículos",
+    pendenciesSection: "Pend.",
+    historySection: "Veiculos",
     reportsSection: "Dados",
     profileSection: "Perfil",
     usersSection: "Users"
@@ -11724,7 +12304,7 @@ initializeVexMobileSprint8();
 
 
 /* =========================================================
-   Sprint 9 �?Premium Polish
+   Sprint 9  - Premium Polish
    Polimento visual/UX sem alterar Firebase, initialize() ou regras de negócio.
    ========================================================= */
 function initializeVexSprint9PremiumPolish() {
@@ -12030,7 +12610,7 @@ initializeVexSprint9PremiumPolish();
 /* =========================================================
    VEX HUB PRO - Sprint 10
    Performance Feel + Command UX (non-invasive)
-   Não altera Firebase, initializeApplication, Auth ou Firestore.
+   Nao altera Firebase, initializeApplication, Auth ou Firestore.
 ========================================================= */
 function initializeVexSprint10PerformanceUX() {
   injectVexSprint10Styles();
@@ -12281,7 +12861,7 @@ function enhanceVexSprint10SafeArea() {
 initializeVexSprint10PerformanceUX();
 
 /* Sprint 11 - Premium Final Quality Layer
-   Camada incremental de UX: não altera Firebase, initialize(), Auth, Firestore ou regras de negócio. */
+   Camada incremental de UX: nao altera Firebase, initialize(), Auth, Firestore ou regras de negócio. */
 function initializeVexSprint11FinalQuality() {
   injectVexSprint11Styles();
   enhanceVexSprint11SectionAwareness();
@@ -12684,9 +13264,9 @@ setTimeout(injectVexRC13LegibilityPatch, 250);
 setTimeout(injectVexRC13LegibilityPatch, 1000);
 
 /* =========================================================
-   VEX HUB PRO �?RC2.01
+   VEX HUB PRO  - RC2.01
    Mobile seguro: centralização + menu Mais + Sair no celular
-   Escopo: CSS/UX mobile. Não altera Firebase, Auth, Firestore ou cadastro de venda.
+   Escopo: CSS/UX mobile. Nao altera Firebase, Auth, Firestore ou cadastro de venda.
 ========================================================= */
 function initializeVexRC201MobileSafe() {
   injectVexRC201MobileStyles();
@@ -12985,15 +13565,15 @@ function openVexRC201MobileMoreMenu() {
         <strong>Mais opções</strong><br>
         <span>Perfil, administração e saída</span>
       </div>
-      <button class="vex-rc2-more-close" type="button" onclick="closeVexRC201MobileMoreMenu()" aria-label="Fechar menu">×</button>
+      <button class="vex-rc2-more-close" type="button" onclick="closeVexRC201MobileMoreMenu()" aria-label="Fechar menu">X</button>
     </div>
     <div class="vex-rc2-more-list">
       <button class="vex-rc2-more-item" type="button" onclick="goToSection('profileSection'); closeVexRC201MobileMoreMenu(); syncVexRC201MobileMoreVisibility();">
-        <span>👤 Perfil</span><small>Dados da conta</small>
+        <span>CL Perfil</span><small>Dados da conta</small>
       </button>
       ${isAdmin ? `<button class="vex-rc2-more-item" type="button" onclick="goToSection('usersSection'); closeVexRC201MobileMoreMenu(); syncVexRC201MobileMoreVisibility();"><span>👥 Usuários</span><small>ADM</small></button>` : ""}
       <button class="vex-rc2-more-item" type="button" onclick="goToSection('dashboardSection'); closeVexRC201MobileMoreMenu(); syncVexRC201MobileMoreVisibility();">
-        <span>⚙️ Configurações</span><small>Em breve</small>
+        <span>AD Configurações</span><small>Em breve</small>
       </button>
       <button class="vex-rc2-more-item danger" type="button" onclick="closeVexRC201MobileMoreMenu(); logoutUser();">
         <span>🚪 Sair</span><small>Encerrar sessão</small>
@@ -13254,7 +13834,7 @@ function updateVexDashboardExecutive() {
   const averageTicket = currentMonthSales.length > 0 ? monthlySoldValue / currentMonthSales.length : 0;
   const pendingAfterSales = sales.filter(function (sale) { return sale.afterSaleStatus !== "Finalizado"; }).length;
   const pendingTransfers = sales.filter(function (sale) {
-    return sale.afterSaleStatus === "Transferência em andamento" || sale.afterSaleStatus === "Aguardando Cliente" || sale.transferType === "Pela loja";
+    return sale.afterSaleStatus === "Transferencia em andamento" || sale.afterSaleStatus === "Aguardando Cliente" || sale.transferType === "Pela loja";
   }).length;
 
   const commissionGoal = 6000;
@@ -13263,7 +13843,7 @@ function updateVexDashboardExecutive() {
 
   setTextById("vexGreetingTitle", getGreetingText());
   setTextById("vexCurrentDate", getCurrentDateLabel());
-  setTextById("vexMonthlySalesCount", `${currentMonthSales.length} veículo(s) no mês`);
+  setTextById("vexMonthlySalesCount", `${currentMonthSales.length} veiculo(s) no mês`);
   setTextById("vexMonthlyCommission", formatCurrencyToBrazil(monthlyCommission));
   setTextById("vexGoalLabel", `Meta: ${formatCurrencyToBrazil(commissionGoal)}`);
   setTextById("vexGoalPercent", `${goalPercent.toFixed(0)}%`);
@@ -13320,8 +13900,8 @@ function updateVexDashboardExecutive() {
 })();
 
 /* =========================================================
-   VEX HUB PRO �?RC2.03
-   Detalhes do veículo: Editar ADM + Formalização inicial
+   VEX HUB PRO  - RC2.03
+   Detalhes do veiculo: Editar ADM + Formalizacao inicial
    ========================================================= */
 function injectVexRC203DetailsStyles() {
   if (document.getElementById("vex-rc203-details-styles")) {
@@ -13548,6 +14128,104 @@ function getVexInventoryAvailableCountClean() {
   return vexInventory.filter((item) => !isVexInventorySoldStatus(item.status || "Disponivel")).length;
 }
 
+function getVexDaysSinceSale(sale) {
+  if (!sale || !sale.saleDate) return 0;
+  const date = new Date(sale.saleDate + "T00:00:00");
+  if (Number.isNaN(date.getTime())) return 0;
+  const diff = Date.now() - date.getTime();
+  return Math.max(0, Math.floor(diff / 86400000));
+}
+
+function isVexSaleTransferFinished(sale) {
+  const status = String((sale && sale.afterSaleStatus) || "").toLowerCase();
+  const stage = String(getVexTransferStage(sale) || "").toLowerCase();
+  return status.includes("transferido") || status.includes("finalizado") || stage.includes("transferido");
+}
+
+function getVexNextTransferChecklistItem(sale) {
+  const definitions = typeof getVexTransferChecklistDefinitions === "function" ? getVexTransferChecklistDefinitions(sale) : [];
+  const state = typeof getVexTransferChecklistState === "function" ? getVexTransferChecklistState(sale) : {};
+  return definitions.find(function(item) { return !state[item.key]; }) || null;
+}
+
+function getVexDashboardPendingItems() {
+  if (!Array.isArray(sales)) return [];
+
+  return sales
+    .filter(function(sale) { return !isVexSaleTransferFinished(sale); })
+    .map(function(sale) {
+      const days = getVexDaysSinceSale(sale);
+      const nextItem = getVexNextTransferChecklistItem(sale);
+      const stage = getVexTransferStage(sale);
+      const transfer = sale.transferType || "Transferencia nao informada";
+      let tone = "normal";
+      let label = "Acompanhar";
+      let detail = nextItem ? nextItem.label : stage;
+      let score = 1;
+
+      if (days >= 25) {
+        tone = "critical";
+        label = "Prazo critico";
+        score = 100 + days;
+        detail = `${days} dias desde a venda - ${detail}`;
+      } else if (String(stage).toLowerCase().includes("cliente")) {
+        tone = "client";
+        label = "Aguardando cliente";
+        score = 70 + days;
+      } else if (String(stage).toLowerCase().includes("despachante") || String(stage).toLowerCase().includes("atpv")) {
+        tone = "progress";
+        label = "Despachante / ATPV";
+        score = 55 + days;
+      } else if (nextItem) {
+        tone = "pending";
+        label = "Pendente";
+        score = 35 + days;
+      }
+
+      return {
+        id: sale.id,
+        label: label,
+        tone: tone,
+        score: score,
+        title: `${sale.vehicleModel || "Veiculo"} ${sale.vehicleYear || ""}`.trim(),
+        subtitle: `${sale.clientName || "Cliente nao informado"} - ${transfer}`,
+        detail: detail,
+        date: sale.saleDate ? formatDateToBrazil(sale.saleDate) : "Sem data"
+      };
+    })
+    .sort(function(a, b) { return b.score - a.score; })
+    .slice(0, 8);
+}
+
+function renderVexPendingBoard() {
+  const board = document.getElementById("vexPendingBoard");
+  const counter = document.getElementById("vexPendingBoardCount");
+  if (!board) return;
+
+  const items = getVexDashboardPendingItems();
+  if (counter) counter.textContent = `${items.length} prioridade(s)`;
+
+  if (!items.length) {
+    board.innerHTML = `
+      <div class="vex-pending-empty">
+        <strong>Nenhuma pendencia critica agora.</strong>
+        <span>As transferencias em aberto aparecerao aqui automaticamente.</span>
+      </div>
+    `;
+    return;
+  }
+
+  board.innerHTML = items.map(function(item) {
+    return `
+      <button class="vex-pending-item is-${escapeHTML(item.tone)}" type="button" onclick="openVexVehicleDrawer('${escapeHTML(item.id)}')">
+        <span>${escapeHTML(item.label)}</span>
+        <strong>${escapeHTML(item.title)}</strong>
+        <small>${escapeHTML(item.subtitle)}</small>
+        <em>${escapeHTML(item.detail)} - ${escapeHTML(item.date)}</em>
+      </button>
+    `;
+  }).join("");
+}
 function prepareVexDashboardLayout() {
   const dashboardSection = document.getElementById("dashboardSection");
   if (!dashboardSection) return;
@@ -13587,8 +14265,7 @@ function prepareVexDashboardLayout() {
           <small>vs. mes anterior</small>
         </article>
       </section>
-
-      <section class="vex-clean-grid">
+<section class="vex-clean-grid">
         <article class="vex-clean-panel vex-clean-panel-main">
           <div class="vex-clean-panel-head">
             <div>
@@ -13924,6 +14601,7 @@ function injectVexRC49PremiumStyles() {
       html body #dashboardScreen.screen.active .nav-item[data-section="dashboardSection"]::before { content: "IN" !important; }
       html body #dashboardScreen.screen.active .nav-item[data-section="newSaleSection"]::before { content: "+" !important; font-size: 17px !important; }
       html body #dashboardScreen.screen.active .nav-item[data-section="inventorySection"]::before { content: "ES" !important; }
+      html body #dashboardScreen.screen.active .nav-item[data-section="pendenciesSection"]::before { content: "PE" !important; }
       html body #dashboardScreen.screen.active .nav-item[data-section="historySection"]::before { content: "VE" !important; }
       html body #dashboardScreen.screen.active .nav-item[data-section="reportsSection"]::before { content: "RE" !important; }
       html body #dashboardScreen.screen.active .nav-item[data-section="profileSection"]::before { content: "PF" !important; }
@@ -15199,6 +15877,20 @@ setTimeout(() => {
   if (dashboardSection) dashboardSection.removeAttribute("data-vex-dashboard-ready");
   if (typeof updateVexDashboardExecutive === "function") updateVexDashboardExecutive();
 }, 0);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

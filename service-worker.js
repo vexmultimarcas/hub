@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = "vex-hub-rc3-0-69-lista-veiculos-ajustada";
+const CACHE_NAME = "vex-hub-rc3-0-74-pendencias-aba";
 
 const FILES_TO_CACHE = [
   "./",
@@ -54,4 +54,9 @@ self.addEventListener("fetch", function (event) {
     })
   );
 });
+
+
+
+
+
 

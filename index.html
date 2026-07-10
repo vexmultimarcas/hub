@@ -106,6 +106,7 @@
           <button class="nav-item active" data-section="dashboardSection">Dashboard</button>
           <button class="nav-item" data-section="newSaleSection">+ Nova Venda</button>
           <button class="nav-item" data-section="inventorySection">Estoque</button>
+          <button class="nav-item" data-section="pendenciesSection">Pendencias</button>
           <button class="nav-item" data-section="historySection">Veículos</button>
           <button class="nav-item" data-section="reportsSection">Relatórios</button>
           <button class="nav-item" data-section="profileSection">Perfil</button>
@@ -283,6 +284,27 @@
           </form>
         </section>
 
+
+        <section id="pendenciesSection" class="content-section">
+          <div class="section-header">
+            <div>
+              <span class="eyebrow">Operacao</span>
+              <h2>Pendencias</h2>
+              <p>Prioridades de transferencia, documentos e acompanhamento diario.</p>
+            </div>
+          </div>
+
+          <section class="vex-pending-board-panel vex-pending-section-panel" aria-label="Pendencias prioritarias">
+            <div class="vex-clean-panel-head">
+              <div>
+                <span>Prioridades do dia</span>
+                <h2>Pendencias que precisam de acao</h2>
+              </div>
+              <strong id="vexPendingBoardCount" class="vex-pending-counter">0 prioridade(s)</strong>
+            </div>
+            <div id="vexPendingBoard" class="vex-pending-board"></div>
+          </section>
+        </section>
         <section id="inventorySection" class="content-section">
           <div class="section-header">
             <div>
@@ -648,3 +670,4 @@
   <script src="js/app.js"></script>
 </body>
 </html>
+

@@ -1105,7 +1105,7 @@ textarea:focus {
 }
 
 .vex-f03-extra-fields::before {
-  content: "🚗 Dados complementares do veículo";
+  content: "VE Dados complementares do veiculo";
   grid-column: 1 / -1;
   color: #ffffff;
   font-weight: 600;
@@ -1735,7 +1735,7 @@ textarea:focus {
 }
 
 .vex-vehicle-compact-subline span + span::before {
-  content: "�?;
+  content: "-";
   margin-right: 6px;
   color: rgba(255, 255, 255, 0.28);
 }
@@ -5710,4 +5710,503 @@ html body #dashboardScreen.screen.active #historyList .vex-s6-row-arrow {
   html body #dashboardScreen.screen.active #historyList .vex-s6-row-value { grid-area: value !important; justify-self: start !important; }
   html body #dashboardScreen.screen.active #historyList .vex-s6-row-status { grid-area: status !important; justify-self: end !important; max-width: 160px !important; }
   html body #dashboardScreen.screen.active #historyList .vex-s6-row-arrow { grid-area: arrow !important; }
+}
+
+/* RC3.0.70 - Painel operacional da transferencia */
+html body .vex-drawer-root .vex-transfer-stage-detail {
+  display: grid !important;
+  gap: 12px !important;
+  padding: 18px !important;
+  border-radius: 18px !important;
+  background: linear-gradient(135deg, #0b1220 0%, #111827 58%, rgba(127, 29, 29, 0.42) 100%) !important;
+  border: 1px solid rgba(248, 113, 113, 0.34) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 18px 34px rgba(2, 6, 23, 0.20) !important;
+}
+
+html body .vex-drawer-root .vex-transfer-stage-detail > span,
+html body .vex-drawer-root .vex-transfer-note-label {
+  color: #cbd5e1 !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+}
+
+html body .vex-drawer-root .vex-transfer-flow-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+html body .vex-drawer-root .vex-transfer-flow-grid > div {
+  display: grid !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  padding: 13px !important;
+  border-radius: 14px !important;
+  background: rgba(15, 23, 42, 0.78) !important;
+  border: 1px solid rgba(148, 163, 184, 0.24) !important;
+}
+
+html body .vex-drawer-root .vex-transfer-flow-grid span {
+  color: #94a3b8 !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+}
+
+html body .vex-drawer-root .vex-transfer-mode-select,
+html body .vex-drawer-root .vex-transfer-stage-select,
+html body .vex-drawer-root .vex-transfer-note-input {
+  width: 100% !important;
+  min-height: 46px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(148, 163, 184, 0.30) !important;
+  background: #07111f !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 850 !important;
+  outline: none !important;
+}
+
+html body .vex-drawer-root .vex-transfer-mode-select,
+html body .vex-drawer-root .vex-transfer-stage-select {
+  padding: 0 12px !important;
+}
+
+html body .vex-drawer-root .vex-transfer-note-input {
+  resize: vertical !important;
+  padding: 12px !important;
+  line-height: 1.35 !important;
+}
+
+html body .vex-drawer-root .vex-transfer-note-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+html body .vex-drawer-root .vex-transfer-note-readonly {
+  padding: 12px !important;
+  border-radius: 12px !important;
+  background: rgba(15, 23, 42, 0.78) !important;
+  border: 1px solid rgba(148, 163, 184, 0.24) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+
+@media (max-width: 760px) {
+  html body .vex-drawer-root .vex-transfer-flow-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+
+/* RC3.0.72 - Checklist operacional da transferencia */
+html body .vex-drawer-root .vex-transfer-checklist {
+  display: grid !important;
+  gap: 12px !important;
+  margin-top: 4px !important;
+  padding: 14px !important;
+  border-radius: 16px !important;
+  background: rgba(2, 6, 23, 0.44) !important;
+  border: 1px solid rgba(148, 163, 184, 0.20) !important;
+}
+
+html body .vex-drawer-root .vex-transfer-checklist-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+html body .vex-drawer-root .vex-transfer-checklist-head span {
+  display: block !important;
+  color: #94a3b8 !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+}
+
+html body .vex-drawer-root .vex-transfer-checklist-head strong,
+html body .vex-drawer-root .vex-transfer-checklist-head em {
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 950 !important;
+  font-style: normal !important;
+}
+
+html body .vex-drawer-root .vex-transfer-checklist-head em {
+  min-width: 54px !important;
+  padding: 7px 10px !important;
+  border-radius: 999px !important;
+  text-align: center !important;
+  background: rgba(220, 38, 38, 0.22) !important;
+  border: 1px solid rgba(248, 113, 113, 0.30) !important;
+}
+
+html body .vex-drawer-root .vex-transfer-checklist-bar {
+  height: 8px !important;
+  overflow: hidden !important;
+  border-radius: 999px !important;
+  background: rgba(15, 23, 42, 0.92) !important;
+  border: 1px solid rgba(148, 163, 184, 0.18) !important;
+}
+
+html body .vex-drawer-root .vex-transfer-checklist-bar i {
+  display: block !important;
+  height: 100% !important;
+  border-radius: inherit !important;
+  background: linear-gradient(90deg, #ef4444, #f59e0b, #22c55e) !important;
+}
+
+html body .vex-drawer-root .vex-transfer-checklist-items {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+html body .vex-drawer-root .vex-transfer-check-item {
+  display: grid !important;
+  grid-template-columns: 22px minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 10px !important;
+  min-height: 74px !important;
+  padding: 12px !important;
+  border-radius: 14px !important;
+  background: rgba(15, 23, 42, 0.76) !important;
+  border: 1px solid rgba(248, 113, 113, 0.22) !important;
+  cursor: pointer !important;
+}
+
+html body .vex-drawer-root .vex-transfer-check-item.is-done {
+  background: rgba(20, 83, 45, 0.30) !important;
+  border-color: rgba(74, 222, 128, 0.40) !important;
+}
+
+html body .vex-drawer-root .vex-transfer-check-item input {
+  width: 18px !important;
+  height: 18px !important;
+  margin-top: 2px !important;
+  accent-color: #22c55e !important;
+}
+
+html body .vex-drawer-root .vex-transfer-check-item span {
+  display: grid !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+
+html body .vex-drawer-root .vex-transfer-check-item strong {
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+  line-height: 1.18 !important;
+}
+
+html body .vex-drawer-root .vex-transfer-check-item small {
+  color: #cbd5e1 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 1.28 !important;
+}
+
+@media (max-width: 760px) {
+  html body .vex-drawer-root .vex-transfer-checklist-items {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* RC3.0.73 - Painel de pendencias prioritarias */
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-board-panel {
+  display: grid !important;
+  gap: 14px !important;
+  padding: 18px !important;
+  border-radius: 2px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left: 5px solid #d90404 !important;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08) !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-counter {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 34px !important;
+  padding: 8px 12px !important;
+  border-radius: 999px !important;
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-board {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-item {
+  display: grid !important;
+  gap: 5px !important;
+  min-height: 104px !important;
+  padding: 14px 16px !important;
+  border-radius: 2px !important;
+  background: linear-gradient(135deg, #ffffff, #f8fafc) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left: 4px solid #94a3b8 !important;
+  color: #0f172a !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06) !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-item:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.10) !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-item span {
+  width: fit-content !important;
+  padding: 5px 8px !important;
+  border-radius: 999px !important;
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  letter-spacing: .06em !important;
+  text-transform: uppercase !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-item strong {
+  color: #0f172a !important;
+  font-size: 16px !important;
+  line-height: 1.15 !important;
+  font-weight: 950 !important;
+  overflow-wrap: anywhere !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-item small,
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-item em {
+  color: #475569 !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  font-weight: 750 !important;
+  font-style: normal !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-item.is-critical {
+  border-left-color: #dc2626 !important;
+  background: linear-gradient(135deg, #fff7f7, #ffffff) !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-item.is-critical span {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-item.is-client {
+  border-left-color: #2563eb !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-item.is-client span {
+  background: #dbeafe !important;
+  color: #1e40af !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-item.is-progress {
+  border-left-color: #f59e0b !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-item.is-progress span,
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-item.is-pending span {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-empty {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  gap: 6px !important;
+  padding: 18px !important;
+  border-radius: 2px !important;
+  background: #f8fafc !important;
+  border: 1px dashed #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-empty strong {
+  font-size: 16px !important;
+  font-weight: 950 !important;
+}
+
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-empty span {
+  color: #64748b !important;
+  font-weight: 750 !important;
+}
+
+@media (max-width: 860px) {
+  html body #dashboardScreen.screen.active #dashboardSection .vex-pending-board {
+    grid-template-columns: 1fr !important;
+  }
+
+  html body #dashboardScreen.screen.active #dashboardSection .vex-pending-board-panel .vex-clean-panel-head {
+    align-items: flex-start !important;
+  }
+}
+
+/* RC3.0.74 - Pendencias em aba separada */
+html body #dashboardScreen.screen.active #dashboardSection .vex-pending-board-panel {
+  display: none !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .section-header {
+  border-left: 5px solid #d90404 !important;
+  background: #ffffff !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-board-panel {
+  display: grid !important;
+  gap: 14px !important;
+  padding: 18px !important;
+  border-radius: 2px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left: 5px solid #d90404 !important;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08) !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-counter {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 34px !important;
+  padding: 8px 12px !important;
+  border-radius: 999px !important;
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-board {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item {
+  display: grid !important;
+  gap: 5px !important;
+  min-height: 104px !important;
+  padding: 14px 16px !important;
+  border-radius: 2px !important;
+  background: linear-gradient(135deg, #ffffff, #f8fafc) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left: 4px solid #94a3b8 !important;
+  color: #0f172a !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06) !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item span {
+  width: fit-content !important;
+  padding: 5px 8px !important;
+  border-radius: 999px !important;
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  letter-spacing: .06em !important;
+  text-transform: uppercase !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item strong {
+  color: #0f172a !important;
+  font-size: 16px !important;
+  line-height: 1.15 !important;
+  font-weight: 950 !important;
+  overflow-wrap: anywhere !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item small,
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item em {
+  color: #475569 !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  font-weight: 750 !important;
+  font-style: normal !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item.is-critical {
+  border-left-color: #dc2626 !important;
+  background: linear-gradient(135deg, #fff7f7, #ffffff) !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item.is-critical span {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item.is-client {
+  border-left-color: #2563eb !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item.is-client span {
+  background: #dbeafe !important;
+  color: #1e40af !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item.is-progress {
+  border-left-color: #f59e0b !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item.is-progress span,
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item.is-pending span {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-empty {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  gap: 6px !important;
+  padding: 18px !important;
+  border-radius: 2px !important;
+  background: #f8fafc !important;
+  border: 1px dashed #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-empty strong {
+  font-size: 16px !important;
+  font-weight: 950 !important;
+}
+
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-empty span {
+  color: #64748b !important;
+  font-weight: 750 !important;
+}
+
+html body #dashboardScreen.screen.active .nav-item[data-section="pendenciesSection"]::before {
+  content: "PE" !important;
+}
+
+@media (max-width: 860px) {
+  html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-board {
+    grid-template-columns: 1fr !important;
+  }
+
+  html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-board-panel .vex-clean-panel-head {
+    align-items: flex-start !important;
+  }
 }
