@@ -76,6 +76,7 @@ let vexInventoryCrlvDraft = null;
 let vexInventoryCollection = null;
 let unsubscribeVexInventory = null;
 let vexInventoryEditingId = "";
+let vexInventoryKeyLabelSelectedIds = new Set();
 
 
 const ADMIN_EMAILS = [
@@ -1414,6 +1415,7 @@ function initializeVexInventory() {
   loadVexInventory();
   injectVexInventoryStyles();
   bindVexInventoryForm();
+  initializeVexKeyLabels();
   insertVexInventorySaleLookup();
   renderVexInventory();
 }
@@ -1737,6 +1739,11 @@ function bindVexInventoryForm() {
   const parseButton = document.getElementById("inventoryParseButton");
   const clearButton = document.getElementById("inventoryClearButton");
   const search = document.getElementById("inventorySearch");
+  const keyLabelsToggleButton = document.getElementById("inventoryKeyLabelsToggleButton");
+  const keyLabelsStatusFilter = document.getElementById("inventoryKeyLabelsStatusFilter");
+  const keyLabelsSelectAllButton = document.getElementById("inventoryKeyLabelsSelectAllButton");
+  const keyLabelsClearButton = document.getElementById("inventoryKeyLabelsClearButton");
+  const keyLabelsGenerateButton = document.getElementById("inventoryKeyLabelsGenerateButton");
 
   if (form && form.dataset.vexInventoryReady !== "true") {
     form.dataset.vexInventoryReady = "true";
@@ -1804,6 +1811,35 @@ function bindVexInventoryForm() {
     search.addEventListener("input", renderVexInventory);
   }
 
+
+  if (keyLabelsToggleButton && keyLabelsToggleButton.dataset.vexInventoryReady !== "true") {
+    keyLabelsToggleButton.dataset.vexInventoryReady = "true";
+    keyLabelsToggleButton.addEventListener("click", toggleVexInventoryKeyLabelsPanel);
+  }
+
+  if (keyLabelsStatusFilter && keyLabelsStatusFilter.dataset.vexInventoryReady !== "true") {
+    keyLabelsStatusFilter.dataset.vexInventoryReady = "true";
+    keyLabelsStatusFilter.addEventListener("change", function() {
+      vexInventoryKeyLabelSelectedIds.clear();
+      renderVexInventory();
+      updateVexInventoryKeyLabelSummary();
+    });
+  }
+
+  if (keyLabelsSelectAllButton && keyLabelsSelectAllButton.dataset.vexInventoryReady !== "true") {
+    keyLabelsSelectAllButton.dataset.vexInventoryReady = "true";
+    keyLabelsSelectAllButton.addEventListener("click", selectAllVexInventoryKeyLabels);
+  }
+
+  if (keyLabelsClearButton && keyLabelsClearButton.dataset.vexInventoryReady !== "true") {
+    keyLabelsClearButton.dataset.vexInventoryReady = "true";
+    keyLabelsClearButton.addEventListener("click", clearVexInventoryKeyLabelSelection);
+  }
+
+  if (keyLabelsGenerateButton && keyLabelsGenerateButton.dataset.vexInventoryReady !== "true") {
+    keyLabelsGenerateButton.dataset.vexInventoryReady = "true";
+    keyLabelsGenerateButton.addEventListener("click", generateVexInventoryKeyLabelsPdf);
+  }
   initializeVexInventoryMasks();
 }
 
@@ -2293,6 +2329,293 @@ function getVexInventorySoldRibbon(status) {
   if (isVexInventorySoldStatus(status)) return "Vendido VEX";
   return "";
 }
+
+function initializeVexKeyLabels() {
+  updateVexInventoryKeyLabelSummary();
+}
+
+function isVexKeyLabelsPanelOpen() {
+  const section = document.getElementById("inventorySection");
+  return Boolean(section && section.classList.contains("inventory-key-labels-open"));
+}
+
+function toggleVexInventoryKeyLabelsPanel() {
+  const section = document.getElementById("inventorySection");
+  const panel = document.getElementById("inventoryKeyLabelsPanel");
+  if (!section || !panel) return;
+
+  const isOpen = section.classList.toggle("inventory-key-labels-open");
+  panel.classList.toggle("hidden", !isOpen);
+  renderVexInventory();
+  updateVexInventoryKeyLabelSummary();
+}
+
+function getVexInventoryKeyLabelMode() {
+  const filter = document.getElementById("inventoryKeyLabelsStatusFilter");
+  return filter ? filter.value || "Disponivel" : "Disponivel";
+}
+
+function isVexInventoryEligibleForKeyLabel(item) {
+  const mode = getVexInventoryKeyLabelMode();
+  if (mode === "Todos") return true;
+  if (mode === "Vendido") return isVexInventorySoldStatus(item && item.status);
+  return normalizeVexInventoryStatus(item && item.status) === "disponivel";
+}
+
+function toggleVexInventoryKeyLabelSelection(id, checked) {
+  if (!id) return;
+  if (checked) {
+    vexInventoryKeyLabelSelectedIds.add(id);
+  } else {
+    vexInventoryKeyLabelSelectedIds.delete(id);
+  }
+  updateVexInventoryKeyLabelSummary();
+}
+
+function getVexInventoryKeyLabelCandidates() {
+  return vexInventory.filter(function(item) {
+    return item && item.id && isVexInventoryEligibleForKeyLabel(item);
+  });
+}
+
+function getVexInventorySelectedKeyLabelItems() {
+  const selected = new Set(Array.from(vexInventoryKeyLabelSelectedIds));
+  return vexInventory.filter(function(item) {
+    return item && selected.has(item.id) && isVexInventoryEligibleForKeyLabel(item);
+  });
+}
+
+function selectAllVexInventoryKeyLabels() {
+  vexInventoryKeyLabelSelectedIds = new Set(getVexInventoryKeyLabelCandidates().map(function(item) { return item.id; }));
+  renderVexInventory();
+  updateVexInventoryKeyLabelSummary();
+}
+
+function clearVexInventoryKeyLabelSelection() {
+  vexInventoryKeyLabelSelectedIds.clear();
+  renderVexInventory();
+  updateVexInventoryKeyLabelSummary();
+}
+
+function updateVexInventoryKeyLabelSummary() {
+  const selectedItems = getVexInventorySelectedKeyLabelItems();
+  const candidates = getVexInventoryKeyLabelCandidates();
+  const summary = document.getElementById("inventoryKeyLabelsSummary");
+  const generateButton = document.getElementById("inventoryKeyLabelsGenerateButton");
+  const selectAllButton = document.getElementById("inventoryKeyLabelsSelectAllButton");
+
+  if (summary) {
+    summary.textContent = `${selectedItems.length} selecionado(s) de ${candidates.length}`;
+  }
+
+  if (generateButton) {
+    generateButton.disabled = selectedItems.length === 0;
+  }
+
+  if (selectAllButton) {
+    const mode = getVexInventoryKeyLabelMode();
+    selectAllButton.textContent = mode === "Disponivel" ? "Selecionar todos disponiveis" : "Selecionar todos do filtro";
+  }
+}
+
+function getVexKeyLabelFirstYear(year) {
+  const match = String(year || "").match(/\d{4}/);
+  return match ? match[0] : "";
+}
+
+function getVexKeyLabelVehicleTitle(item) {
+  const rawModel = String(item && item.model ? item.model : "VEICULO").replace(/\s+/g, " ").trim();
+  return simplifyVexKeyLabelModel(rawModel).toUpperCase();
+}
+
+function simplifyVexKeyLabelModel(model) {
+  let clean = normalizeVexPdfText(model).toUpperCase();
+  if (clean.indexOf("/") >= 0) {
+    clean = clean.split("/").slice(1).join(" ").trim() || clean;
+  }
+
+  clean = clean
+    .replace(/\bCHEVROLET\b/g, "")
+    .replace(/\bCHEV\b/g, "")
+    .replace(/\bVOLKSWAGEN\b/g, "")
+    .replace(/\bHYUNDAI\b/g, "")
+    .replace(/\bTOYOTA\b/g, "")
+    .replace(/\bCITROEN\b/g, "")
+    .replace(/\bRENAULT\b/g, "")
+    .replace(/\bNISSAN\b/g, "")
+    .replace(/\bHONDA\b/g, "")
+    .replace(/\bFORD\b/g, "")
+    .replace(/\bFIAT\b/g, "")
+    .replace(/\bKIA\b/g, "")
+    .replace(/\bGM\b/g, "")
+    .replace(/\bVW\b/g, "")
+    .replace(/\bSD\b/g, "SEDAN")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const words = clean.split(/\s+/).filter(Boolean);
+  const keep = [];
+
+  for (let i = 0; i < words.length; i += 1) {
+    const word = words[i];
+    if (!keep.length) {
+      keep.push(word);
+      continue;
+    }
+
+    if (/^\d\.\d/.test(word)) break;
+    if (/^\d{1,2}(V|MT|AT|P|P\.)/.test(word)) break;
+    if (/^(FLEX|FF|MT|AT|AUT|AUTOMATICO|MANUAL|COMPLETO|LT|LS|EX|EXL|GL|GLS|SPORT|PREC|PRES|PACK|PK|HB|XR|XS|XEI|GLX|LTD|TDI|T8V|8V)$/.test(word)) break;
+    if (/^[A-Z]{1,3}\d/.test(word)) break;
+
+    keep.push(word);
+    if (keep.length >= 2) break;
+  }
+
+  return keep.join(" ") || clean.split(/\s+/).slice(0, 2).join(" ") || "VEICULO";
+}
+function normalizeVexPdfText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[()\\]/g, " ")
+    .replace(/[^A-Za-z0-9 .\/\-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function escapeVexPdfText(value) {
+  return normalizeVexPdfText(value).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+}
+
+function fitVexPdfFontSize(text, maxWidth, baseSize, minSize) {
+  const length = Math.max(1, String(text || "").length);
+  const estimated = length * baseSize * 0.54;
+  if (estimated <= maxWidth) return baseSize;
+  return Math.max(minSize, Math.min(baseSize, maxWidth / (length * 0.54)));
+}
+
+function estimateVexPdfTextWidth(text, fontSize) {
+  return Math.max(1, String(text || "").length) * fontSize * 0.54;
+}
+
+function createVexPdfDocument(contentStream) {
+  const objects = [];
+  objects.push('<< /Type /Catalog /Pages 2 0 R >>');
+  objects.push('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  objects.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>');
+  objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  objects.push(`<< /Length ${contentStream.length} >>\nstream\n${contentStream}\nendstream`);
+
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+  objects.forEach(function(object, index) {
+    offsets.push(pdf.length);
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+
+  const xrefOffset = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i < offsets.length; i += 1) {
+    pdf += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return pdf;
+}
+
+function buildVexInventoryKeyLabelsPdf(items) {
+  const pageWidth = 595.28;
+  const pageHeight = 841.89;
+  const cm = 28.3464567;
+  const mm = 2.83464567;
+  const labelWidth = 3.3 * cm;
+  const labelHeight = 1.8 * cm;
+  const gapX = 2 * mm;
+  const gapY = 3 * mm;
+  const cols = 6;
+  const rows = Math.floor((pageHeight + gapY) / (labelHeight + gapY));
+  const gridWidth = cols * labelWidth + (cols - 1) * gapX;
+  const startX = Math.max(0, (pageWidth - gridWidth) / 2);
+  const startY = pageHeight - 1 * mm - labelHeight;
+  const stream = [];
+
+  stream.push('0.3 w 0.6 0.6 0.6 RG');
+
+  items.forEach(function(item, index) {
+    if (index >= cols * rows) return;
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    const x = startX + col * (labelWidth + gapX);
+    const y = startY - row * (labelHeight + gapY);
+    const model = getVexKeyLabelVehicleTitle(item);
+    const year = getVexKeyLabelFirstYear(item && item.year);
+    const plate = normalizeVexPlate(item && item.plate) || "SEMPLACA";
+    const modelSize = fitVexPdfFontSize(model, labelWidth - 8, 8, 5.6);
+    const yearSize = 7;
+    const plateSize = fitVexPdfFontSize(plate, labelWidth - 8, 10, 8.5);
+    const modelX = x + (labelWidth - estimateVexPdfTextWidth(model, modelSize)) / 2;
+    const yearX = x + (labelWidth - estimateVexPdfTextWidth(year, yearSize)) / 2;
+    const plateX = x + (labelWidth - estimateVexPdfTextWidth(plate, plateSize)) / 2;
+
+    stream.push(`${x.toFixed(2)} ${y.toFixed(2)} ${labelWidth.toFixed(2)} ${labelHeight.toFixed(2)} re S`);
+    stream.push(`BT /F1 ${modelSize.toFixed(2)} Tf 0 0 0 rg ${modelX.toFixed(2)} ${(y + 36).toFixed(2)} Td (${escapeVexPdfText(model)}) Tj ET`);
+    stream.push(`BT /F1 ${yearSize.toFixed(2)} Tf 0 0 0 rg ${yearX.toFixed(2)} ${(y + 27).toFixed(2)} Td (${escapeVexPdfText(year)}) Tj ET`);
+    stream.push(`BT /F1 ${plateSize.toFixed(2)} Tf 0 0 0 rg ${plateX.toFixed(2)} ${(y + 12).toFixed(2)} Td (${escapeVexPdfText(plate)}) Tj ET`);
+  });
+
+  return createVexPdfDocument(stream.join("\n"));
+}
+function downloadVexBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+}
+
+async function saveVexInventoryKeyLabelsHistory(items) {
+  if (!db || !currentUser || !items.length) return;
+
+  const batchId = `etiquetas-${Date.now()}`;
+  const payload = {
+    id: batchId,
+    usuario: currentUser.email || currentUser.uid || "",
+    userId: currentUser.uid || "",
+    data_hora: firebase && firebase.firestore ? firebase.firestore.FieldValue.serverTimestamp() : new Date().toISOString(),
+    quantidade: items.length,
+    veiculosSelecionados: items.map(function(item) {
+      return {
+        id: item.id || "",
+        modelo: item.model || "",
+        ano: item.year || "",
+        placa: item.plate || "",
+        status: item.status || ""
+      };
+    })
+  };
+
+  try {
+    await db.collection("etiquetas_geradas").doc(batchId).set(payload, { merge: true });
+  } catch (error) {
+    console.warn("Historico de etiquetas nao salvo:", error);
+  }
+}
+
+async function generateVexInventoryKeyLabelsPdf() {
+  const items = getVexInventorySelectedKeyLabelItems();
+  if (!items.length) {
+    alert("Selecione pelo menos um veiculo para gerar etiquetas.");
+    return;
+  }
+
+  const pdf = buildVexInventoryKeyLabelsPdf(items);
+  const blob = new Blob([pdf], { type: "application/pdf" });
+  downloadVexBlob(blob, "etiquetas_chaves_estoque.pdf");
+  await saveVexInventoryKeyLabelsHistory(items);
+}
 function renderVexInventory() {
   const list = document.getElementById("inventoryList");
   const counter = document.getElementById("inventoryCounter");
@@ -2336,9 +2659,12 @@ function renderVexInventory() {
     const ribbonText = getVexInventorySoldRibbon(status);
     const ribbonClass = isCdaStoreSold ? " inventory-cda-store-ribbon" : (isCdaSold ? " inventory-cda-ribbon" : "");
     const soldRibbon = ribbonText ? `<div class="inventory-sold-ribbon${ribbonClass}">${escapeHTML(ribbonText)}</div>` : "";
+    const keyLabelChecked = vexInventoryKeyLabelSelectedIds.has(item.id) ? " checked" : "";
+    const keyLabelDisabled = isVexKeyLabelsPanelOpen() && !isVexInventoryEligibleForKeyLabel(item) ? " disabled" : "";
 
     return `
-      <article class="inventory-item${itemClass}">
+      <article class="inventory-item${itemClass}${keyLabelChecked ? " is-key-label-selected" : ""}">
+        <label class="inventory-key-label-check"><input type="checkbox" class="inventory-key-label-checkbox" data-inventory-key-label-id="${escapeHTML(item.id)}" onchange="toggleVexInventoryKeyLabelSelection('${escapeHTML(item.id)}', this.checked)"${keyLabelChecked}${keyLabelDisabled} /><span>Etiqueta</span></label>
         <div class="inventory-thumb">${item.photoUrl ? `<img src="${escapeHTML(item.photoUrl)}" alt="${escapeHTML(item.model)}" />` : `<span>${escapeHTML(item.plate || "VEX")}</span>`}${soldRibbon}</div>
         <div class="inventory-info">
           <strong>${escapeHTML(item.model)} <em class="inventory-status-pill ${statusBadgeClass}">${escapeHTML(status)}</em></strong>
@@ -5933,238 +6259,6 @@ injectVexFinalContrastStyles();
    RC3.0.47 - Menu lateral VEX Oficial
    Visual premium preto fosco com destaque vermelho.
    ========================================================= */
-function injectVexOfficialSidebarStyles() {
-  if (document.getElementById("vex-official-sidebar-styles")) return;
-
-  const style = document.createElement("style");
-  style.id = "vex-official-sidebar-styles";
-  style.textContent = `
-    @media (min-width: 761px) {
-      html body #dashboardScreen.screen.active .sidebar {
-        width: 286px !important;
-        min-height: 100vh !important;
-        padding: 22px 18px !important;
-        gap: 22px !important;
-        position: sticky !important;
-        top: 0 !important;
-        background:
-          linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0) 22%),
-          linear-gradient(180deg, #08090b 0%, #111820 52%, #08090b 100%) !important;
-        border-right: 1px solid rgba(217, 4, 4, 0.28) !important;
-        box-shadow: 18px 0 46px rgba(15, 23, 42, 0.16) !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        background:
-          radial-gradient(circle at 18% 4%, rgba(217, 4, 4, 0.20), transparent 30%),
-          linear-gradient(90deg, rgba(217, 4, 4, 0.18), transparent 22%);
-        opacity: 0.72;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar > * {
-        position: relative;
-        z-index: 1;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-brand {
-        min-height: 92px !important;
-        padding: 16px 12px 18px !important;
-        display: grid !important;
-        grid-template-columns: 72px minmax(0, 1fr) !important;
-        gap: 13px !important;
-        align-items: center !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small {
-        width: 72px !important;
-        height: 54px !important;
-        border-radius: 2px !important;
-        background: transparent !important;
-        border: 0 !important;
-        box-shadow: none !important;
-        padding: 0 !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small img {
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: contain !important;
-        filter: drop-shadow(0 8px 18px rgba(217, 4, 4, 0.18)) !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-brand strong {
-        color: #ffffff !important;
-        font-size: 15px !important;
-        line-height: 1.05 !important;
-        font-weight: 950 !important;
-        letter-spacing: 0.06em !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-brand span {
-        display: block !important;
-        margin-top: 6px !important;
-        color: #aab4c2 !important;
-        font-size: 11px !important;
-        line-height: 1.25 !important;
-        font-weight: 750 !important;
-        letter-spacing: 0.02em !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-nav {
-        display: grid !important;
-        gap: 7px !important;
-        padding: 4px 0 !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-nav::before {
-        content: "MENU DO APP";
-        display: block;
-        margin: 0 10px 4px;
-        color: #7f8a99;
-        font-size: 10px;
-        font-weight: 950;
-        letter-spacing: 0.18em;
-      }
-
-      html body #dashboardScreen.screen.active .nav-item {
-        position: relative !important;
-        min-height: 48px !important;
-        padding: 0 14px 0 46px !important;
-        display: flex !important;
-        align-items: center !important;
-        border-radius: 2px !important;
-        background: transparent !important;
-        border: 1px solid transparent !important;
-        color: #cbd5e1 !important;
-        font-size: 14px !important;
-        font-weight: 850 !important;
-        letter-spacing: 0 !important;
-        text-align: left !important;
-        transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease !important;
-      }
-
-      html body #dashboardScreen.screen.active .nav-item::before {
-        position: absolute !important;
-        left: 15px !important;
-        top: 50% !important;
-        width: 20px !important;
-        transform: translateY(-50%) !important;
-        display: grid !important;
-        place-items: center !important;
-        color: #7f8a99 !important;
-        font-size: 15px !important;
-        font-weight: 950 !important;
-        line-height: 1 !important;
-      }
-
-      html body #dashboardScreen.screen.active .nav-item[data-section="dashboardSection"]::before { content: "01" !important; font-size: 10px !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="newSaleSection"]::before { content: "+" !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="inventorySection"]::before { content: "â–? !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="historySection"]::before { content: "â‰? !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="reportsSection"]::before { content: "â–? !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="profileSection"]::before { content: "â—? !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="usersSection"]::before { content: "âš? !important; }
-
-      html body #dashboardScreen.screen.active .nav-item::after {
-        content: "" !important;
-        position: absolute !important;
-        left: 0 !important;
-        top: 8px !important;
-        bottom: 8px !important;
-        width: 4px !important;
-        height: auto !important;
-        right: auto !important;
-        border-radius: 0 999px 999px 0 !important;
-        background: #d90404 !important;
-        transform: scaleY(0) !important;
-        transform-origin: center !important;
-        transition: transform 160ms ease !important;
-      }
-
-      html body #dashboardScreen.screen.active .nav-item:hover {
-        color: #ffffff !important;
-        background: rgba(255, 255, 255, 0.055) !important;
-        border-color: rgba(255, 255, 255, 0.08) !important;
-        transform: translateX(2px) !important;
-      }
-
-      html body #dashboardScreen.screen.active .nav-item:hover::before {
-        color: #ffffff !important;
-      }
-
-      html body #dashboardScreen.screen.active .nav-item.active {
-        color: #ffffff !important;
-        background:
-          linear-gradient(90deg, rgba(217, 4, 4, 0.26), rgba(217, 4, 4, 0.05)),
-          rgba(255, 255, 255, 0.055) !important;
-        border-color: rgba(217, 4, 4, 0.36) !important;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 12px 24px rgba(0,0,0,0.16) !important;
-      }
-
-      html body #dashboardScreen.screen.active .nav-item.active::before {
-        color: #ffffff !important;
-      }
-
-      html body #dashboardScreen.screen.active .nav-item.active::after {
-        transform: scaleY(1) !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-footer {
-        margin-top: auto !important;
-        padding: 16px 12px 4px !important;
-        gap: 12px !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.10) !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-footer #userEmailLabel {
-        color: #cbd5e1 !important;
-        font-size: 12px !important;
-        line-height: 1.35 !important;
-        font-weight: 800 !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-footer #userEmailLabel::before {
-        content: "USUARIO LOGADO";
-        display: block;
-        margin-bottom: 5px;
-        color: #7f8a99;
-        font-size: 9px;
-        font-weight: 950;
-        letter-spacing: 0.16em;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-footer .ghost-button,
-      html body #dashboardScreen.screen.active .sidebar-footer button {
-        min-height: 42px !important;
-        border-radius: 2px !important;
-        background: rgba(255, 255, 255, 0.06) !important;
-        color: #ffffff !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        font-weight: 950 !important;
-        box-shadow: none !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-footer .ghost-button:hover,
-      html body #dashboardScreen.screen.active .sidebar-footer button:hover {
-        background: rgba(217, 4, 4, 0.18) !important;
-        border-color: rgba(217, 4, 4, 0.38) !important;
-      }
-    }
-  `;
-
-  document.head.appendChild(style);
-}
-
-injectVexOfficialSidebarStyles();
-
-// Tema claro pausado na RC3.0.31 para restaurar o visual escuro aprovado.
 
 setTimeout(() => {
   const dashboardSection = document.getElementById("dashboardSection");
@@ -6253,175 +6347,6 @@ injectVexRC332InventoryCardFix();
 /* =========================================================
    RC3.0.30 - Contraste clean + visualizacao do estoque
    ========================================================= */
-function injectVexRC330ContrastStyles() {
-  if (document.getElementById("vexRC330ContrastStyles")) return;
-
-  const style = document.createElement("style");
-  style.id = "vexRC330ContrastStyles";
-  style.textContent = `
-    .workspace,
-    .content-section {
-      color: #111827 !important;
-    }
-
-    .form-card,
-    .filters-card,
-    .reports-print-panel,
-    .inventory-item,
-    .vex-clean-panel,
-    .vex-clean-kpi,
-    .vex-formalization-form-card,
-    .vex-formalization-summary-item,
-    .vex-inventory-sale-lookup,
-    .empty-state {
-      background: #ffffff !important;
-      color: #111827 !important;
-      border-color: #d4dbe7 !important;
-      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08) !important;
-    }
-
-    .section-header h2,
-    .form-card h3,
-    .inventory-info strong,
-    .vex-clean-panel h2,
-    .vex-clean-kpi strong,
-    .vex-formalization-form-card h3,
-    .vex-formalization-summary-item strong,
-    .vex-inventory-sale-lookup strong,
-    .reports-print-panel h3 {
-      color: #111827 !important;
-    }
-
-    .section-header p,
-    .form-card p,
-    .inventory-info small,
-    .inventory-info span,
-    .vex-clean-panel span,
-    .vex-clean-panel small,
-    .vex-clean-kpi span,
-    .vex-clean-kpi small,
-    .vex-formalization-form-card p,
-    .vex-formalization-summary-item span,
-    .vex-inventory-sale-lookup small,
-    #saleInventoryLookupMessage {
-      color: #475467 !important;
-    }
-
-    input,
-    select,
-    textarea {
-      background: #ffffff !important;
-      color: #111827 !important;
-      border-color: #cbd5e1 !important;
-    }
-
-    input::placeholder,
-    textarea::placeholder {
-      color: #667085 !important;
-      opacity: 1 !important;
-    }
-
-    .secondary-button,
-    .ghost-button {
-      background: #f8fafc !important;
-      color: #111827 !important;
-      border-color: #cbd5e1 !important;
-    }
-
-    .secondary-button:hover,
-    .ghost-button:hover {
-      background: #eef2f7 !important;
-      color: #0f172a !important;
-    }
-
-    .vex-drawer-panel,
-    .vex-inventory-details-panel {
-      background: #f8fafc !important;
-      color: #111827 !important;
-    }
-
-    .vex-inventory-details-panel {
-      display: grid;
-      gap: 16px;
-      max-width: 680px;
-    }
-
-    .vex-inventory-details-photo {
-      width: 100%;
-      aspect-ratio: 16 / 10;
-      border-radius: 18px;
-      overflow: hidden;
-      display: grid;
-      place-items: center;
-      background: #111827;
-      color: #ffffff;
-      font-size: 32px;
-      font-weight: 950;
-      border: 1px solid #d4dbe7;
-    }
-
-    .vex-inventory-details-photo img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .vex-inventory-details-head h2 {
-      margin: 8px 0 4px;
-      color: #111827 !important;
-      font-size: clamp(24px, 4vw, 36px);
-      line-height: 1.05;
-    }
-
-    .vex-inventory-details-head p {
-      margin: 0;
-      color: #475467 !important;
-    }
-
-    .vex-inventory-details-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .vex-inventory-detail-row,
-    .vex-inventory-details-notes {
-      background: #ffffff;
-      border: 1px solid #d4dbe7;
-      border-radius: 14px;
-      padding: 12px;
-    }
-
-    .vex-inventory-detail-row span,
-    .vex-inventory-details-notes span {
-      display: block;
-      color: #667085;
-      font-size: 11px;
-      font-weight: 900;
-      text-transform: uppercase;
-      margin-bottom: 5px;
-    }
-
-    .vex-inventory-detail-row strong,
-    .vex-inventory-details-notes p {
-      color: #111827 !important;
-      font-size: 14px;
-      line-height: 1.35;
-      margin: 0;
-      word-break: break-word;
-    }
-
-    @media (max-width: 640px) {
-      .vex-inventory-details-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  `;
-
-  document.head.appendChild(style);
-}
-
 function injectVexRC331InventoryViewStyles() {
   if (document.getElementById("vexRC331InventoryViewStyles")) return;
 
@@ -6523,281 +6448,6 @@ injectVexRC331InventoryViewStyles();
 /* =========================================================
    RC3.0.32 - Tema claro VEX com contraste controlado
    ========================================================= */
-function injectVexRC332LightPremiumTheme() {
-  if (document.getElementById("vexRC332LightPremiumTheme")) return;
-
-  const oldLight = document.getElementById("vexVisualCleanStyles");
-  const oldContrast = document.getElementById("vexRC330ContrastStyles");
-  if (oldLight) oldLight.remove();
-  if (oldContrast) oldContrast.remove();
-
-  const style = document.createElement("style");
-  style.id = "vexRC332LightPremiumTheme";
-  style.textContent = `
-    :root {
-      --vex-red: #d90404;
-      --vex-red-dark: #9f0000;
-      --vex-ink: #111827;
-      --vex-soft-ink: #475467;
-      --vex-border: #d8e0ea;
-      --vex-paper: #ffffff;
-      --vex-page: #eef2f7;
-      --vex-sidebar: #111820;
-      --vex-sidebar-2: #202a33;
-    }
-
-    body,
-    .screen.active#dashboardScreen,
-    #dashboardScreen.screen.active {
-      background: var(--vex-page) !important;
-      color: var(--vex-ink) !important;
-    }
-
-    .workspace {
-      background: linear-gradient(180deg, #f6f8fb 0%, #eef2f7 100%) !important;
-      color: var(--vex-ink) !important;
-    }
-
-    .content-section {
-      color: var(--vex-ink) !important;
-    }
-
-    .content-section.active {
-      background: transparent !important;
-    }
-
-    .sidebar {
-      background: linear-gradient(180deg, var(--vex-sidebar), var(--vex-sidebar-2)) !important;
-      border-right: 1px solid rgba(15, 23, 42, 0.18) !important;
-      box-shadow: 16px 0 34px rgba(15, 23, 42, 0.18) !important;
-    }
-
-    .sidebar-brand strong,
-    .sidebar-footer strong,
-    .sidebar-footer span {
-      color: #ffffff !important;
-    }
-
-    .sidebar-brand span {
-      color: #cbd5e1 !important;
-    }
-
-    .nav-item {
-      background: rgba(255, 255, 255, 0.05) !important;
-      color: #e5e7eb !important;
-      border: 1px solid rgba(255, 255, 255, 0.08) !important;
-      box-shadow: none !important;
-    }
-
-    .nav-item:hover,
-    .nav-item.active {
-      background: var(--vex-red) !important;
-      color: #ffffff !important;
-      border-color: rgba(255, 255, 255, 0.16) !important;
-    }
-
-    .section-header,
-    .form-card,
-    .filters-card,
-    .reports-print-panel,
-    .reports-grid > div,
-    .inventory-item,
-    .inventory-photo-box,
-    .vex-inventory-sale-lookup,
-    .vex-clean-kpi,
-    .vex-clean-panel,
-    .vex-clean-latest-item,
-    .vex-clean-chart-item,
-    .vex-formalization-form-card,
-    .vex-formalization-summary-item,
-    .empty-state,
-    .commission-box,
-    .admin-info-card,
-    .admin-create-user-card,
-    .users-list > *,
-    .profile-card {
-      background: var(--vex-paper) !important;
-      color: var(--vex-ink) !important;
-      border: 1px solid var(--vex-border) !important;
-      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08) !important;
-      backdrop-filter: none !important;
-    }
-
-    .section-header {
-      border-top: 4px solid var(--vex-red) !important;
-    }
-
-    h1, h2, h3, h4,
-    .section-header h2,
-    .form-card h3,
-    .inventory-info strong,
-    .reports-grid strong,
-    .reports-print-panel h3,
-    .vex-clean-kpi strong,
-    .vex-clean-panel h2,
-    .vex-formalization-form-card h3,
-    .vex-formalization-summary-item strong,
-    .vex-inventory-sale-lookup strong,
-    label {
-      color: var(--vex-ink) !important;
-    }
-
-    p,
-    small,
-    span,
-    .section-header p,
-    .form-card p,
-    .inventory-info small,
-    .inventory-info span,
-    .reports-grid span,
-    .reports-print-panel p,
-    .vex-clean-kpi span,
-    .vex-clean-kpi small,
-    .vex-clean-panel span,
-    .vex-clean-panel small,
-    .vex-formalization-form-card p,
-    .vex-formalization-summary-item span,
-    .vex-inventory-sale-lookup small,
-    #saleInventoryLookupMessage {
-      color: var(--vex-soft-ink) !important;
-    }
-
-    input,
-    select,
-    textarea {
-      background: #f8fafc !important;
-      color: var(--vex-ink) !important;
-      border: 1px solid #cbd5e1 !important;
-      box-shadow: none !important;
-    }
-
-    input::placeholder,
-    textarea::placeholder {
-      color: #667085 !important;
-      opacity: 1 !important;
-    }
-
-    input:focus,
-    select:focus,
-    textarea:focus {
-      border-color: var(--vex-red) !important;
-      box-shadow: 0 0 0 4px rgba(217, 4, 4, 0.10) !important;
-    }
-
-    .primary-button,
-    .vex-clean-action,
-    .vex-mini-button {
-      background: linear-gradient(135deg, var(--vex-red), var(--vex-red-dark)) !important;
-      color: #ffffff !important;
-      border: 0 !important;
-      box-shadow: 0 10px 22px rgba(217, 4, 4, 0.18) !important;
-    }
-
-    .secondary-button,
-    .ghost-button {
-      background: #f8fafc !important;
-      color: var(--vex-ink) !important;
-      border: 1px solid #cbd5e1 !important;
-      box-shadow: none !important;
-    }
-
-    .secondary-button:hover,
-    .ghost-button:hover {
-      background: #eef2f7 !important;
-      color: #0f172a !important;
-    }
-
-    .eyebrow,
-    .counter-pill,
-    .vex-kicker {
-      background: #f1f5f9 !important;
-      color: #475467 !important;
-      border: 1px solid #cbd5e1 !important;
-    }
-
-    .inventory-thumb,
-    .inventory-photo-preview,
-    .vex-clean-car-mark {
-      background: #111820 !important;
-      color: #ffffff !important;
-      border: 1px solid #cbd5e1 !important;
-    }
-
-    .inventory-thumb span {
-      background: var(--vex-red) !important;
-      color: #ffffff !important;
-    }
-
-    .vex-drawer-panel {
-      background: #f8fafc !important;
-      color: var(--vex-ink) !important;
-      border-left: 1px solid var(--vex-border) !important;
-    }
-
-    .vex-drawer-panel h2,
-    .vex-drawer-panel h3,
-    .vex-drawer-panel strong,
-    .vex-inventory-details-head h2 {
-      color: var(--vex-ink) !important;
-    }
-
-    .vex-drawer-panel p,
-    .vex-drawer-panel span,
-    .vex-inventory-details-head p {
-      color: var(--vex-soft-ink) !important;
-    }
-
-    .vex-inventory-details-panel {
-      background: #f8fafc !important;
-      color: var(--vex-ink) !important;
-    }
-
-    .vex-inventory-details-photo {
-      background: #111820 !important;
-      border: 1px solid var(--vex-border) !important;
-      color: #ffffff !important;
-    }
-
-    .vex-inventory-detail-row,
-    .vex-inventory-details-notes {
-      background: #ffffff !important;
-      border: 1px solid var(--vex-border) !important;
-    }
-
-    .vex-inventory-detail-row strong,
-    .vex-inventory-details-notes p {
-      color: var(--vex-ink) !important;
-    }
-
-    .vex-inventory-detail-row span,
-    .vex-inventory-details-notes span {
-      color: #667085 !important;
-    }
-
-    .vex-drawer-close {
-      background: rgba(17, 24, 39, 0.08) !important;
-      color: var(--vex-ink) !important;
-    }
-
-    .vex-formalization-progress {
-      background: #e5e7eb !important;
-    }
-
-    .vex-formalization-progress-bar,
-    .vex-clean-chart-bar {
-      background: linear-gradient(90deg, var(--vex-red), var(--vex-red-dark)) !important;
-    }
-
-    @media (max-width: 760px) {
-      .sidebar {
-        background: var(--vex-sidebar) !important;
-      }
-    }
-  `;
-
-  document.head.appendChild(style);
-}
-
 // Tema claro experimental pausado. A base visual atual permanece preservada.
 
 /* =========================================================
@@ -6984,231 +6634,6 @@ function updateVexDashboardExecutive() {
   renderVexLatestVehicles();
   renderVexMonthlyGrowthChart();
 }
-
-function injectVexVisualCleanStyles() {
-  if (document.getElementById("vexVisualCleanStyles")) return;
-
-  const style = document.createElement("style");
-  style.id = "vexVisualCleanStyles";
-  style.textContent = `
-    body {
-      background: #eef1f5 !important;
-      color: #151821 !important;
-    }
-
-    body::before {
-      opacity: 0 !important;
-    }
-
-    .workspace {
-      background: #eef1f5 !important;
-      color: #151821 !important;
-    }
-
-    .content-section {
-      color: #151821 !important;
-    }
-
-    .section-header,
-    .form-card,
-    .filters-card,
-    .reports-print-panel,
-    .reports-grid > div,
-    .empty-state,
-    .commission-box,
-    .inventory-item,
-    .vex-clean-panel,
-    .vex-clean-kpis article,
-    .vex-inventory-sale-lookup {
-      background: #ffffff !important;
-      border: 1px solid #dde3eb !important;
-      box-shadow: 0 12px 34px rgba(15, 23, 42, 0.08) !important;
-      color: #151821 !important;
-      backdrop-filter: none !important;
-    }
-
-    .section-header {
-      border-radius: 18px !important;
-      padding: 18px 20px !important;
-    }
-
-    .section-header h2,
-    .form-card h2,
-    .form-card h3,
-    .reports-print-panel h3,
-    .inventory-info strong,
-    .vex-clean-panel h3,
-    .vex-clean-kpis strong,
-    .vex-clean-latest-item strong {
-      color: #151821 !important;
-    }
-
-    .section-header p,
-    .form-card p,
-    .inventory-info small,
-    .inventory-info span,
-    .vex-inventory-sale-lookup small,
-    .vex-clean-panel small,
-    .vex-clean-kpis small,
-    .vex-clean-kpis span,
-    .vex-clean-latest-item small,
-    .reports-grid span {
-      color: #667085 !important;
-    }
-
-    label {
-      color: #303846 !important;
-    }
-
-    input,
-    select,
-    textarea {
-      background: #f8fafc !important;
-      border-color: #d7dee8 !important;
-      color: #151821 !important;
-      box-shadow: none !important;
-    }
-
-    input:focus,
-    select:focus,
-    textarea:focus {
-      border-color: #e10600 !important;
-      box-shadow: 0 0 0 4px rgba(225, 6, 0, 0.10) !important;
-    }
-
-    .sidebar {
-      background: #161a22 !important;
-      border-right: 1px solid rgba(255,255,255,0.08) !important;
-      box-shadow: 12px 0 30px rgba(15, 23, 42, 0.10) !important;
-    }
-
-    .sidebar-brand strong,
-    .sidebar-footer span {
-      color: #ffffff !important;
-    }
-
-    .nav-item {
-      background: transparent !important;
-      color: rgba(255,255,255,0.78) !important;
-      border-color: transparent !important;
-    }
-
-    .nav-item.active {
-      background: rgba(225, 6, 0, 0.16) !important;
-      color: #ffffff !important;
-      border-color: rgba(225, 6, 0, 0.30) !important;
-    }
-
-    .primary-button,
-    .vex-clean-action,
-    .vex-mini-button {
-      background: #e10600 !important;
-      color: #ffffff !important;
-      border: 0 !important;
-      box-shadow: 0 10px 24px rgba(225, 6, 0, 0.18) !important;
-    }
-
-    .secondary-button,
-    .ghost-button {
-      background: #f1f4f8 !important;
-      color: #202735 !important;
-      border: 1px solid #dde3eb !important;
-      box-shadow: none !important;
-    }
-
-    .eyebrow,
-    .counter-pill,
-    .vex-kicker {
-      background: #f3f6fa !important;
-      border-color: #dde3eb !important;
-      color: #667085 !important;
-    }
-
-    .vex-dashboard-minimal {
-      display: grid;
-      gap: 18px;
-    }
-
-    .vex-dashboard-minimal .vex-clean-kpis {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .vex-dashboard-minimal .vex-clean-kpis article {
-      min-height: 122px;
-      border-radius: 16px !important;
-      padding: 18px !important;
-    }
-
-    .vex-dashboard-minimal .vex-clean-kpis strong {
-      font-size: clamp(26px, 4vw, 38px) !important;
-      letter-spacing: 0 !important;
-    }
-
-    .vex-clean-grid {
-      gap: 16px !important;
-    }
-
-    .vex-clean-panel {
-      border-radius: 16px !important;
-      padding: 18px !important;
-    }
-
-    .vex-clean-latest-item,
-    .vex-clean-chart-item,
-    .inventory-thumb,
-    .inventory-photo-preview {
-      background: #f8fafc !important;
-      border: 1px solid #dde3eb !important;
-      color: #151821 !important;
-    }
-
-    .vex-clean-car-mark,
-    .inventory-thumb span {
-      background: #e10600 !important;
-      color: #ffffff !important;
-    }
-
-    .vex-clean-chart-bar-wrap {
-      background: #eef2f7 !important;
-    }
-
-    .vex-clean-chart-bar {
-      background: linear-gradient(180deg, #e10600, #f04438) !important;
-    }
-
-    #vexGreetingTitle,
-    #vexCurrentDate,
-    .vex-clean-hero {
-      display: none !important;
-    }
-
-    @media (max-width: 860px) {
-      .vex-dashboard-minimal .vex-clean-kpis {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 560px) {
-      .workspace {
-        background: #f2f4f7 !important;
-      }
-
-      .content-section {
-        padding-bottom: 96px !important;
-      }
-
-      .vex-dashboard-minimal .vex-clean-kpis,
-      .vex-clean-grid {
-        grid-template-columns: 1fr !important;
-      }
-    }
-  `;
-
-  document.head.appendChild(style);
-}
-
-// Tema claro pausado na RC3.0.31 para restaurar o visual escuro aprovado.
 
 /* =========================================================
    RC3.0.14 - Relatorios PDF de vendas e comissao
@@ -11643,13 +11068,6 @@ function injectVexPremiumUISprint6Styles() {
         font-size: 0;
       }
 
-      .sidebar-nav .nav-item[data-section="dashboardSection"]::before { content: "IN"; font-size: 18px; }
-      .sidebar-nav .nav-item[data-section="newSaleSection"]::before { content: "+"; font-size: 18px; }
-      .sidebar-nav .nav-item[data-section="pendenciesSection"]::before { content: "PE"; font-size: 18px; }
-      .sidebar-nav .nav-item[data-section="historySection"]::before { content: "VE"; font-size: 18px; }
-      .sidebar-nav .nav-item[data-section="reportsSection"]::before { content: "RE"; font-size: 18px; }
-      .sidebar-nav .nav-item[data-section="profileSection"]::before { content: "CL"; font-size: 18px; }
-      .sidebar-nav .nav-item[data-section="usersSection"]::before { content: "AD"; font-size: 18px; }
 
       #historySection .section-header {
         padding: 14px !important;
@@ -12615,7 +12033,6 @@ initializeVexSprint9PremiumPolish();
 function initializeVexSprint10PerformanceUX() {
   injectVexSprint10Styles();
   enhanceVexSprint10ViewTransitions();
-  enhanceVexSprint10KeyboardShortcuts();
   enhanceVexSprint10FormFocus();
   enhanceVexSprint10ScrollToTop();
   enhanceVexSprint10SafeArea();
@@ -12727,28 +12144,7 @@ function injectVexSprint10Styles() {
       pointer-events: auto;
     }
 
-    .vex-s10-shortcut-hint {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      margin-left: 8px;
-      min-width: 21px;
-      height: 21px;
-      padding: 0 7px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.10);
-      color: rgba(255,255,255,0.48);
-      font-size: 10px;
-      font-weight: 650;
-      letter-spacing: -0.02em;
-    }
-
     @media (max-width: 760px) {
-      .vex-s10-shortcut-hint { display: none; }
-      .vex-s10-scroll-top {
-        right: 14px;
-        bottom: calc(96px + env(safe-area-inset-bottom));
-      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -12773,39 +12169,6 @@ function enhanceVexSprint10ViewTransitions() {
         document.body.classList.remove("vex-s10-routing");
       }, 180);
     }, { passive: true });
-  });
-}
-
-function enhanceVexSprint10KeyboardShortcuts() {
-  const shortcuts = [
-    { selector: '[data-section="dashboardSection"]', key: "1" },
-    { selector: '[data-section="newSaleSection"]', key: "2" },
-    { selector: '[data-section="historySection"]', key: "3" },
-    { selector: '[data-section="reportsSection"]', key: "4" },
-    { selector: '[data-section="profileSection"]', key: "5" }
-  ];
-
-  shortcuts.forEach(function (item) {
-    const button = document.querySelector(item.selector);
-    if (!button || button.querySelector(".vex-s10-shortcut-hint")) return;
-    const hint = document.createElement("span");
-    hint.className = "vex-s10-shortcut-hint";
-    hint.textContent = item.key;
-    button.appendChild(hint);
-  });
-
-  document.addEventListener("keydown", function (event) {
-    const activeTag = (document.activeElement && document.activeElement.tagName || "").toLowerCase();
-    if (["input", "select", "textarea"].indexOf(activeTag) >= 0) return;
-    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-
-    const target = shortcuts.find(function (item) { return item.key === event.key; });
-    if (!target) return;
-    const button = document.querySelector(target.selector);
-    if (button && !button.classList.contains("hidden")) {
-      event.preventDefault();
-      button.click();
-    }
   });
 }
 
@@ -14317,8 +13680,6 @@ function updateVexDashboardExecutive() {
   renderVexMonthlyGrowthChart();
 }
 
-// Tema claro pausado na RC3.0.31 para restaurar o visual escuro aprovado.
-
 /* =========================================================
    RC3.0.49 - Acabamento premium visual
    Estoque, dashboard executivo e menu lateral.
@@ -14598,14 +13959,6 @@ function injectVexRC49PremiumStyles() {
         font-size: 10px !important;
       }
 
-      html body #dashboardScreen.screen.active .nav-item[data-section="dashboardSection"]::before { content: "IN" !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="newSaleSection"]::before { content: "+" !important; font-size: 17px !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="inventorySection"]::before { content: "ES" !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="pendenciesSection"]::before { content: "PE" !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="historySection"]::before { content: "VE" !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="reportsSection"]::before { content: "RE" !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="profileSection"]::before { content: "PF" !important; }
-      html body #dashboardScreen.screen.active .nav-item[data-section="usersSection"]::before { content: "AD" !important; }
     }
 
     @media (max-width: 980px) {
@@ -14641,69 +13994,6 @@ function applyVexSidebarSingleBrand() {
     subtitle.textContent = "Sistema interno";
   }
 }
-
-function injectVexSidebarSingleBrandStyles() {
-  if (document.getElementById("vex-sidebar-single-brand-styles")) return;
-
-  const style = document.createElement("style");
-  style.id = "vex-sidebar-single-brand-styles";
-  style.textContent = `
-    @media (min-width: 761px) {
-      html body #dashboardScreen.screen.active .sidebar-brand {
-        grid-template-columns: 92px minmax(0, 1fr) !important;
-        min-height: 92px !important;
-        padding: 18px 12px !important;
-        align-items: center !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small {
-        width: 92px !important;
-        height: 58px !important;
-        color: transparent !important;
-        background: transparent !important;
-        border: 0 !important;
-        box-shadow: none !important;
-        overflow: visible !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small::before,
-      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small::after {
-        content: none !important;
-        display: none !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small img {
-        display: block !important;
-        width: 92px !important;
-        height: 58px !important;
-        object-fit: contain !important;
-        filter: drop-shadow(0 10px 18px rgba(217, 4, 4, 0.18)) !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-brand strong {
-        color: #ffffff !important;
-        font-size: 18px !important;
-        line-height: 1 !important;
-        font-weight: 950 !important;
-        letter-spacing: 0.04em !important;
-      }
-
-      html body #dashboardScreen.screen.active .sidebar-brand span {
-        margin-top: 8px !important;
-        color: #b8c2d1 !important;
-        font-size: 12px !important;
-        line-height: 1.2 !important;
-        font-weight: 850 !important;
-        letter-spacing: 0.08em !important;
-        text-transform: uppercase !important;
-      }
-    }
-  `;
-
-  document.head.appendChild(style);
-}
-
-injectVexSidebarSingleBrandStyles();
 applyVexSidebarSingleBrand();
 setTimeout(applyVexSidebarSingleBrand, 300);
 
@@ -15890,6 +15180,400 @@ setTimeout(() => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   RC3.0.81 - Nitidez tipografica final
+   Camada final para desktop/PWA sem trocar cores ou fundos.
+   ========================================================= */
+
+/* =========================================================
+   RC3.0.82 - Visual VEX premium leve
+   Reduz peso excessivo das fontes sem alterar regras ou fluxos.
+   ========================================================= */
+function injectVexRC82PremiumLightTypography() {
+  if (document.getElementById("vex-rc82-premium-light-typography")) return;
+  const style = document.createElement("style");
+  style.id = "vex-rc82-premium-light-typography";
+  style.textContent = `
+    html body #dashboardScreen.screen.active,
+    html body #dashboardScreen.screen.active *:not(img):not(svg),
+    html body .vex-drawer-root,
+    html body .vex-drawer-root *:not(img):not(svg) {
+      font-family: Aptos, "Segoe UI Variable Text", "Segoe UI", Arial, Helvetica, sans-serif !important;
+      font-synthesis: none !important;
+      text-rendering: geometricPrecision !important;
+      -webkit-font-smoothing: antialiased !important;
+      -moz-osx-font-smoothing: grayscale !important;
+      text-shadow: none !important;
+    }
+
+    html body #dashboardScreen.screen.active p,
+    html body #dashboardScreen.screen.active small,
+    html body #dashboardScreen.screen.active span,
+    html body #dashboardScreen.screen.active label,
+    html body #dashboardScreen.screen.active input,
+    html body #dashboardScreen.screen.active select,
+    html body #dashboardScreen.screen.active textarea,
+    html body #dashboardScreen.screen.active .inventory-info,
+    html body #dashboardScreen.screen.active .history-item,
+    html body #dashboardScreen.screen.active .dashboard-card,
+    html body #dashboardScreen.screen.active .metric-card,
+    html body .vex-drawer-root p,
+    html body .vex-drawer-root small,
+    html body .vex-drawer-root span,
+    html body .vex-drawer-root label,
+    html body .vex-drawer-root input,
+    html body .vex-drawer-root select,
+    html body .vex-drawer-root textarea {
+      font-weight: 450 !important;
+      letter-spacing: 0 !important;
+    }
+
+    html body #dashboardScreen.screen.active h1,
+    html body #dashboardScreen.screen.active h2,
+    html body #dashboardScreen.screen.active h3,
+    html body #dashboardScreen.screen.active h4,
+    html body #dashboardScreen.screen.active .section-header h2,
+    html body #dashboardScreen.screen.active .vex-executive-head h2,
+    html body .vex-drawer-root .vex-drawer-hero h2 {
+      font-weight: 760 !important;
+      letter-spacing: -0.018em !important;
+      line-height: 1.05 !important;
+    }
+
+    html body #dashboardScreen.screen.active strong,
+    html body #dashboardScreen.screen.active b,
+    html body #dashboardScreen.screen.active .inventory-info strong,
+    html body #dashboardScreen.screen.active .history-item-title,
+    html body #dashboardScreen.screen.active .vex-clean-latest-item strong,
+    html body .vex-drawer-root strong,
+    html body .vex-drawer-root b,
+    html body .vex-drawer-root .vex-detail-item strong {
+      font-weight: 700 !important;
+      letter-spacing: -0.006em !important;
+    }
+
+    html body #dashboardScreen.screen.active .nav-item,
+    html body #dashboardScreen.screen.active button,
+    html body #dashboardScreen.screen.active .primary-button,
+    html body #dashboardScreen.screen.active .secondary-button,
+    html body #dashboardScreen.screen.active .ghost-button,
+    html body #dashboardScreen.screen.active .danger-button,
+    html body .vex-drawer-root button {
+      font-weight: 650 !important;
+      letter-spacing: 0 !important;
+    }
+
+    html body #dashboardScreen.screen.active .eyebrow,
+    html body #dashboardScreen.screen.active .counter-pill,
+    html body #dashboardScreen.screen.active .inventory-status-pill,
+    html body #dashboardScreen.screen.active .vex-transfer-stage-chip,
+    html body #dashboardScreen.screen.active .vex-status-pill,
+    html body .vex-drawer-root .eyebrow,
+    html body .vex-drawer-root .vex-status-pill {
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.08em !important;
+    }
+
+    html body #dashboardScreen.screen.active input,
+    html body #dashboardScreen.screen.active select,
+    html body #dashboardScreen.screen.active textarea,
+    html body .vex-drawer-root input,
+    html body .vex-drawer-root select,
+    html body .vex-drawer-root textarea {
+      font-size: 15px !important;
+      font-weight: 450 !important;
+    }
+
+    html body #dashboardScreen.screen.active #inventorySection .inventory-info strong {
+      font-size: clamp(22px, 1.7vw, 30px) !important;
+      line-height: 1.08 !important;
+    }
+
+    html body #dashboardScreen.screen.active #historySection .history-item-title,
+    html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item-title {
+      font-size: clamp(18px, 1.25vw, 22px) !important;
+      line-height: 1.14 !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+injectVexRC82PremiumLightTypography();
+
+/* =========================================================
+   RC3.0.83 - Menu lateral no padrao VEX oficial
+   ========================================================= */
+function injectVexRC83OfficialSidebar() {
+  if (document.getElementById("vex-rc83-official-sidebar")) return;
+  const style = document.createElement("style");
+  style.id = "vex-rc83-official-sidebar";
+  style.textContent = `
+    html body #dashboardScreen.screen.active .sidebar {
+      width: 292px !important;
+      padding: 28px 18px 20px !important;
+      background: radial-gradient(circle at 28% 8%, rgba(217, 4, 4, 0.20), transparent 26%), linear-gradient(180deg, #111820 0%, #071019 58%, #070b12 100%) !important;
+      border-right: 1px solid rgba(255,255,255,0.08) !important;
+      box-shadow: 18px 0 44px rgba(15,23,42,0.20) !important;
+    }
+    html body #dashboardScreen.screen.active .sidebar-brand {
+      display: grid !important;
+      grid-template-columns: 122px minmax(0, 1fr) !important;
+      align-items: center !important;
+      gap: 18px !important;
+      min-height: 76px !important;
+      padding: 6px 14px 30px !important;
+      margin: 0 0 24px !important;
+      border-bottom: 1px solid rgba(255,255,255,0.10) !important;
+      background: transparent !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+    }
+    html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small {
+      width: 118px !important;
+      height: 58px !important;
+      display: block !important;
+      color: transparent !important;
+      background: url("assets/logo/vex-logo.png") center / contain no-repeat !important;
+      border: 0 !important;
+      box-shadow: none !important;
+      filter: drop-shadow(0 10px 18px rgba(239,68,68,0.18)) !important;
+      overflow: visible !important;
+    }
+    html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small::before,
+    html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small::after,
+    html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small img {
+      content: none !important;
+      display: none !important;
+    }
+    html body #dashboardScreen.screen.active .sidebar-brand strong {
+      color: #fff !important;
+      font-size: 22px !important;
+      line-height: 1 !important;
+      font-weight: 760 !important;
+      letter-spacing: 0.02em !important;
+      text-transform: uppercase !important;
+      white-space: nowrap !important;
+    }
+    html body #dashboardScreen.screen.active .sidebar-brand span {
+      display: block !important;
+      margin-top: 10px !important;
+      color: #aeb8c7 !important;
+      font-size: 13px !important;
+      line-height: 1 !important;
+      font-weight: 620 !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase !important;
+      white-space: nowrap !important;
+    }
+    html body #dashboardScreen.screen.active .sidebar-nav {
+      display: grid !important;
+      gap: 10px !important;
+      padding: 0 2px !important;
+    }
+    html body #dashboardScreen.screen.active .sidebar-nav::before {
+      content: "MENU DO APP" !important;
+      display: block !important;
+      margin: 0 0 14px 18px !important;
+      color: rgba(255,255,255,0.58) !important;
+      font-size: 12px !important;
+      line-height: 1 !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.12em !important;
+      text-transform: uppercase !important;
+    }
+    html body #dashboardScreen.screen.active .nav-item {
+      position: relative !important;
+      display: flex !important;
+      align-items: center !important;
+      min-height: 54px !important;
+      width: 100% !important;
+      padding: 0 56px 0 68px !important;
+      border: 1px solid transparent !important;
+      border-radius: 6px !important;
+      background: transparent !important;
+      color: #f7fafc !important;
+      font-size: 16px !important;
+      line-height: 1 !important;
+      font-weight: 650 !important;
+      text-align: left !important;
+      box-shadow: none !important;
+    }
+    html body #dashboardScreen.screen.active .nav-item::before {
+      content: "" !important;
+      position: absolute !important;
+      left: 16px !important;
+      top: 50% !important;
+      width: 38px !important;
+      height: 38px !important;
+      transform: translateY(-50%) !important;
+      display: block !important;
+      border-radius: 6px !important;
+      background-color: rgba(255,255,255,0.07) !important;
+      background-position: center !important;
+      background-repeat: no-repeat !important;
+      background-size: 22px 22px !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04) !important;
+      opacity: 1 !important;
+    }
+    html body #dashboardScreen.screen.active .nav-item::after {
+      position: absolute !important;
+      right: 18px !important;
+      top: 50% !important;
+      min-width: 22px !important;
+      height: 22px !important;
+      transform: translateY(-50%) !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      border-radius: 999px !important;
+      background: rgba(255,255,255,0.07) !important;
+      color: rgba(255,255,255,0.72) !important;
+      font-size: 12px !important;
+      font-weight: 650 !important;
+      letter-spacing: 0 !important;
+    }
+    html body #dashboardScreen.screen.active .nav-item[data-section="inventorySection"]::after,
+    html body #dashboardScreen.screen.active .nav-item[data-section="pendenciesSection"]::after,
+    html body #dashboardScreen.screen.active .nav-item[data-section="usersSection"]::after,
+    html body #dashboardScreen.screen.active .nav-item.vex-rc2-mobile-more-button::after { content: "" !important; display: none !important; }
+    html body #dashboardScreen.screen.active .nav-item:hover { background: rgba(255,255,255,0.055) !important; color: #fff !important; }
+    html body #dashboardScreen.screen.active .nav-item:hover::before { background-color: rgba(255,255,255,0.10) !important; }
+    html body #dashboardScreen.screen.active .nav-item.active {
+      background: linear-gradient(135deg, #ff1515 0%, #d90404 54%, #a40000 100%) !important;
+      color: #fff !important;
+      border-color: rgba(255,255,255,0.06) !important;
+      box-shadow: 0 16px 32px rgba(217,4,4,0.28) !important;
+    }
+    html body #dashboardScreen.screen.active .nav-item.active::before { background-color: rgba(255,255,255,0.12) !important; border-color: rgba(255,255,255,0.12) !important; }
+    html body #dashboardScreen.screen.active .nav-item.active::after { background: rgba(255,255,255,0.12) !important; color: rgba(255,255,255,0.92) !important; }
+    html body #dashboardScreen.screen.active .nav-item[data-section="dashboardSection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m3 11 9-8 9 8"/%3E%3Cpath d="M5 10v10h14V10"/%3E%3Cpath d="M9 20v-6h6v6"/%3E%3C/svg%3E') !important; }
+    html body #dashboardScreen.screen.active .nav-item[data-section="newSaleSection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2.2" stroke-linecap="round"%3E%3Cpath d="M12 5v14M5 12h14"/%3E%3C/svg%3E') !important; }
+    html body #dashboardScreen.screen.active .nav-item[data-section="inventorySection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M5 17h14l-1.4-5.2A3 3 0 0 0 14.7 10H9.3a3 3 0 0 0-2.9 1.8L5 17Z"/%3E%3Cpath d="M7 17v2M17 17v2M8 14h8"/%3E%3C/svg%3E') !important; }
+    html body #dashboardScreen.screen.active .nav-item[data-section="pendenciesSection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Crect x="7" y="3" width="10" height="18" rx="2"/%3E%3Cpath d="M9 7h6M9 11h6M9 15h4"/%3E%3C/svg%3E') !important; }
+    html body #dashboardScreen.screen.active .nav-item[data-section="historySection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M4 15h16l-1.5-5.5A3 3 0 0 0 15.6 7H8.4a3 3 0 0 0-2.9 2.5L4 15Z"/%3E%3Ccircle cx="7" cy="17" r="2"/%3E%3Ccircle cx="17" cy="17" r="2"/%3E%3C/svg%3E') !important; }
+    html body #dashboardScreen.screen.active .nav-item[data-section="reportsSection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M4 20V10"/%3E%3Cpath d="M10 20V4"/%3E%3Cpath d="M16 20v-7"/%3E%3Cpath d="M22 20H2"/%3E%3C/svg%3E') !important; }
+    html body #dashboardScreen.screen.active .nav-item[data-section="profileSection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Ccircle cx="12" cy="8" r="4"/%3E%3Cpath d="M4 21a8 8 0 0 1 16 0"/%3E%3C/svg%3E') !important; }
+    html body #dashboardScreen.screen.active .nav-item[data-section="usersSection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/%3E%3Ccircle cx="9" cy="7" r="4"/%3E%3Cpath d="M22 21v-2a4 4 0 0 0-3-3.87"/%3E%3Cpath d="M16 3.13a4 4 0 0 1 0 7.75"/%3E%3C/svg%3E') !important; }
+    html body #dashboardScreen.screen.active .nav-item.vex-rc2-mobile-more-button::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2.5" stroke-linecap="round"%3E%3Ccircle cx="5" cy="12" r="1"/%3E%3Ccircle cx="12" cy="12" r="1"/%3E%3Ccircle cx="19" cy="12" r="1"/%3E%3C/svg%3E') !important; }
+    html body #dashboardScreen.screen.active .sidebar-footer { margin-top: auto !important; padding: 16px 10px 0 !important; border-top: 1px solid rgba(255,255,255,0.10) !important; }
+    @media (max-width: 760px) {
+      html body #dashboardScreen.screen.active .sidebar { width: 100% !important; padding: 8px 8px 10px !important; border-right: 0 !important; }
+      html body #dashboardScreen.screen.active .sidebar-brand,
+      html body #dashboardScreen.screen.active .sidebar-footer,
+      html body #dashboardScreen.screen.active .sidebar-nav::before { display: none !important; }
+      html body #dashboardScreen.screen.active .sidebar-nav { display: flex !important; gap: 8px !important; overflow-x: auto !important; padding: 0 !important; }
+      html body #dashboardScreen.screen.active .nav-item { min-width: 74px !important; min-height: 58px !important; justify-content: center !important; padding: 34px 8px 7px !important; font-size: 11px !important; text-align: center !important; }
+      html body #dashboardScreen.screen.active .nav-item::before { left: 50% !important; top: 7px !important; width: 26px !important; height: 26px !important; background-size: 16px 16px !important; transform: translateX(-50%) !important; }
+      html body #dashboardScreen.screen.active .nav-item::after { display: none !important; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+injectVexRC83OfficialSidebar();
+setTimeout(injectVexRC83OfficialSidebar, 400);
+
+
+function cleanupVexRC84SidebarArtifacts() {
+  document.querySelectorAll('.nav-item > span, .nav-item [class*="shortcut"], .nav-item [class*="hint"]').forEach(function (node) {
+    node.remove();
+  });
+}
+
+function injectVexRC87SidebarFix() {
+  if (document.getElementById('vex-rc87-sidebar-fix')) return;
+  const style = document.createElement('style');
+  style.id = 'vex-rc87-sidebar-fix';
+  style.textContent = `
+    html body #dashboardScreen.screen.active .sidebar-nav .nav-item,
+    html body #dashboardScreen.screen.active .sidebar .nav-item {
+      position: relative !important;
+      overflow: hidden !important;
+      isolation: isolate !important;
+      padding: 0 18px 0 68px !important;
+      min-height: 54px !important;
+      background-image: none !important;
+      color: #f8fafc !important;
+      font-size: 16px !important;
+      font-weight: 650 !important;
+      line-height: 1.05 !important;
+      text-shadow: none !important;
+    }
+    html body #dashboardScreen.screen.active .sidebar-nav .nav-item::before,
+    html body #dashboardScreen.screen.active .sidebar .nav-item::before,
+    html body #dashboardScreen.screen.active .sidebar-nav .nav-item[data-section]::before,
+    html body #dashboardScreen.screen.active .sidebar .nav-item[data-section]::before,
+    html body #dashboardScreen.screen.active .sidebar-nav .nav-item[data-section="pendenciesSection"]::before,
+    html body #dashboardScreen.screen.active .sidebar .nav-item[data-section="pendenciesSection"]::before {
+      content: "" !important;
+      color: transparent !important;
+      font-size: 0 !important;
+      line-height: 0 !important;
+      text-indent: -9999px !important;
+      overflow: hidden !important;
+      white-space: nowrap !important;
+      z-index: 1 !important;
+    }
+    html body #dashboardScreen.screen.active .sidebar-nav .nav-item::after,
+    html body #dashboardScreen.screen.active .sidebar .nav-item::after,
+    html body #dashboardScreen.screen.active .sidebar-nav .nav-item.active::after,
+    html body #dashboardScreen.screen.active .sidebar .nav-item.active::after,
+    html body #dashboardScreen.screen.active .sidebar-nav .nav-item[data-section]::after,
+    html body #dashboardScreen.screen.active .sidebar .nav-item[data-section]::after {
+      content: "" !important;
+      display: none !important;
+      width: 0 !important;
+      min-width: 0 !important;
+      height: 0 !important;
+      opacity: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+    html body #dashboardScreen.screen.active .sidebar-nav .nav-item > span,
+    html body #dashboardScreen.screen.active .sidebar .nav-item > span,
+    html body #dashboardScreen.screen.active .sidebar-nav .nav-item [class*="shortcut"],
+    html body #dashboardScreen.screen.active .sidebar .nav-item [class*="shortcut"],
+    html body #dashboardScreen.screen.active .sidebar-nav .nav-item [class*="hint"],
+    html body #dashboardScreen.screen.active .sidebar .nav-item [class*="hint"] {
+      display: none !important;
+    }
+    html body #dashboardScreen.screen.active .sidebar-nav .nav-item.active {
+      background: linear-gradient(135deg, #ff1515 0%, #d90404 54%, #a40000 100%) !important;
+      box-shadow: 0 16px 32px rgba(217, 4, 4, 0.28) !important;
+    }
+    @media (max-width: 760px) {
+      html body #dashboardScreen.screen.active .sidebar-nav .nav-item,
+      html body #dashboardScreen.screen.active .sidebar .nav-item { padding: 34px 8px 7px !important; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+/* =========================================================
+   RC3.0.84 - Limpeza final do menu lateral
+   Remove siglas e atalhos visuais antigos sem alterar navegacao.
+   ========================================================= */
+injectVexRC87SidebarFix();
+cleanupVexRC84SidebarArtifacts();
+setTimeout(cleanupVexRC84SidebarArtifacts, 300);
+setTimeout(cleanupVexRC84SidebarArtifacts, 1200);
 
 
 

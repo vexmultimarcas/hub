@@ -6210,3 +6210,609 @@ html body #dashboardScreen.screen.active .nav-item[data-section="pendenciesSecti
     align-items: flex-start !important;
   }
 }
+
+/* RC3.0.75 - Gerador de etiquetas de chaves */
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-panel {
+  display: grid !important;
+  gap: 14px !important;
+  margin: 14px 0 18px !important;
+  padding: 18px !important;
+  border-left: 5px solid #d90404 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-panel.hidden {
+  display: none !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-head {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-head h3 {
+  margin: 4px 0 4px !important;
+  color: #0f172a !important;
+  font-size: 22px !important;
+  font-weight: 950 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-head p,
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-panel small {
+  color: #475569 !important;
+  font-weight: 750 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection #inventoryKeyLabelsSummary {
+  padding: 9px 12px !important;
+  border-radius: 999px !important;
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fecaca !important;
+  white-space: nowrap !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-controls {
+  display: grid !important;
+  grid-template-columns: minmax(180px, 260px) repeat(3, minmax(150px, auto)) !important;
+  gap: 10px !important;
+  align-items: end !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-controls label {
+  color: #334155 !important;
+  font-weight: 900 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-controls select {
+  width: 100% !important;
+  margin-top: 6px !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-label-check {
+  display: none !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection.inventory-key-labels-open .inventory-item {
+  grid-template-columns: 118px 132px minmax(0, 1fr) auto !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection.inventory-key-labels-open .inventory-key-label-check {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  min-height: 46px !important;
+  padding: 10px 12px !important;
+  border-radius: 2px !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-label-checkbox {
+  width: 18px !important;
+  height: 18px !important;
+  accent-color: #d90404 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-item.is-key-label-selected {
+  border-color: rgba(217, 4, 4, 0.42) !important;
+  box-shadow: 0 18px 36px rgba(217, 4, 4, 0.10) !important;
+}
+
+@media (max-width: 860px) {
+  html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-head,
+  html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-controls {
+    grid-template-columns: 1fr !important;
+    display: grid !important;
+  }
+
+  html body #dashboardScreen.screen.active #inventorySection.inventory-key-labels-open .inventory-item {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* RC3.0.80 - Painel de etiquetas compacto */
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-panel {
+  grid-template-columns: auto auto minmax(150px, 190px) auto auto auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 58px !important;
+  margin: 12px 0 14px !important;
+  padding: 10px 14px !important;
+  border-left: 5px solid #d90404 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-title {
+  color: #0f172a !important;
+  font-size: 15px !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-panel select,
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-panel button {
+  min-height: 42px !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-panel select {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 2px !important;
+  padding: 0 12px !important;
+  font-weight: 850 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection #inventoryKeyLabelsSummary {
+  min-height: 34px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 7px 11px !important;
+  font-size: 12px !important;
+}
+
+@media (max-width: 980px) {
+  html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-panel {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  html body #dashboardScreen.screen.active #inventorySection .inventory-key-labels-title,
+  html body #dashboardScreen.screen.active #inventorySection #inventoryKeyLabelsGenerateButton {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+/* RC3.0.82 - Direcao visual VEX premium leve */
+html body #dashboardScreen.screen.active,
+html body #dashboardScreen.screen.active *:not(img):not(svg),
+html body .vex-drawer-root,
+html body .vex-drawer-root *:not(img):not(svg) {
+  font-family: Aptos, "Segoe UI Variable Text", "Segoe UI", Arial, Helvetica, sans-serif !important;
+  font-synthesis: none !important;
+  text-rendering: geometricPrecision !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+html body #dashboardScreen.screen.active p,
+html body #dashboardScreen.screen.active small,
+html body #dashboardScreen.screen.active span,
+html body #dashboardScreen.screen.active label,
+html body #dashboardScreen.screen.active input,
+html body #dashboardScreen.screen.active select,
+html body #dashboardScreen.screen.active textarea,
+html body #dashboardScreen.screen.active .inventory-info,
+html body #dashboardScreen.screen.active .history-item,
+html body #dashboardScreen.screen.active .dashboard-card,
+html body #dashboardScreen.screen.active .metric-card,
+html body .vex-drawer-root p,
+html body .vex-drawer-root small,
+html body .vex-drawer-root span,
+html body .vex-drawer-root label,
+html body .vex-drawer-root input,
+html body .vex-drawer-root select,
+html body .vex-drawer-root textarea {
+  font-weight: 450 !important;
+  letter-spacing: 0 !important;
+}
+
+html body #dashboardScreen.screen.active h1,
+html body #dashboardScreen.screen.active h2,
+html body #dashboardScreen.screen.active h3,
+html body #dashboardScreen.screen.active h4,
+html body #dashboardScreen.screen.active .section-header h2,
+html body #dashboardScreen.screen.active .vex-executive-head h2,
+html body .vex-drawer-root .vex-drawer-hero h2 {
+  font-weight: 760 !important;
+  letter-spacing: -0.018em !important;
+  line-height: 1.05 !important;
+}
+
+html body #dashboardScreen.screen.active .section-header p,
+html body #dashboardScreen.screen.active .vex-executive-head p,
+html body #dashboardScreen.screen.active .inventory-info span,
+html body #dashboardScreen.screen.active .inventory-info small,
+html body #dashboardScreen.screen.active .history-item-meta,
+html body #dashboardScreen.screen.active .vex-clean-latest-item small,
+html body .vex-drawer-root .vex-drawer-hero p,
+html body .vex-drawer-root .vex-detail-item span {
+  font-weight: 430 !important;
+  line-height: 1.45 !important;
+}
+
+html body #dashboardScreen.screen.active strong,
+html body #dashboardScreen.screen.active b,
+html body #dashboardScreen.screen.active .inventory-info strong,
+html body #dashboardScreen.screen.active .history-item-title,
+html body #dashboardScreen.screen.active .vex-clean-latest-item strong,
+html body .vex-drawer-root strong,
+html body .vex-drawer-root b,
+html body .vex-drawer-root .vex-detail-item strong {
+  font-weight: 700 !important;
+  letter-spacing: -0.006em !important;
+}
+
+html body #dashboardScreen.screen.active .nav-item,
+html body #dashboardScreen.screen.active button,
+html body #dashboardScreen.screen.active .primary-button,
+html body #dashboardScreen.screen.active .secondary-button,
+html body #dashboardScreen.screen.active .ghost-button,
+html body #dashboardScreen.screen.active .danger-button,
+html body .vex-drawer-root button {
+  font-weight: 650 !important;
+  letter-spacing: 0 !important;
+}
+
+html body #dashboardScreen.screen.active .eyebrow,
+html body #dashboardScreen.screen.active .counter-pill,
+html body #dashboardScreen.screen.active .inventory-status-pill,
+html body #dashboardScreen.screen.active .vex-transfer-stage-chip,
+html body #dashboardScreen.screen.active .vex-status-pill,
+html body .vex-drawer-root .eyebrow,
+html body .vex-drawer-root .vex-status-pill {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+}
+
+html body #dashboardScreen.screen.active input,
+html body #dashboardScreen.screen.active select,
+html body #dashboardScreen.screen.active textarea,
+html body .vex-drawer-root input,
+html body .vex-drawer-root select,
+html body .vex-drawer-root textarea {
+  font-size: 15px !important;
+  font-weight: 450 !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar .nav-item {
+  font-size: 15px !important;
+  font-weight: 650 !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-brand strong {
+  font-weight: 720 !important;
+  letter-spacing: 0.015em !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-info strong {
+  font-size: clamp(22px, 1.7vw, 30px) !important;
+  line-height: 1.08 !important;
+}
+
+html body #dashboardScreen.screen.active #inventorySection .inventory-info span,
+html body #dashboardScreen.screen.active #inventorySection .inventory-info small {
+  font-size: 15px !important;
+}
+
+html body #dashboardScreen.screen.active #historySection .history-item-title,
+html body #dashboardScreen.screen.active #pendenciesSection .vex-pending-item-title {
+  font-size: clamp(18px, 1.25vw, 22px) !important;
+  line-height: 1.14 !important;
+}
+
+html body #dashboardScreen.screen.active .metric-card strong,
+html body #dashboardScreen.screen.active .dashboard-card strong {
+  font-weight: 720 !important;
+  letter-spacing: -0.01em !important;
+}
+
+html body #dashboardScreen.screen.active .metric-card span,
+html body #dashboardScreen.screen.active .dashboard-card span {
+  font-weight: 520 !important;
+  letter-spacing: 0.03em !important;
+}
+
+/* RC3.0.83 - Menu lateral VEX oficial com icones */
+html body #dashboardScreen.screen.active .sidebar {
+  width: 292px !important;
+  padding: 28px 18px 20px !important;
+  background:
+    radial-gradient(circle at 28% 8%, rgba(217, 4, 4, 0.20), transparent 26%),
+    linear-gradient(180deg, #111820 0%, #071019 58%, #070b12 100%) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 18px 0 44px rgba(15, 23, 42, 0.20) !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-brand {
+  display: grid !important;
+  grid-template-columns: 122px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 18px !important;
+  min-height: 76px !important;
+  padding: 6px 14px 30px !important;
+  margin: 0 0 24px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small {
+  width: 118px !important;
+  height: 58px !important;
+  display: block !important;
+  color: transparent !important;
+  background: url("../assets/logo/vex-logo.png") center / contain no-repeat !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 10px 18px rgba(239, 68, 68, 0.18)) !important;
+  overflow: visible !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small::before,
+html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small::after,
+html body #dashboardScreen.screen.active .sidebar-brand .brand-badge.small img {
+  content: none !important;
+  display: none !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-brand strong {
+  color: #ffffff !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  font-weight: 760 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-brand span {
+  display: block !important;
+  margin-top: 10px !important;
+  color: #aeb8c7 !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  font-weight: 620 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-nav {
+  display: grid !important;
+  gap: 10px !important;
+  padding: 0 2px !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-nav::before {
+  content: "MENU DO APP" !important;
+  display: block !important;
+  margin: 0 0 14px 18px !important;
+  color: rgba(255, 255, 255, 0.58) !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+html body #dashboardScreen.screen.active .nav-item {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  min-height: 54px !important;
+  width: 100% !important;
+  padding: 0 56px 0 68px !important;
+  border: 1px solid transparent !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: #f7fafc !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  font-weight: 650 !important;
+  text-align: left !important;
+  box-shadow: none !important;
+}
+
+html body #dashboardScreen.screen.active .nav-item::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 16px !important;
+  top: 50% !important;
+  width: 38px !important;
+  height: 38px !important;
+  transform: translateY(-50%) !important;
+  display: block !important;
+  border-radius: 6px !important;
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 22px 22px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04) !important;
+  opacity: 1 !important;
+}
+
+html body #dashboardScreen.screen.active .nav-item::after {
+  position: absolute !important;
+  right: 18px !important;
+  top: 50% !important;
+  min-width: 22px !important;
+  height: 22px !important;
+  transform: translateY(-50%) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  color: rgba(255, 255, 255, 0.72) !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  letter-spacing: 0 !important;
+}
+
+html body #dashboardScreen.screen.active .nav-item[data-section="inventorySection"]::after,
+html body #dashboardScreen.screen.active .nav-item[data-section="pendenciesSection"]::after,
+html body #dashboardScreen.screen.active .nav-item[data-section="usersSection"]::after { content: "" !important; display: none !important; }
+
+html body #dashboardScreen.screen.active .nav-item:hover {
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: #ffffff !important;
+}
+
+html body #dashboardScreen.screen.active .nav-item:hover::before {
+  background-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+html body #dashboardScreen.screen.active .nav-item.active {
+  background: linear-gradient(135deg, #ff1515 0%, #d90404 54%, #a40000 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 16px 32px rgba(217, 4, 4, 0.28) !important;
+}
+
+html body #dashboardScreen.screen.active .nav-item.active::before {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html body #dashboardScreen.screen.active .nav-item.active::after {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+html body #dashboardScreen.screen.active .nav-item[data-section="dashboardSection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m3 11 9-8 9 8"/%3E%3Cpath d="M5 10v10h14V10"/%3E%3Cpath d="M9 20v-6h6v6"/%3E%3C/svg%3E') !important; }
+html body #dashboardScreen.screen.active .nav-item[data-section="newSaleSection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2.2" stroke-linecap="round"%3E%3Cpath d="M12 5v14M5 12h14"/%3E%3C/svg%3E') !important; }
+html body #dashboardScreen.screen.active .nav-item[data-section="inventorySection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M5 17h14l-1.4-5.2A3 3 0 0 0 14.7 10H9.3a3 3 0 0 0-2.9 1.8L5 17Z"/%3E%3Cpath d="M7 17v2M17 17v2M8 14h8"/%3E%3C/svg%3E') !important; }
+html body #dashboardScreen.screen.active .nav-item[data-section="pendenciesSection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Crect x="7" y="3" width="10" height="18" rx="2"/%3E%3Cpath d="M9 7h6M9 11h6M9 15h4"/%3E%3C/svg%3E') !important; }
+html body #dashboardScreen.screen.active .nav-item[data-section="historySection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M4 15h16l-1.5-5.5A3 3 0 0 0 15.6 7H8.4a3 3 0 0 0-2.9 2.5L4 15Z"/%3E%3Ccircle cx="7" cy="17" r="2"/%3E%3Ccircle cx="17" cy="17" r="2"/%3E%3C/svg%3E') !important; }
+html body #dashboardScreen.screen.active .nav-item[data-section="reportsSection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M4 20V10"/%3E%3Cpath d="M10 20V4"/%3E%3Cpath d="M16 20v-7"/%3E%3Cpath d="M22 20H2"/%3E%3C/svg%3E') !important; }
+html body #dashboardScreen.screen.active .nav-item[data-section="profileSection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Ccircle cx="12" cy="8" r="4"/%3E%3Cpath d="M4 21a8 8 0 0 1 16 0"/%3E%3C/svg%3E') !important; }
+html body #dashboardScreen.screen.active .nav-item[data-section="usersSection"]::before { background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/%3E%3Ccircle cx="9" cy="7" r="4"/%3E%3Cpath d="M22 21v-2a4 4 0 0 0-3-3.87"/%3E%3Cpath d="M16 3.13a4 4 0 0 1 0 7.75"/%3E%3C/svg%3E') !important; }
+
+html body #dashboardScreen.screen.active .sidebar-footer {
+  margin-top: auto !important;
+  padding: 16px 10px 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+@media (max-width: 760px) {
+  html body #dashboardScreen.screen.active .sidebar {
+    width: 100% !important;
+    padding: 8px 8px 10px !important;
+    border-right: 0 !important;
+  }
+
+  html body #dashboardScreen.screen.active .sidebar-brand,
+  html body #dashboardScreen.screen.active .sidebar-footer,
+  html body #dashboardScreen.screen.active .sidebar-nav::before {
+    display: none !important;
+  }
+
+  html body #dashboardScreen.screen.active .sidebar-nav {
+    display: flex !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    padding: 0 !important;
+  }
+
+  html body #dashboardScreen.screen.active .nav-item {
+    min-width: 74px !important;
+    min-height: 58px !important;
+    justify-content: center !important;
+    padding: 34px 8px 7px !important;
+    font-size: 11px !important;
+    text-align: center !important;
+  }
+
+  html body #dashboardScreen.screen.active .nav-item::before {
+    left: 50% !important;
+    top: 7px !important;
+    width: 26px !important;
+    height: 26px !important;
+    background-size: 16px 16px !important;
+    transform: translateX(-50%) !important;
+  }
+
+  html body #dashboardScreen.screen.active .nav-item::after {
+    display: none !important;
+  }
+}
+
+/* RC3.0.87 - Menu lateral corrigido: remove siglas, numeros e camadas antigas */
+html body #dashboardScreen.screen.active .sidebar-nav .nav-item,
+html body #dashboardScreen.screen.active .sidebar .nav-item {
+  position: relative !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  padding: 0 18px 0 68px !important;
+  min-height: 54px !important;
+  background-image: none !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-nav .nav-item::before,
+html body #dashboardScreen.screen.active .sidebar .nav-item::before,
+html body #dashboardScreen.screen.active .sidebar-nav .nav-item[data-section]::before,
+html body #dashboardScreen.screen.active .sidebar .nav-item[data-section]::before,
+html body #dashboardScreen.screen.active .sidebar-nav .nav-item[data-section="pendenciesSection"]::before,
+html body #dashboardScreen.screen.active .sidebar .nav-item[data-section="pendenciesSection"]::before {
+  content: "" !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  text-indent: -9999px !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  z-index: 1 !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-nav .nav-item::after,
+html body #dashboardScreen.screen.active .sidebar .nav-item::after,
+html body #dashboardScreen.screen.active .sidebar-nav .nav-item.active::after,
+html body #dashboardScreen.screen.active .sidebar .nav-item.active::after,
+html body #dashboardScreen.screen.active .sidebar-nav .nav-item[data-section]::after,
+html body #dashboardScreen.screen.active .sidebar .nav-item[data-section]::after {
+  content: "" !important;
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-nav .nav-item > span,
+html body #dashboardScreen.screen.active .sidebar .nav-item > span,
+html body #dashboardScreen.screen.active .sidebar-nav .nav-item [class*="shortcut"],
+html body #dashboardScreen.screen.active .sidebar .nav-item [class*="shortcut"],
+html body #dashboardScreen.screen.active .sidebar-nav .nav-item [class*="hint"],
+html body #dashboardScreen.screen.active .sidebar .nav-item [class*="hint"] {
+  display: none !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-nav .nav-item {
+  color: #f8fafc !important;
+  font-size: 16px !important;
+  font-weight: 650 !important;
+  line-height: 1.05 !important;
+  text-shadow: none !important;
+}
+
+html body #dashboardScreen.screen.active .sidebar-nav .nav-item.active {
+  background: linear-gradient(135deg, #ff1515 0%, #d90404 54%, #a40000 100%) !important;
+  box-shadow: 0 16px 32px rgba(217, 4, 4, 0.28) !important;
+}
+
+@media (max-width: 760px) {
+  html body #dashboardScreen.screen.active .sidebar-nav .nav-item,
+  html body #dashboardScreen.screen.active .sidebar .nav-item {
+    padding: 34px 8px 7px !important;
+  }
+}

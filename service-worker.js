@@ -1,4 +1,4 @@
-const CACHE_NAME = "vex-hub-rc3-0-74-pendencias-aba";
+const CACHE_NAME = "vex-hub-rc3-0-87-menu-lateral-corrigido";
 
 const FILES_TO_CACHE = [
   "./",
@@ -54,6 +54,19 @@ self.addEventListener("fetch", function (event) {
     })
   );
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

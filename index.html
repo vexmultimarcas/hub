@@ -316,6 +316,7 @@
             <div class="inventory-header-actions">
               <strong id="inventoryCounter" class="counter-pill">0 veiculos</strong>
               <button id="inventoryAddButton" class="primary-button" type="button">Adicionar veiculo</button>
+              <button id="inventoryKeyLabelsToggleButton" class="secondary-button" type="button">Gerar Etiquetas de Chaves</button>
             </div>
           </div>
 
@@ -487,6 +488,19 @@
             <input id="inventorySearch" type="text" placeholder="Pesquisar placa, modelo, cor..." />
           </div>
 
+
+          <div id="inventoryKeyLabelsPanel" class="filters-card inventory-key-labels-panel hidden">
+            <strong class="inventory-key-labels-title">Etiquetas de chaves</strong>
+            <strong id="inventoryKeyLabelsSummary">0 selecionado(s)</strong>
+            <select id="inventoryKeyLabelsStatusFilter" aria-label="Filtro de etiquetas">
+              <option value="Disponivel">Disponiveis</option>
+              <option value="Vendido">Vendidos</option>
+              <option value="Todos">Todos</option>
+            </select>
+            <button id="inventoryKeyLabelsSelectAllButton" class="secondary-button" type="button">Selecionar todos</button>
+            <button id="inventoryKeyLabelsClearButton" class="ghost-button" type="button">Limpar</button>
+            <button id="inventoryKeyLabelsGenerateButton" class="primary-button" type="button" disabled>Gerar etiquetas</button>
+          </div>
           <div id="inventoryList" class="inventory-list"></div>
         </section>
 
@@ -670,4 +684,7 @@
   <script src="js/app.js"></script>
 </body>
 </html>
+
+
+
 
