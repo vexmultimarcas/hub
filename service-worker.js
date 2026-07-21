@@ -1,4 +1,4 @@
-const CACHE_NAME = "vex-hub-rc3-0-87-menu-lateral-corrigido";
+﻿const CACHE_NAME = "vex-hub-rc3-0-92-revisao-textos-e-barra";
 
 const FILES_TO_CACHE = [
   "./",
@@ -54,6 +54,11 @@ self.addEventListener("fetch", function (event) {
     })
   );
 });
+
+
+
+
+
 
 
 

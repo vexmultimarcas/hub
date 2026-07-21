@@ -1,4 +1,4 @@
-// VEX HUB - app.js
+﻿// VEX HUB - app.js
 // Correção: venda aparece imediatamente no Histórico + Firestore por usuário
 
 const homeScreen = document.getElementById("homeScreen");
@@ -1219,9 +1219,17 @@ function renderVexTransferChecklist(sale) {
 }
 
 async function updateSaleTransferChecklist(saleId, key, checked) {
+  const currentPanel = document.querySelector("#vexVehicleDrawerRoot .vex-drawer-panel");
+  const previousScrollTop = currentPanel ? currentPanel.scrollTop : 0;
+  const restoreChecklistScroll = function() {
+    const nextPanel = document.querySelector("#vexVehicleDrawerRoot .vex-drawer-panel");
+    if (nextPanel) nextPanel.scrollTop = previousScrollTop;
+  };
+
   if (!canManageContent()) {
     alert("Apenas administradores podem alterar o checklist da transferencia.");
     openVexVehicleDrawer(saleId);
+    requestAnimationFrame(restoreChecklistScroll);
     return;
   }
 
@@ -1269,6 +1277,7 @@ async function updateSaleTransferChecklist(saleId, key, checked) {
     });
 
     openVexVehicleDrawer(saleId);
+    requestAnimationFrame(restoreChecklistScroll);
   } catch (error) {
     console.error("Erro ao atualizar checklist da transferencia:", error);
     alert("Erro ao atualizar checklist da transferencia.");
@@ -3272,7 +3281,7 @@ function openSaleDetails(saleId) {
 
     <div class="drawer-actions vex-drawer-actions-safe">
       ${canManageContent() ? `<button class="primary-button" type="button" onclick="startEditSale('${sale.id}')">Editar</button>` : ""}
-      <button class="primary-button" type="button" onclick="openVexFormalization('${sale.id}')">Formalizacao</button>
+      <button class="primary-button" type="button" onclick="closeSaleDetails(); openVexFormalization('${sale.id}')">Formalização</button>
       <button class="secondary-button" type="button" onclick="openVexClientWhatsapp('${sale.id}', 'transfer')">WhatsApp</button>
       <button class="secondary-button" type="button" onclick="closeSaleDetails();">Fechar</button>
       ${canManageContent() ? `<button class="danger-button" type="button" onclick="deleteSale('${sale.id}'); closeSaleDetails();">Excluir</button>` : ""}
@@ -3995,7 +4004,7 @@ function prepareVexDashboardLayout() {
         </article>
 
         <article class="vex-kpi-card">
-          <span>Pendências</span>
+          <span>pendências</span>
           <strong id="pendingAfterSalesCard">0</strong>
           <small>Pós-vendas em aberto</small>
         </article>
@@ -5356,7 +5365,7 @@ function formatDateToBrazil(date) {
 }
 
 /* =========================================================
-   RC3.0.9 - WhatsApp rapido para pendencias
+   RC3.0.9 - WhatsApp rapido para pendências
    ========================================================= */
 function renderVexSmartAlerts(pendingAfterSales, pendingTransfers, goalPercent, growth) {
   const container = document.getElementById("vexSmartAlerts");
@@ -5442,7 +5451,7 @@ function getVexPendingCategories() {
     { key: "afterSale", label: "Pos-venda", rows: [] },
     { key: "docs", label: "Documentos", rows: [] },
     { key: "payment", label: "Pagamento", rows: [] },
-    { key: "formalization", label: "Formalizacao", rows: [] },
+    { key: "formalization", label: "Formalização", rows: [] },
     { key: "phone", label: "Sem telefone", rows: [] }
   ];
   const byKey = categories.reduce(function(map, category) {
@@ -7245,7 +7254,7 @@ function openVexVehicleDrawer(saleId) {
 
       <div class="vex-drawer-actions vex-drawer-actions-safe">
         ${canManageContent() ? `<button class="primary-button" type="button" onclick="startEditSale('${sale.id}')">Editar</button>` : ""}
-        <button class="primary-button" type="button" onclick="openVexFormalization('${sale.id}')">Formalizacao</button>
+        <button class="primary-button" type="button" onclick="closeSaleDetails(); openVexFormalization('${sale.id}')">Formalização</button>
         <button class="secondary-button" type="button" onclick="closeVexVehicleDrawer()">Fechar</button>
         ${canManageContent() ? `<button class="danger-button" type="button" onclick="deleteSale('${sale.id}'); closeVexVehicleDrawer();">Excluir</button>` : ""}
       </div>
@@ -7359,7 +7368,7 @@ function openVexFormalizationClient(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">CL</div>
-        <span class="eyebrow">Formalizacao  - Cliente</span>
+        <span class="eyebrow">Formalização  - Cliente</span>
         <h2>${escapeHTML(client.clientName || sale.clientName || "Cliente")}</h2>
         <p>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</p>
 
@@ -7575,7 +7584,7 @@ function openVexFormalizationVehicle(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">VE</div>
-        <span class="eyebrow">Formalizacao  - Veiculo</span>
+        <span class="eyebrow">Formalização  - Veiculo</span>
         <h2>${escapeHTML(vehicleTitle)}</h2>
         <p>${escapeHTML(sale.clientName || "Cliente nao informado")}</p>
 
@@ -7873,7 +7882,7 @@ function openVexFormalizationPayment(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">$</div>
-        <span class="eyebrow">Formalizacao  - Pagamento</span>
+        <span class="eyebrow">Formalização  - Pagamento</span>
         <h2>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
         <p>${escapeHTML(sale.clientName || "Cliente nao informado")}</p>
 
@@ -8199,8 +8208,8 @@ function openVexFormalizationRepasse(saleId) {
       <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">X</button>
 
       <section class="vex-drawer-hero vex-formalization-hero">
-        <div class="vex-vehicle-icon">🛡�?/div>
-        <span class="eyebrow">Formalizacao  - Repasse e Gastos</span>
+        <div class="vex-vehicle-icon">🛡️</div>
+        <span class="eyebrow">Formalização  - Repasse e Gastos</span>
         <h2>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
         <p>${escapeHTML(sale.clientName || "Cliente nao informado")}</p>
 
@@ -8515,7 +8524,7 @@ function openVexFormalizationTransfer(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">TR</div>
-        <span class="eyebrow">Formalizacao  - Transferencia</span>
+        <span class="eyebrow">Formalização  - Transferencia</span>
         <h2>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
         <p>${escapeHTML(sale.clientName || "Cliente nao informado")}  - ${formatDateToBrazil(sale.saleDate)}</p>
 
@@ -8729,18 +8738,18 @@ function getVexReceivedDocsMessagePreview(docs) {
   const lines = [];
 
   if (docs.idDocument === "CNH") {
-    lines.push("CNH: �?Em anexo");
+    lines.push("CNH: – Em anexo");
   } else if (docs.idDocument === "RG") {
-    lines.push("RG: �?Em anexo");
+    lines.push("RG: – Em anexo");
   } else if (docs.idDocument === "CNH + RG") {
-    lines.push("CNH: �?Em anexo");
-    lines.push("RG: �?Em anexo");
+    lines.push("CNH: – Em anexo");
+    lines.push("RG: – Em anexo");
   } else {
     lines.push("Documento de identificação: ⚠️ Pendente");
   }
 
-  lines.push(`Comprovante de endereco: ${docs.addressProof === "Recebido" ? "�?Em anexo" : "⚠️ Pendente"}`);
-  lines.push(`Comprovantes de pagamento: ${docs.paymentProof === "Recebido" ? "�?Em anexo" : "⚠️ Pendente"}`);
+  lines.push(`Comprovante de endereco: ${docs.addressProof === "Recebido" ? "–Em anexo" : "⚠️ Pendente"}`);
+  lines.push(`Comprovantes de pagamento: ${docs.paymentProof === "Recebido" ? "–Em anexo" : "⚠️ Pendente"}`);
 
   return lines.join("\n");
 }
@@ -8773,7 +8782,7 @@ function openVexFormalizationReceivedDocs(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">DR</div>
-        <span class="eyebrow">Formalizacao  - Documentos Recebidos</span>
+        <span class="eyebrow">Formalização  - Documentos Recebidos</span>
         <h2>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
         <p>${escapeHTML(sale.clientName || "Cliente nao informado")}  - ${formatDateToBrazil(sale.saleDate)}</p>
 
@@ -8993,12 +9002,12 @@ function buildVexPreparationMessage(sale) {
   const plate = vehicle.vehiclePlate || sale.vehiclePlate || "Placa nao informada";
 
   return [
-    "VE VEÍCULO VENDIDO",
+    "VE\u00cdCULO VENDIDO",
     "",
     `Veiculo: ${vehicleTitle}`,
     `Placa: ${plate}`,
     "",
-    "Solicitamos a retirada dos anúncios.",
+    "Solicitamos a retirada dos an\u00fAncios.",
     "",
     "Obrigado."
   ].join("\n");
@@ -9041,7 +9050,7 @@ function buildVexSalesGroupMessage(sale) {
   lines.push("");
   lines.push(`*A transferencia vai ser feita com a gente:* ${getVexCommunicationTransferAnswer(sale)}`);
   lines.push("");
-  lines.push("Detalhes da Transação.");
+  lines.push("Detalhes da transação.");
   lines.push("");
 
   if (transactionLines.length) {
@@ -9078,7 +9087,7 @@ function getVexCommunicationPendencies(sale) {
   if (!client.clientName) pendencies.push("Nome do cliente nao informado");
   if (!client.clientPhone) pendencies.push("Telefone do cliente nao informado");
   if (!client.clientEmail) pendencies.push("E-mail do cliente nao informado");
-  if (docs.idDocument === "Pendente") pendencies.push("Documento de identificação pendente");
+  if (docs.idDocument === "Pendente") pendencies.push("Documento de identificacao pendente");
   if (docs.addressProof !== "Recebido") pendencies.push("Comprovante de endereco pendente");
   if (docs.paymentProof !== "Recebido") pendencies.push("Comprovantes de pagamento pendentes");
   if (!getVexRepasseItems(repasse).length) pendencies.push("Gastos/material nao informados");
@@ -9091,16 +9100,16 @@ function getVexCommunicationPendencies(sale) {
 
 function renderVexCommunicationPendencies(pendencies) {
   if (!pendencies.length) {
-    return `<div class="vex-formalization-inline-message success">�?Mensagens prontas para copiar.</div>`;
+    return `<div class="vex-formalization-inline-message success">Mensagens prontas para copiar.</div>`;
   }
 
   return `
     <div class="vex-formalization-inline-message warning">
-      <strong>⚠️ Pendências encontradas</strong>
+      <strong>Pendencias encontradas</strong>
       <ul>
         ${pendencies.map(function(item) { return `<li>${escapeHTML(item)}</li>`; }).join("")}
       </ul>
-      <small>O sistema nao bloqueia a cópia, apenas alerta para conferência antes do envio.</small>
+      <small>O sistema nao bloqueia a copia, apenas alerta para conferencia antes do envio.</small>
     </div>
   `;
 }
@@ -9112,8 +9121,8 @@ function renderVexCommunicationBlock(title, subtitle, previewId, message, copyTy
       <p>${escapeHTML(subtitle)}</p>
       <pre id="${escapeHTML(previewId)}" class="vex-message-preview">${escapeHTML(message)}</pre>
       <div class="vex-drawer-actions vex-drawer-actions-safe vex-communication-actions">
-        <button class="secondary-button" type="button" onclick="toggleVexCommunicationPreview('${previewId}')">👁 Visualizar</button>
-        <button class="primary-button" type="button" onclick="copyVexCommunicationMessage('${copyType}')">FO Copiar</button>
+        <button class="secondary-button" type="button" onclick="toggleVexCommunicationPreview('${previewId}')">Visualizar</button>
+        <button class="primary-button" type="button" onclick="copyVexCommunicationMessage('${copyType}')">Copiar</button>
       </div>
     </div>
   `;
@@ -9140,21 +9149,21 @@ function openVexFormalizationCommunication(saleId) {
       <button class="vex-drawer-close" onclick="closeVexVehicleDrawer()" type="button">X</button>
 
       <section class="vex-drawer-hero vex-formalization-hero">
-        <div class="vex-vehicle-icon">CM</div>
-        <span class="eyebrow">Formalizacao  - Comunicacao</span>
+        <div class="vex-vehicle-icon">&#128172;</div>
+        <span class="eyebrow">Formalização  - Comunicação</span>
         <h2>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
         <p>${escapeHTML(sale.clientName || "Cliente nao informado")}</p>
 
         <div class="vex-formalization-status-pill">
-          ${pendencies.length ? ".. Conferir pendências" : "OK Comunicacao pronta"}
+          ${pendencies.length ? "Conferir pendências" : "Comunicação pronta"}
         </div>
       </section>
 
       ${renderVexCommunicationPendencies(pendencies)}
 
       <section class="vex-formalization-form">
-        ${renderVexCommunicationBlock("📦 Grupo Preparacao", "Mensagem curta para retirada dos anúncios.", "vexPreparationMessagePreview", preparationMessage, "preparation")}
-        ${renderVexCommunicationBlock("CM Grupo Vendas", "Mensagem completa com dados da venda, anexos e negociação.", "vexSalesMessagePreview", salesMessage, "sales")}
+        ${renderVexCommunicationBlock("Grupo Preparacao", "Mensagem curta para retirada dos an\u00fAncios.", "vexPreparationMessagePreview", preparationMessage, "preparation")}
+        ${renderVexCommunicationBlock("Grupo Vendas", "Mensagem completa com dados da venda, anexos e negociação.", "vexSalesMessagePreview", salesMessage, "sales")}
       </section>
 
       <div id="formalCommunicationMessage" class="vex-formalization-inline-message"></div>
@@ -9199,7 +9208,7 @@ async function copyVexCommunicationMessage(type) {
     }
 
     if (message) {
-      message.innerHTML = `<div class="empty-state">�?Mensagem copiada com sucesso.</div>`;
+      message.innerHTML = `<div class="empty-state">–Mensagem copiada com sucesso.</div>`;
     } else {
       alert("Mensagem copiada com sucesso.");
     }
@@ -9464,7 +9473,7 @@ function renderVexDocumentCard(definition, sale, data) {
           <button class="primary-button" type="button" onclick="downloadVexDocumentDocx('${sale.id}', '${definition.type}')">DOCX</button>
           <button class="secondary-button" type="button" onclick="printVexDocument('${sale.id}', '${definition.type}')">PDF / Imprimir</button>
           <button class="secondary-button" type="button" onclick="shareVexDocumentWhatsapp('${sale.id}', '${definition.type}')">WhatsApp</button>
-        ` : `<button class="secondary-button" type="button" onclick="${action}('${sale.id}')">Ir para Formalizacao</button>`}
+        ` : `<button class="secondary-button" type="button" onclick="${action}('${sale.id}')">Ir para Formalização</button>`}
       </div>
     </article>
   `;
@@ -9492,7 +9501,7 @@ function openVexFormalizationDocuments(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">DC</div>
-        <span class="eyebrow">Formalizacao  - Documentos</span>
+        <span class="eyebrow">Formalização  - Documentos</span>
         <h2>Pedido #${escapeHTML(data.meta.saleNumber)}</h2>
         <p>${escapeHTML(data.client.clientName || "Cliente nao informado")}  - ${escapeHTML(getVexVehicleFullName(data.vehicle) || "Veiculo nao informado")}</p>
 
@@ -9652,27 +9661,27 @@ function buildVexContractHtml(data) {
           <p>Foi dado o abatimento no importe de <strong>${escapeHTML(formatCurrencyToBrazil(discount))}</strong> para que o comprador efetue todas as manutenções necessárias no veículo como preditivas, corretivas e preventivas, que se fizerem necessárias, bem como com eventuais vícios ocultos, em decorrência do abatimento fornecido; Carro consignado.</p>
         </div>
         <p class="contract-gastos"><strong>${gastosLine}</strong></p>
-        <p class="contract-paragraph-unique"><strong>Parágrafo único</strong> �?Caso o valor não seja integralmente quitado, o COMPRADOR assume o bem como <strong>fiel depositário</strong>, não podendo vendê-lo, cedê-lo ou transferi-lo até a quitação total, sob pena de responsabilidade civil e penal.</p>
+        <p class="contract-paragraph-unique"><strong>Parágrafo único</strong> – Caso o valor não seja integralmente quitado, o COMPRADOR assume o bem como <strong>fiel depositário</strong>, não podendo vendê-lo, cedê-lo ou transferi-lo até a quitação total, sob pena de responsabilidade civil e penal.</p>
         <p class="contract-page-number">Página 1 de 4</p>
       </section>
 
       <section class="vex-contract-page vex-contract-page-2">
-        <p class="contract-center-title">IV �?DO ABATIMENTO DO PREÇO E RESPONSABILIDADE PELOS REPAROS</p>
-        <p><strong><u>Cláusula 1ª</u></strong> �?O COMPRADOR declara que <strong><u>teve ampla liberdade e realizou análise minuciosa do veículo</u></strong>, inclusive tendo sido orientado a submetê-lo à avaliação técnica por mecânico de sua confiança antes da compra. Declara ainda que fez minuciosa análise das condições em que o veículo se encontra, declarando que está ciente e de acordo com os reparos necessários.</p>
-        <p><strong><u>Cláusula 2ª</u></strong> �?Foi informado expressamente que <strong>o veículo não passou por qualquer revisão, preparação ou correção prévia para venda, sendo entregue no estado de conservação e uso em que se encontra</strong>, com necessidade de diversos reparos mecânicos, elétricos, estruturais, de suspensão, freios, motor e demais itens, decorrentes de desgaste natural ou falhas já existentes.</p>
-        <p><strong><u>Cláusula 3ª</u></strong> �?As partes reconhecem que o <strong><u>veículo é oriundo de repasse</u></strong>, motivo pelo qual <strong><u>foi concedido abatimento sobre o valor de mercado</u></strong>, ajustando-se que o COMPRADOR assume integralmente a responsabilidade de realizar, por sua conta e risco, todas as manutenções necessárias para sua utilização regular e segura.</p>
-        <p><strong><u>Cláusula 4ª</u></strong> �?O COMPRADOR <strong><u>afirma, com plena ciência, que está adquirindo o bem no estado em que se encontra e sem garantia mecânica ou geral</u></strong>, tendo sido claramente informado da necessidade de revisão completa e reparos em toda a parte mecânica, elétrica e estrutural do veículo �?não se restringindo aos itens exemplificados, mas abrangendo eventuais defeitos ocultos ou futuros.</p>
-        <p><strong><u>Cláusula 5ª</u></strong> �?Reconhece também que <strong><u>o valor do abatimento foi livremente acordado</u></strong> e que não poderá alegar posteriormente insuficiência, visto que teve a oportunidade de examinar o veículo com profissional de sua confiança antes da assinatura deste instrumento, tendo sido orientado a avaliar previamente por um mecânico de sua confiança, quanto a compatibilidade dos reparos a serem feitos e do abatimento ofertado, visto que não poderá posteriormente em hipótese alguma, alegar que o abatimento não tenha sido suficiente para realizar as manutenções necessárias.</p>
+        <p class="contract-center-title">IV – DO ABATIMENTO DO PREÇO E RESPONSABILIDADE PELOS REPAROS</p>
+        <p><strong><u>Cláusula 1ª</u></strong> – O COMPRADOR declara que <strong><u>teve ampla liberdade e realizou análise minuciosa do veículo</u></strong>, inclusive tendo sido orientado a submetê-lo à avaliação técnica por mecânico de sua confiança antes da compra. Declara ainda que fez minuciosa análise das condições em que o veículo se encontra, declarando que está ciente e de acordo com os reparos necessários.</p>
+        <p><strong><u>Cláusula 2ª</u></strong> – Foi informado expressamente que <strong>o veículo não passou por qualquer revisão, preparação ou correção prévia para venda, sendo entregue no estado de conservação e uso em que se encontra</strong>, com necessidade de diversos reparos mecânicos, elétricos, estruturais, de suspensão, freios, motor e demais itens, decorrentes de desgaste natural ou falhas já existentes.</p>
+        <p><strong><u>Cláusula 3ª</u></strong> – As partes reconhecem que o <strong><u>veículo é oriundo de repasse</u></strong>, motivo pelo qual <strong><u>foi concedido abatimento sobre o valor de mercado</u></strong>, ajustando-se que o COMPRADOR assume integralmente a responsabilidade de realizar, por sua conta e risco, todas as manutenções necessárias para sua utilização regular e segura.</p>
+        <p><strong><u>Cláusula 4ª</u></strong> – O COMPRADOR <strong><u>afirma, com plena ciência, que está adquirindo o bem no estado em que se encontra e sem garantia mecânica ou geral</u></strong>, tendo sido claramente informado da necessidade de revisão completa e reparos em toda a parte mecânica, elétrica e estrutural do veículo – não se restringindo aos itens exemplificados, mas abrangendo eventuais defeitos ocultos ou futuros.</p>
+        <p><strong><u>Cláusula 5ª</u></strong> – Reconhece também que <strong><u>o valor do abatimento foi livremente acordado</u></strong> e que não poderá alegar posteriormente insuficiência, visto que teve a oportunidade de examinar o veículo com profissional de sua confiança antes da assinatura deste instrumento, tendo sido orientado a avaliar previamente por um mecânico de sua confiança, quanto a compatibilidade dos reparos a serem feitos e do abatimento ofertado, visto que não poderá posteriormente em hipótese alguma, alegar que o abatimento não tenha sido suficiente para realizar as manutenções necessárias.</p>
         <p class="contract-page-number">Página 2 de 4</p>
       </section>
 
       <section class="vex-contract-page vex-contract-page-3">
-        <p class="contract-center-title">V �?DA TRANSFERÊNCIA DE PROPRIEDADE</p>
+        <p class="contract-center-title">V – DA TRANSFERÊNCIA DE PROPRIEDADE</p>
         <p><strong><u>Cláusula 1ª</u></strong>: A transferência é de responsabilidade exclusiva do <strong>COMPRADOR</strong>, inclusive seus custos.</p>
         <p><strong><u>Cláusula 2ª</u></strong>: Caso o pagamento se dê via cheque ou forma a prazo, os documentos do veículo serão liberados somente após a quitação ou compensação bancária.</p>
         <p><strong><u>Cláusula 3ª</u></strong>: O Certificado de Registro do Veículo/ Autorização de Transferência Propriedade será entregue apenas após <strong>regularização de eventuais pendências administrativas ou financeiras</strong> entre COMPRADOR e VENDEDOR.</p>
 
-        <p class="contract-center-title contract-section-gap">VI �?DAS NOTIFICAÇÕES</p>
+        <p class="contract-center-title contract-section-gap">VI – DAS NOTIFICAÇÕES</p>
         <p>O <strong>COMPRADOR</strong> nesta oportunidade declara e aceita que todas as comunicações serão consideradas válidas se enviadas:</p>
         <ul class="contract-list">
           <li>Pelo WhatsApp do <strong>COMPRADOR</strong>;</li>
@@ -9680,7 +9689,7 @@ function buildVexContractHtml(data) {
           <li>Para o endereço físico cadastrado.</li>
         </ul>
 
-        <p class="contract-center-title contract-section-gap">VII �?DA PROCEDÊNCIA</p>
+        <p class="contract-center-title contract-section-gap">VII – DA PROCEDÊNCIA</p>
         <p>O <strong>VENDEDOR</strong> declara que, até a presente data, o veículo objeto deste contrato encontra-se livre e desembaraçado de ônus, gravames ou restrições de conhecimento da empresa, conforme verificação realizada nos sistemas oficiais disponíveis.</p>
         <p>Contudo, em atenção ao disposto no art. 447 do Código Civil, as partes reconhecem que a responsabilidade do <strong>VENDEDOR</strong> se limita à sua esfera de conhecimento e atuação, não se estendendo a eventuais registros, apontamentos ou restrições lançadas após a celebração do presente instrumento, ainda que decorrentes de fatos pretéritos a negociação.</p>
         <p>Fica pactuado, portanto, que eventual evicção ou reivindicação de terceiros somente ensejará responsabilidade do <strong>VENDEDOR</strong> nos casos em que comprovadamente tenha agido com dolo ou ciência prévia do vício ou ônus incidente sobre o bem.</p>
@@ -9693,11 +9702,11 @@ function buildVexContractHtml(data) {
 
       <section class="vex-contract-page vex-contract-page-4">
         <div class="contract-final-block">
-        <p class="contract-center-title contract-section-gap">IX �?DA CONFIDENCIALIDADE</p>
+        <p class="contract-center-title contract-section-gap">IX – DA CONFIDENCIALIDADE</p>
         <p>Este contrato e sua redação são protegidos por <strong>direitos autorais</strong>. É vedada sua reprodução, modificação ou reutilização sem autorização do <strong>VENDEDOR</strong> e/ou da profissional responsável. Violação sujeita às penalidades da <strong>Lei nº 9.610/98.</strong></p>
         <p>O COMPRADOR se compromete a não realizar postagens, publicações ou comentários públicos que impliquem exposição negativa, constrangimento ou ataque à reputação da empresa VENDEDORA, em redes sociais, sites ou quaisquer meios públicos, sob pena de responder civil e criminalmente por danos morais e à imagem.</p>
 
-        <p class="contract-center-title contract-section-gap">X �?DO FORO</p>
+        <p class="contract-center-title contract-section-gap">X – DO FORO</p>
         <p>As partes elegem o foro da Comarca de <strong>${escapeHTML(cityForo)}</strong> para solucionar qualquer disputa referente a este contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja.</p>
         <p>E, por estarem justas e contratadas, assinam o presente instrumento em duas vias de igual teor e forma, juntamente com duas testemunhas.</p>
         </div>
@@ -9719,7 +9728,7 @@ function buildVexRepasseHtml(data) {
     `${normalizeVexText(data.client.clientStreet)}${normalizeVexText(data.client.clientNumber) ? "," + normalizeVexText(data.client.clientNumber) : ""}${normalizeVexText(data.client.clientComplement) ? " - " + normalizeVexText(data.client.clientComplement) : ""}`,
     normalizeVexText(data.client.clientDistrict),
     `${normalizeVexText(data.client.clientCity)} - ${normalizeVexText(data.client.clientState || "SP")}`
-  ].filter(function(item) { return normalizeVexText(item).replace(/[-\s]/g, ""); }).join(" �?");
+  ].filter(function(item) { return normalizeVexText(item).replace(/[-\s]/g, ""); }).join(" –");
 
   function field(label, value) {
     return `<div class="vex-repasse-field"><strong>${escapeHTML(label)}:</strong><span>${escapeHTML(value || "")}</span></div>`;
@@ -9737,7 +9746,7 @@ function buildVexRepasseHtml(data) {
       <h1 class="vex-repasse-title">TERMO DE REPASSE - Pedido: #${escapeHTML(data.meta.saleNumber)}</h1>
 
       <section class="vex-repasse-section">
-        <h2><span class="vex-repasse-icon">�?/span> Dados do Veículo</h2>
+        <h2><span class="vex-repasse-icon">✓</span> Dados do Veículo</h2>
         <div class="vex-repasse-box">
           <div class="vex-repasse-grid">
             <div>
@@ -9763,7 +9772,7 @@ function buildVexRepasseHtml(data) {
       </section>
 
       <section class="vex-repasse-section vex-repasse-proponente">
-        <h2><span class="vex-repasse-icon">�?/span> Proponente</h2>
+        <h2><span class="vex-repasse-icon">✓</span> Proponente</h2>
         <div class="vex-repasse-box">
           <div class="vex-repasse-grid">
             <div>
@@ -10143,6 +10152,7 @@ function injectVexDocumentEngineStyles() {
 injectVexDocumentEngineStyles();
 
 function openVexFormalization(saleId) {
+  if (typeof closeSaleDetails === 'function') closeSaleDetails();
   const sale = sales.find(function(item) {
     return item.id === saleId;
   });
@@ -10209,7 +10219,7 @@ function openVexFormalization(saleId) {
     },
     {
       icon: "CM",
-      label: "Comunicacao",
+      label: "Comunicação",
       description: "Gerar textos dos grupos Preparacao e Vendas.",
       done: true,
       action: "openVexFormalizationCommunication"
@@ -10225,7 +10235,7 @@ function openVexFormalization(saleId) {
 
   const doneCount = steps.filter(function(step) { return step.done; }).length;
   const progress = Math.round((doneCount / steps.length) * 100);
-  const formalizationStatus = progress >= 100 ? "Formalizacao concluida" : "Formalizacao em andamento";
+  const formalizationStatus = progress >= 100 ? "Formalização concluida" : "Formalização em andamento";
   const statusIcon = progress >= 100 ? "OK" : "..";
 
   drawer.innerHTML = `
@@ -10236,7 +10246,7 @@ function openVexFormalization(saleId) {
 
       <section class="vex-drawer-hero vex-formalization-hero">
         <div class="vex-vehicle-icon">FO</div>
-        <span class="eyebrow">Formalizacao</span>
+        <span class="eyebrow">Formalização</span>
         <h2>${escapeHTML(sale.vehicleModel || "Veiculo")} ${escapeHTML(sale.vehicleYear || "")}</h2>
         <p>${escapeHTML(sale.clientName || "Cliente nao informado")}  - ${formatDateToBrazil(sale.saleDate)}</p>
 
@@ -10274,7 +10284,7 @@ function openVexFormalization(saleId) {
 
       <div class="vex-detail-item full vex-formalization-note">
         <span>RC2.11</span>
-        <strong>Comunicacao Inteligente liberada com mensagens para Grupo Preparacao e Grupo Vendas, visualização e cópia automática.</strong>
+        <strong>Comunicação Inteligente liberada com mensagens para Grupo Preparacao e Grupo Vendas, visualização e cópia automática.</strong>
       </div>
 
       <div class="vex-drawer-actions vex-drawer-actions-safe">
@@ -12731,7 +12741,7 @@ function injectVexRC201MobileStyles() {
       }
 
       .vex-rc2-mobile-more-button::before {
-        content: "�? !important;
+        content: "..." !important;
         display: block !important;
         font-size: 20px !important;
         line-height: 1 !important;
@@ -13264,7 +13274,7 @@ function updateVexDashboardExecutive() {
 
 /* =========================================================
    VEX HUB PRO  - RC2.03
-   Detalhes do veiculo: Editar ADM + Formalizacao inicial
+   Detalhes do veiculo: Editar ADM + Formalização inicial
    ========================================================= */
 function injectVexRC203DetailsStyles() {
   if (document.getElementById("vex-rc203-details-styles")) {
@@ -13998,7 +14008,7 @@ applyVexSidebarSingleBrand();
 setTimeout(applyVexSidebarSingleBrand, 300);
 
 /* =========================================================
-   RC3.0.55 - Correcao de contraste da Formalizacao
+   RC3.0.55 - Correcao de contraste da Formalização
    ========================================================= */
 function injectVexFormalizationContrastFix() {
   if (document.getElementById("vex-formalization-contrast-fix")) return;
@@ -14056,7 +14066,7 @@ function injectVexFormalizationContrastFix() {
 injectVexFormalizationContrastFix();
 
 /* =========================================================
-   RC3.0.56 - Cards premium da Formalizacao
+   RC3.0.56 - Cards premium da Formalização
    ========================================================= */
 function injectVexFormalizationPremiumCards() {
   if (document.getElementById("vex-formalization-premium-cards")) return;
@@ -14229,7 +14239,7 @@ function injectVexFormalizationPremiumCards() {
 injectVexFormalizationPremiumCards();
 
 /* =========================================================
-   RC3.0.57 - Formalizacao alinhada ao padrao premium do app
+   RC3.0.57 - Formalização alinhada ao padrao premium do app
    ========================================================= */
 function injectVexFormalizationAppStandard() {
   if (document.getElementById("vex-formalization-app-standard")) return;
@@ -14478,7 +14488,7 @@ function injectVexFormalizationAppStandard() {
 injectVexFormalizationAppStandard();
 
 /* =========================================================
-   RC3.0.58 - Formalizacao no padrao premium dark
+   RC3.0.58 - Formalização no padrao premium dark
    ========================================================= */
 function injectVexFormalizationDarkPremium() {
   if (document.getElementById("vex-formalization-dark-premium")) return;
@@ -15574,6 +15584,13 @@ injectVexRC87SidebarFix();
 cleanupVexRC84SidebarArtifacts();
 setTimeout(cleanupVexRC84SidebarArtifacts, 300);
 setTimeout(cleanupVexRC84SidebarArtifacts, 1200);
+
+
+
+
+
+
+
 
 
 
